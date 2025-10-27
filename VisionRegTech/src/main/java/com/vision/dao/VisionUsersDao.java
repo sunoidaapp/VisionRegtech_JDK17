@@ -2774,180 +2774,280 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		return getJdbcTemplate().update(query, args);
 	}
 	
-	@SuppressWarnings({ "static-access", "deprecation" })
-	public ExceptionCode prepareAndSendMail(VisionUsersVb vObject, String otp, String resultForgotBy) {
+//	@SuppressWarnings({ "static-access", "deprecation" })
+//	public ExceptionCode prepareAndSendMail(VisionUsersVb vObject, String otp, String resultForgotBy) {
+////		ExceptionCode exceptionCode = new ExceptionCode();
+////		try {
+////			Session session = null;
+////
+////			getEmailProperites();
+////
+////			Authenticator auth = new PopupAuthenticator();
+//////			session = Session.getDefaultInstance(props, auth);
+////			 session = Session.getInstance(props);
+////
+////			MimeMessage message = new MimeMessage(session);
+////
+////			Map<String, Object> map = new HashMap<String, Object>();
+////			String msgBody = "";
+////			vObject.setPassword1(otp);
+////			if (ValidationUtil.isValid(vObject.getUserEmailId())) {
+////				message.addRecipient(Message.RecipientType.TO, new InternetAddress(vObject.getUserEmailId()));
+////			}
+////			VisionUsersVb vObje = new VisionUsersVb();
+////			String currentUser = commonDao.findVisionVariableValue("SYSTEM_USER_ID");
+////			String supportMailId = commonDao.findVisionVariableValue("SUPPORT_MAIL_ID");
+////			if (!ValidationUtil.isValid(supportMailId)) {
+////				supportMailId = "data@kdic.go.ke";
+////			}
+////			VisionUsersVb systemUser = null;
+////			if (!ValidationUtil.isValid(currentUser))
+////				currentUser = "9999";
+////			vObje.setVisionId(Integer.parseInt(currentUser));
+////			vObje.setVerificationRequired(false);
+////			vObje.setRecordIndicator(0);
+////			vObje.setUserStatus(0);
+////			List<VisionUsersVb> result = getQueryPopupResults(vObje);
+////			if (result != null && !result.isEmpty()) {
+////				systemUser = result.get(0);
+////			}
+////			if (systemUser == null) {
+////				logger.error("Error: System User is null");
+////				exceptionCode = CommonUtils.getResultObject("Email Schedule", Constants.ERRONEOUS_OPERATION, "E-Mail",
+////						"");
+////				return exceptionCode;
+////			}
+////			String fromMailId = systemUser.getUserEmailId();
+////			if (!ValidationUtil.isValid(fromMailId)) {
+////				fromMailId = "Vision.Support@sunoida.com";
+////			}
+////			message.setFrom(new InternetAddress(fromMailId));
+//////			String vmFolderUrl = servletContext.getRealPath("/WEB-INF/classes/templates");
+////			config.setClassForTemplateLoading(this.getClass(), "/templates/");
+////			String vmFile = "";
+////			if (ValidationUtil.isValid(resultForgotBy)) {
+////				map.put("subject", "Trouble Signing In");
+////				map.put("supportMailId", supportMailId);
+////				map.put("emailScheduler", vObject);
+////
+////				if ("Username".equalsIgnoreCase(resultForgotBy)) {
+////					vmFile = "SR_EMAIL_FORGOT_USERNAME.vm";
+//////					msgBody = VelocityEngineUtils.mergeTemplateIntoString(getVelocityEngine(), "com/vision/wb/SR_EMAIL_FORGOT_USERNAME.vm", map);
+////				} else if ("Password".equalsIgnoreCase(resultForgotBy)) {
+//////					msgBody = VelocityEngineUtils.mergeTemplateIntoString(getVelocityEngine(), "com/vision/wb/SR_EMAIL_FORGOT_PASSWORD.vm", map);
+////					vmFile = "SR_EMAIL_FORGOT_PASSWORD.vm";
+////				}
+////			} else {
+////				map.put("emailScheduler", vObject);
+////				map.put("subject", "One Time Password");
+////				vmFile = "SR_EMAIL_AUTHENTICATE_CODE.vm";
+////				// msgBody =
+////				// VelocityEngineUtils.mergeTemplateIntoString(getVelocityEngine(),"com/vision/wb/SR_EMAIL_AUTHENTICATE_CODE.vm",
+////				// map);
+////			}
+////			msgBody = FreeMarkerTemplateUtils.processTemplateIntoString(config.getTemplate(vmFile), map);
+////			Multipart multipart = new MimeMultipart("alternative");
+////			MimeBodyPart textPart = new MimeBodyPart();
+////			// textPart.setText( htmlData.toString(), "utf-8" );
+////			textPart.setContent(msgBody.toString(), "text/html; charset=utf-8");
+////			multipart.addBodyPart(textPart);
+////			message.setContent(multipart);
+////
+////			// message.setText(msgBody);
+////			if (!ValidationUtil.isValid(resultForgotBy)) {
+////				message.setSubject("OTP to verify your Vision BI User Login Credentials");
+////			} else {
+////				message.setSubject("Trouble Signing In");
+////			}
+////			message.setSentDate(new Date());
+////
+////			Transport transport = session.getTransport("smtp");
+////			transport.send(message);
+//////			Transport.send(message);
+////			exceptionCode.setErrorMsg("Mail sent successfully");
+////			exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
+////		} catch (Exception e) {
+////			e.printStackTrace();
+////			exceptionCode = CommonUtils.getResultObject("Email Schedule", Constants.ERRONEOUS_OPERATION, "E-Mail", "");
+////			exceptionCode.setErrorMsg("Mail sent failed");
+////			exceptionCode.setOtherInfo(vObject);
+////			return exceptionCode;
+////		}
+////		return exceptionCode;
 //		ExceptionCode exceptionCode = new ExceptionCode();
 //		try {
-//			Session session = null;
+//		    // Set email properties
+//		    Properties props = getEmailProperites();
 //
-//			getEmailProperites();
+//		    // Use secure authentication (replace with actual credentials or load from config)
+//		    final String username = commonDao.findVisionVariableValue("SUPPORT_MAIL_ID");
+//		    final String password = commonDao.findVisionVariableValue("SUPPORT_MAIL_PWD"); // <-- replace this (App Password recommended)
 //
-//			Authenticator auth = new PopupAuthenticator();
-////			session = Session.getDefaultInstance(props, auth);
-//			 session = Session.getInstance(props);
+//		    Authenticator auth = new Authenticator() {
+//		        protected PasswordAuthentication getPasswordAuthentication() {
+//		            return new PasswordAuthentication(username, password);
+//		        }
+//		    };
 //
-//			MimeMessage message = new MimeMessage(session);
+//		    Session session = Session.getInstance(props, auth);
+//		    MimeMessage message = new MimeMessage(session);
 //
-//			Map<String, Object> map = new HashMap<String, Object>();
-//			String msgBody = "";
-//			vObject.setPassword1(otp);
-//			if (ValidationUtil.isValid(vObject.getUserEmailId())) {
-//				message.addRecipient(Message.RecipientType.TO, new InternetAddress(vObject.getUserEmailId()));
-//			}
-//			VisionUsersVb vObje = new VisionUsersVb();
-//			String currentUser = commonDao.findVisionVariableValue("SYSTEM_USER_ID");
-//			String supportMailId = commonDao.findVisionVariableValue("SUPPORT_MAIL_ID");
-//			if (!ValidationUtil.isValid(supportMailId)) {
-//				supportMailId = "data@kdic.go.ke";
-//			}
-//			VisionUsersVb systemUser = null;
-//			if (!ValidationUtil.isValid(currentUser))
-//				currentUser = "9999";
-//			vObje.setVisionId(Integer.parseInt(currentUser));
-//			vObje.setVerificationRequired(false);
-//			vObje.setRecordIndicator(0);
-//			vObje.setUserStatus(0);
-//			List<VisionUsersVb> result = getQueryPopupResults(vObje);
-//			if (result != null && !result.isEmpty()) {
-//				systemUser = result.get(0);
-//			}
-//			if (systemUser == null) {
-//				logger.error("Error: System User is null");
-//				exceptionCode = CommonUtils.getResultObject("Email Schedule", Constants.ERRONEOUS_OPERATION, "E-Mail",
-//						"");
-//				return exceptionCode;
-//			}
-//			String fromMailId = systemUser.getUserEmailId();
-//			if (!ValidationUtil.isValid(fromMailId)) {
-//				fromMailId = "Vision.Support@sunoida.com";
-//			}
-//			message.setFrom(new InternetAddress(fromMailId));
-////			String vmFolderUrl = servletContext.getRealPath("/WEB-INF/classes/templates");
-//			config.setClassForTemplateLoading(this.getClass(), "/templates/");
-//			String vmFile = "";
-//			if (ValidationUtil.isValid(resultForgotBy)) {
-//				map.put("subject", "Trouble Signing In");
-//				map.put("supportMailId", supportMailId);
-//				map.put("emailScheduler", vObject);
+//		    Map<String, Object> map = new HashMap<>();
+//		    String msgBody = "";
+//		    vObject.setPassword1(otp);
 //
-//				if ("Username".equalsIgnoreCase(resultForgotBy)) {
-//					vmFile = "SR_EMAIL_FORGOT_USERNAME.vm";
-////					msgBody = VelocityEngineUtils.mergeTemplateIntoString(getVelocityEngine(), "com/vision/wb/SR_EMAIL_FORGOT_USERNAME.vm", map);
-//				} else if ("Password".equalsIgnoreCase(resultForgotBy)) {
-////					msgBody = VelocityEngineUtils.mergeTemplateIntoString(getVelocityEngine(), "com/vision/wb/SR_EMAIL_FORGOT_PASSWORD.vm", map);
-//					vmFile = "SR_EMAIL_FORGOT_PASSWORD.vm";
-//				}
-//			} else {
-//				map.put("emailScheduler", vObject);
-//				map.put("subject", "One Time Password");
-//				vmFile = "SR_EMAIL_AUTHENTICATE_CODE.vm";
-//				// msgBody =
-//				// VelocityEngineUtils.mergeTemplateIntoString(getVelocityEngine(),"com/vision/wb/SR_EMAIL_AUTHENTICATE_CODE.vm",
-//				// map);
-//			}
-//			msgBody = FreeMarkerTemplateUtils.processTemplateIntoString(config.getTemplate(vmFile), map);
-//			Multipart multipart = new MimeMultipart("alternative");
-//			MimeBodyPart textPart = new MimeBodyPart();
-//			// textPart.setText( htmlData.toString(), "utf-8" );
-//			textPart.setContent(msgBody.toString(), "text/html; charset=utf-8");
-//			multipart.addBodyPart(textPart);
-//			message.setContent(multipart);
+//		    if (ValidationUtil.isValid(vObject.getUserEmailId())) {
+//		        message.addRecipient(Message.RecipientType.TO, new InternetAddress(vObject.getUserEmailId()));
+//		    }
 //
-//			// message.setText(msgBody);
-//			if (!ValidationUtil.isValid(resultForgotBy)) {
-//				message.setSubject("OTP to verify your Vision BI User Login Credentials");
-//			} else {
-//				message.setSubject("Trouble Signing In");
-//			}
-//			message.setSentDate(new Date());
+//		    message.setFrom(new InternetAddress(username));
 //
+//		    config.setClassForTemplateLoading(this.getClass(), "/templates/");
+//		    String vmFile = "";
+//		    if (ValidationUtil.isValid(resultForgotBy)) {
+//		        map.put("subject", "Trouble Signing In");
+//		        map.put("supportMailId", username);
+//		        map.put("emailScheduler", vObject);
+//
+//		        if ("Username".equalsIgnoreCase(resultForgotBy)) {
+//		            vmFile = "SR_EMAIL_FORGOT_USERNAME.vm";
+//		        } else if ("Password".equalsIgnoreCase(resultForgotBy)) {
+//		            vmFile = "SR_EMAIL_FORGOT_PASSWORD.vm";
+//		        }
+//		    } else {
+//		        map.put("emailScheduler", vObject);
+//		        map.put("subject", "One Time Password");
+//		        vmFile = "SR_EMAIL_AUTHENTICATE_CODE.vm";
+//		    }
+//
+//		    msgBody = FreeMarkerTemplateUtils.processTemplateIntoString(config.getTemplate(vmFile), map);
+//		    Multipart multipart = new MimeMultipart("alternative");
+//		    MimeBodyPart textPart = new MimeBodyPart();
+//		    textPart.setContent(msgBody, "text/html; charset=utf-8");
+//		    multipart.addBodyPart(textPart);
+//		    message.setContent(multipart);
+//
+//		    if (!ValidationUtil.isValid(resultForgotBy)) {
+//		        message.setSubject("OTP to verify your Vision RegTech User Login Credentials");
+//		    } else {
+//		        message.setSubject("Trouble Signing In");
+//		    }
+//
+//		    message.setSentDate(new Date());
+//
+//		    // Send the message
+////		    Transport.send(message);
+//		    
 //			Transport transport = session.getTransport("smtp");
-//			transport.send(message);
-////			Transport.send(message);
-//			exceptionCode.setErrorMsg("Mail sent successfully");
-//			exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
+//			transport.connect("smtp.gmail.com", username, password);
+//			transport.sendMessage(message, message.getAllRecipients());
+//			transport.close();
+//		    exceptionCode.setErrorMsg("OTP sent successfully");
+//		    exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
 //		} catch (Exception e) {
-//			e.printStackTrace();
-//			exceptionCode = CommonUtils.getResultObject("Email Schedule", Constants.ERRONEOUS_OPERATION, "E-Mail", "");
-//			exceptionCode.setErrorMsg("Mail sent failed");
-//			exceptionCode.setOtherInfo(vObject);
-//			return exceptionCode;
+//		    e.printStackTrace();
+//		    exceptionCode = CommonUtils.getResultObject("Email Schedule", Constants.ERRONEOUS_OPERATION, "E-Mail", "");
+//		    exceptionCode.setErrorMsg("OTP sent failed");
+//		    exceptionCode.setOtherInfo(vObject);
+//		    return exceptionCode;
 //		}
 //		return exceptionCode;
+//
+//	}
+	@SuppressWarnings({ "static-access", "deprecation" })
+	public ExceptionCode prepareAndSendMail(VisionUsersVb vObject, String otp, String resultForgotBy) {
 		ExceptionCode exceptionCode = new ExceptionCode();
 		try {
-		    // Set email properties
-		    Properties props = new Properties();
-		    props.put("mail.smtp.auth", "true");
-		    props.put("mail.smtp.starttls.enable", "true");
-		    props.put("mail.smtp.host", "smtp.gmail.com");
-		    props.put("mail.smtp.port", "587");
+			// Fetch mail configuration from Vision variables
+			final String hostName = commonDao.findVisionVariableValue("RG_MAIL_HOST");
+			final String mailPort = commonDao.findVisionVariableValue("RG_MAIL_PORT");
+			final String authFlag = commonDao.findVisionVariableValue("RG_MAIL_SMTP_AUTH"); // "true" or "false"
+			final String username = commonDao.findVisionVariableValue("RG_MAIL_ID");
+			final String password = commonDao.findVisionVariableValue("RG_MAIL_PWD");
 
-		    // Use secure authentication (replace with actual credentials or load from config)
-		    final String username = commonDao.findVisionVariableValue("SUPPORT_MAIL_ID");
-		    final String password = commonDao.findVisionVariableValue("SUPPORT_MAIL_PWD"); // <-- replace this (App Password recommended)
+			boolean useAuth = "true".equalsIgnoreCase(authFlag);
 
-		    Authenticator auth = new Authenticator() {
-		        protected PasswordAuthentication getPasswordAuthentication() {
-		            return new PasswordAuthentication(username, password);
-		        }
-		    };
+			// Set mail properties
+			Properties props = new Properties();
+			props.put("mail.smtp.host", hostName);
+			props.put("mail.smtp.port", mailPort);
+			props.put("mail.smtp.starttls.enable", "true");
+			props.put("mail.smtp.auth", String.valueOf(useAuth));
 
-		    Session session = Session.getInstance(props, auth);
-		    MimeMessage message = new MimeMessage(session);
+			Session session;
 
-		    Map<String, Object> map = new HashMap<>();
-		    String msgBody = "";
-		    vObject.setPassword1(otp);
+			if (useAuth) {
+			    Authenticator auth = new Authenticator() {
+			        protected PasswordAuthentication getPasswordAuthentication() {
+			            return new PasswordAuthentication(username, password);
+			        }
+			    };
+			    session = Session.getInstance(props, auth);
+			} else {
+			    session = Session.getInstance(props);
+			}
 
-		    if (ValidationUtil.isValid(vObject.getUserEmailId())) {
-		        message.addRecipient(Message.RecipientType.TO, new InternetAddress(vObject.getUserEmailId()));
-		    }
+			// Compose the email
+			MimeMessage message = new MimeMessage(session);
+			Map<String, Object> map = new HashMap<>();
+			String msgBody = "";
+			vObject.setPassword1(otp);
 
-		    message.setFrom(new InternetAddress(username));
+			if (ValidationUtil.isValid(vObject.getUserEmailId())) {
+			    message.addRecipient(Message.RecipientType.TO, new InternetAddress(vObject.getUserEmailId()));
+			}
+			message.setFrom(new InternetAddress(username));
 
-		    config.setClassForTemplateLoading(this.getClass(), "/templates/");
-		    String vmFile = "";
-		    if (ValidationUtil.isValid(resultForgotBy)) {
-		        map.put("subject", "Trouble Signing In");
-		        map.put("supportMailId", username);
-		        map.put("emailScheduler", vObject);
+			// Select template and fill data
+			config.setClassForTemplateLoading(this.getClass(), "/templates/");
+			String vmFile = "";
 
-		        if ("Username".equalsIgnoreCase(resultForgotBy)) {
-		            vmFile = "SR_EMAIL_FORGOT_USERNAME.vm";
-		        } else if ("Password".equalsIgnoreCase(resultForgotBy)) {
-		            vmFile = "SR_EMAIL_FORGOT_PASSWORD.vm";
-		        }
-		    } else {
-		        map.put("emailScheduler", vObject);
-		        map.put("subject", "One Time Password");
-		        vmFile = "SR_EMAIL_AUTHENTICATE_CODE.vm";
-		    }
+			if (ValidationUtil.isValid(resultForgotBy)) {
+			    map.put("subject", "Trouble Signing In");
+			    map.put("supportMailId", username);
+			    map.put("emailScheduler", vObject);
 
-		    msgBody = FreeMarkerTemplateUtils.processTemplateIntoString(config.getTemplate(vmFile), map);
-		    Multipart multipart = new MimeMultipart("alternative");
-		    MimeBodyPart textPart = new MimeBodyPart();
-		    textPart.setContent(msgBody, "text/html; charset=utf-8");
-		    multipart.addBodyPart(textPart);
-		    message.setContent(multipart);
+			    if ("Username".equalsIgnoreCase(resultForgotBy)) {
+			        vmFile = "SR_EMAIL_FORGOT_USERNAME.vm";
+			    } else if ("Password".equalsIgnoreCase(resultForgotBy)) {
+			        vmFile = "SR_EMAIL_FORGOT_PASSWORD.vm";
+			    }
+			} else {
+			    map.put("emailScheduler", vObject);
+			    map.put("subject", "One Time Password");
+			    vmFile = "SR_EMAIL_AUTHENTICATE_CODE.vm";
+			}
 
-		    if (!ValidationUtil.isValid(resultForgotBy)) {
-		        message.setSubject("OTP to verify your Vision RegTech User Login Credentials");
-		    } else {
-		        message.setSubject("Trouble Signing In");
-		    }
+			msgBody = FreeMarkerTemplateUtils.processTemplateIntoString(config.getTemplate(vmFile), map);
 
-		    message.setSentDate(new Date());
+			// Prepare message body
+			Multipart multipart = new MimeMultipart("alternative");
+			MimeBodyPart textPart = new MimeBodyPart();
+			textPart.setContent(msgBody, "text/html; charset=utf-8");
+			multipart.addBodyPart(textPart);
+			message.setContent(multipart);
 
-		    // Send the message
-//		    Transport.send(message);
-		    
-			Transport transport = session.getTransport("smtp");
-			transport.connect("smtp.gmail.com", username, password);
-			transport.sendMessage(message, message.getAllRecipients());
-			transport.close();
-		    exceptionCode.setErrorMsg("OTP sent successfully");
-		    exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
+			if (!ValidationUtil.isValid(resultForgotBy)) {
+			    message.setSubject("OTP to verify your Vision RegTech User Login Credentials");
+			} else {
+			    message.setSubject("Trouble Signing In");
+			}
+
+			message.setSentDate(new Date());
+
+			// Send the email
+			if (useAuth) {
+			    Transport transport = session.getTransport("smtp");
+			    transport.connect(hostName, username, password);
+			    transport.sendMessage(message, message.getAllRecipients());
+			    transport.close();
+			} else {
+			    Transport.send(message);
+			}
+
+			exceptionCode.setErrorMsg("OTP sent successfully");
+			exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
+
 		} catch (Exception e) {
 		    e.printStackTrace();
 		    exceptionCode = CommonUtils.getResultObject("Email Schedule", Constants.ERRONEOUS_OPERATION, "E-Mail", "");
@@ -2958,10 +3058,9 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		return exceptionCode;
 
 	}
-
 	Properties props = System.getProperties();
 
-	public void getEmailProperites() {
+	public Properties getEmailProperites() {
 		/*
 		 * props.put("mail.smtp.auth", "true"); props.put("mail.smtp.starttls.enable",
 		 * "true"); props.put("mail.smtp.socketFactory.fallback", "true");
@@ -2974,6 +3073,7 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		props.put("mail.smtp.host", host);
 		props.put("mail.smtp.port", port);
 		props.setProperty("mail.smtp.ssl.protocols", "TLSv1.2");
+		return props;
 	}
 
 	public class PopupAuthenticator extends Authenticator {

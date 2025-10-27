@@ -23,17 +23,13 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.StringJoiner;
 import java.util.regex.Matcher;
@@ -42,7 +38,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.hc.client5.http.classic.methods.HttpPost;
-import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.entity.mime.FileBody;
 import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
 import org.apache.hc.client5.http.entity.mime.StringBody;
@@ -53,9 +48,7 @@ import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
-import org.apache.poi.ooxml.POIXMLDocument;
 import org.apache.poi.poifs.filesystem.FileMagic;
-import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -83,13 +76,21 @@ import com.vision.util.Constants;
 import com.vision.util.ValidationUtil;
 import com.vision.util.ZipUtils;
 import com.vision.vb.ColumnHeadersVb;
+import com.vision.vb.EmailScheduleVb;
 import com.vision.vb.ReportsVb;
 import com.vision.vb.ReviewResultVb;
 import com.vision.vb.TemplateConfigVb;
 import com.vision.vb.TemplateErrorsVb;
 import com.vision.vb.TemplateMappingVb;
 import com.vision.vb.TemplateScheduleVb;
+import com.vision.vb.VisionUsersVb;
 
+import jakarta.mail.Message;
+import jakarta.mail.PasswordAuthentication;
+import jakarta.mail.Session;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -451,13 +452,13 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 //		return (POIFSFileSystem.hasPOIFSHeader(i) || POIXMLDocument.hasOOXMLHeader(i));
 //	}
 	public boolean isExcel(InputStream inputStream) throws IOException {
-	    // Ensure mark/reset capability
-	    if (!inputStream.markSupported()) {
-	        inputStream = new PushbackInputStream(inputStream, 8);
-	    }
+		// Ensure mark/reset capability
+		if (!inputStream.markSupported()) {
+			inputStream = new PushbackInputStream(inputStream, 8);
+		}
 
-	    FileMagic fileMagic = FileMagic.valueOf(inputStream);
-	    return fileMagic == FileMagic.OLE2 || fileMagic == FileMagic.OOXML;
+		FileMagic fileMagic = FileMagic.valueOf(inputStream);
+		return fileMagic == FileMagic.OLE2 || fileMagic == FileMagic.OOXML;
 	}
 
 	public ExceptionCode reviewDetails(TemplateScheduleVb vObject, String fileName) throws IOException {
@@ -780,15 +781,15 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 		ExceptionCode exceptionCode = new ExceptionCode();
 		for (TemplateScheduleVb templateScheduleVb : vObjects) {
 			if ("Y".equalsIgnoreCase(rgBuildFlag)) {
-				
+
 				if (ValidationUtil.isValid(templateScheduleVb.getCountry())
 						&& ValidationUtil.isValid(templateScheduleVb.getLeBook())
 						&& ValidationUtil.isValid(templateScheduleVb.getTemplateId())
 						&& ValidationUtil.isValid(templateScheduleVb.getReportingDate())) {
 					templateScheduleVb.setRecordIndicator(Constants.ATTEMPT_TO_MODIFY_UNEXISTING_RECORD);
 					templateScheduleCronDao.updateProcessControl("SI", templateScheduleVb, true);
-					templateScheduleCronDao.updateProcessControlInternalStatus(1,templateScheduleVb);
-					templateScheduleCronDao.updateTemplatesHeaderInternalStatus(1,templateScheduleVb);
+					templateScheduleCronDao.updateProcessControlInternalStatus(1, templateScheduleVb);
+					templateScheduleCronDao.updateTemplatesHeaderInternalStatus(1, templateScheduleVb);
 					templateScheduleCronDao.updateTemplatesHeader("SI", templateScheduleVb);
 					exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
 					exceptionCode.setErrorMsg("Submission In Progress");
@@ -801,24 +802,24 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 
 		return exceptionCode;
 	}
-	
+
 	public ExceptionCode ReInitiate(List<TemplateScheduleVb> vObjects) {
 		ExceptionCode exceptionCode = new ExceptionCode();
 		for (TemplateScheduleVb templateScheduleVb : vObjects) {
-				if (ValidationUtil.isValid(templateScheduleVb.getCountry())
-						&& ValidationUtil.isValid(templateScheduleVb.getLeBook())
-						&& ValidationUtil.isValid(templateScheduleVb.getTemplateId())
-						&& ValidationUtil.isValid(templateScheduleVb.getReportingDate())) {
-					templateScheduleVb.setRecordIndicator(Constants.ATTEMPT_TO_MODIFY_UNEXISTING_RECORD);
-					templateScheduleCronDao.updateProcessControl("VP", templateScheduleVb, true);
-					templateScheduleCronDao.updateProcessControlInternalStatus(1,templateScheduleVb);
-					templateScheduleCronDao.updateTemplatesHeaderInternalStatus(1,templateScheduleVb);
-					templateScheduleCronDao.updateTemplatesHeader("VP", templateScheduleVb);
-					exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
-					exceptionCode.setErrorMsg("ReInitited Successfull");
-					exceptionCode.setOtherInfo(templateScheduleVb.getProcessStatus());
-				
-				}
+			if (ValidationUtil.isValid(templateScheduleVb.getCountry())
+					&& ValidationUtil.isValid(templateScheduleVb.getLeBook())
+					&& ValidationUtil.isValid(templateScheduleVb.getTemplateId())
+					&& ValidationUtil.isValid(templateScheduleVb.getReportingDate())) {
+				templateScheduleVb.setRecordIndicator(Constants.ATTEMPT_TO_MODIFY_UNEXISTING_RECORD);
+				templateScheduleCronDao.updateProcessControl("VP", templateScheduleVb, true);
+				templateScheduleCronDao.updateProcessControlInternalStatus(1, templateScheduleVb);
+				templateScheduleCronDao.updateTemplatesHeaderInternalStatus(1, templateScheduleVb);
+				templateScheduleCronDao.updateTemplatesHeader("VP", templateScheduleVb);
+				exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
+				exceptionCode.setErrorMsg("ReInitited Successfull");
+				exceptionCode.setOtherInfo(templateScheduleVb.getProcessStatus());
+
+			}
 		}
 
 		return exceptionCode;
@@ -1617,20 +1618,106 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 //		}
 //		return exceptionCode;
 //	}
+//	public ExceptionCode getAuthenticationCode(TemplateConfigVb templateConfigVb) {
+//		ExceptionCode exceptionCode = new ExceptionCode();
+//		String TOKEN_URL = templateScheduleDao.getAuthTokenURl(templateConfigVb);
+//		if (!ValidationUtil.isValid(TOKEN_URL)) {
+//			exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
+//			exceptionCode.setErrorMsg("Authentication Token URL is not valid/maintained");
+//			return exceptionCode;
+//		}
+//
+//		String GRANT_TYPE = "client_credentials"; // or your grant type
+//
+//		System.out.println("TOKEN_URL: " + TOKEN_URL);
+//		System.out.println("CLIENT_ID: " + clientID);
+//		System.out.println("CLIENT_SECRET: " + clientSecret);
+//
+//		try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+//
+//			HttpPost httpPost = new HttpPost(TOKEN_URL);
+//			httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded");
+//
+//			// Prepare form data
+//			StringBuilder formData = new StringBuilder();
+//			formData.append("client_id=").append(clientID).append("&client_secret=").append(clientSecret)
+//					.append("&grant_type=").append(GRANT_TYPE).append("&scope=").append(scope);
+//
+//			// Set request body
+//			StringEntity entity = new StringEntity(formData.toString());
+//			httpPost.setEntity(entity);
+//
+//			// Execute request
+//			try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+////					int statusCode = response.getStatusLine().getStatusCode();
+//					int statusCode = response.getCode();
+//				String responseBody = EntityUtils.toString(response.getEntity());
+//
+//				if (statusCode == 200) {
+//					exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
+//
+//					// Parse JSON response
+//					ObjectMapper objectMapper = new ObjectMapper();
+//					Map<String, Object> responseData = objectMapper.readValue(responseBody, Map.class);
+//					String access_token = (String) responseData.get("access_token");
+//					exceptionCode.setResponse(access_token);
+//					exceptionCode.setErrorMsg(responseBody);
+//
+//					// Extract exp & subtract 5 min
+//					String[] parts = access_token.split("\\.");
+//					if (parts.length < 2) {
+//						throw new IllegalArgumentException("Invalid token format");
+//					}
+//
+//					String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
+//					Map<String, Object> claims = new ObjectMapper().readValue(payload, Map.class);
+//					long expEpoch = ((Number) claims.get("exp")).longValue();
+//
+//					LocalDateTime expTime = Instant.ofEpochSecond(expEpoch).atZone(ZoneId.systemDefault())
+//							.toLocalDateTime();
+//					Timestamp dbTimestamp = Timestamp.valueOf(expTime);
+//
+//					Calendar calendar = Calendar.getInstance();
+//					calendar.setTime(dbTimestamp);
+//					calendar.add(Calendar.MINUTE, -5);
+//					Timestamp validTill = new Timestamp(calendar.getTimeInMillis());
+//
+//					System.out.println("Token EXP: " + dbTimestamp);
+//					System.out.println("VALID_TILL (minus 5 min): " + validTill);
+//
+//					// Insert into RG_AUTH_TOKEN
+//					templateScheduleDao.insertIntoAuthToken(access_token, validTill);
+//
+//				} else {
+//					System.out.println("Failed to get access token. Response code: " + statusCode);
+//					System.out.println("Response body: " + responseBody);
+//					exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
+//					exceptionCode.setErrorMsg(responseBody);
+//				}
+//			}
+//
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//			exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
+//			exceptionCode.setErrorMsg(e.getMessage());
+//		}
+//
+//		return exceptionCode;
+//
+//	}
 	public ExceptionCode getAuthenticationCode(TemplateConfigVb templateConfigVb) {
 		ExceptionCode exceptionCode = new ExceptionCode();
 		String TOKEN_URL = templateScheduleDao.getAuthTokenURl(templateConfigVb);
 		if (!ValidationUtil.isValid(TOKEN_URL)) {
 			exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
-			exceptionCode.setErrorMsg("Authentication Token URL is not valid/maintained");
-			return exceptionCode;
+			exceptionCode.setErrorMsg("Authentication Token URL is not valid/maintianed");
 		}
 
-		String GRANT_TYPE = "client_credentials"; // or your grant type
+		String GRANT_TYPE = "client_credentials"; // or another grant type
 
-		System.out.println("TOKEN_URL: " + TOKEN_URL);
-		System.out.println("CLIENT_ID: " + clientID);
-		System.out.println("CLIENT_SECRET: " + clientSecret);
+		System.out.println("TOKEN_URL :" + TOKEN_URL);
+		System.out.println("CLIENT_ID :" + clientID);
+		System.out.println("CLIENT_SECRET :" + clientSecret);// your
 
 		try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
 
@@ -1644,65 +1731,37 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 
 			// Set request body
 			StringEntity entity = new StringEntity(formData.toString());
+
 			httpPost.setEntity(entity);
 
-			// Execute request
+//			 Execute request
 			try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
-//					int statusCode = response.getStatusLine().getStatusCode();
-					int statusCode = response.getCode();
-				String responseBody = EntityUtils.toString(response.getEntity());
+				// Check response status code
 
+				int statusCode = response.getCode();
 				if (statusCode == 200) {
 					exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
-
 					// Parse JSON response
+					String responseBody = EntityUtils.toString(response.getEntity());
 					ObjectMapper objectMapper = new ObjectMapper();
 					Map<String, Object> responseData = objectMapper.readValue(responseBody, Map.class);
 					String access_token = (String) responseData.get("access_token");
 					exceptionCode.setResponse(access_token);
 					exceptionCode.setErrorMsg(responseBody);
-
-					// Extract exp & subtract 5 min
-					String[] parts = access_token.split("\\.");
-					if (parts.length < 2) {
-						throw new IllegalArgumentException("Invalid token format");
-					}
-
-					String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
-					Map<String, Object> claims = new ObjectMapper().readValue(payload, Map.class);
-					long expEpoch = ((Number) claims.get("exp")).longValue();
-
-					LocalDateTime expTime = Instant.ofEpochSecond(expEpoch).atZone(ZoneId.systemDefault())
-							.toLocalDateTime();
-					Timestamp dbTimestamp = Timestamp.valueOf(expTime);
-
-					Calendar calendar = Calendar.getInstance();
-					calendar.setTime(dbTimestamp);
-					calendar.add(Calendar.MINUTE, -5);
-					Timestamp validTill = new Timestamp(calendar.getTimeInMillis());
-
-					System.out.println("Token EXP: " + dbTimestamp);
-					System.out.println("VALID_TILL (minus 5 min): " + validTill);
-
-					// Insert into RG_AUTH_TOKEN
-					templateScheduleDao.insertIntoAuthToken(access_token, validTill);
-
 				} else {
 					System.out.println("Failed to get access token. Response code: " + statusCode);
+					String responseBody = EntityUtils.toString(response.getEntity());
 					System.out.println("Response body: " + responseBody);
 					exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
 					exceptionCode.setErrorMsg(responseBody);
 				}
 			}
-
 		} catch (Exception e) {
 			e.printStackTrace();
 			exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
 			exceptionCode.setErrorMsg(e.getMessage());
 		}
-
 		return exceptionCode;
-
 	}
 
 	public ExceptionCode postData(String institutionCode, String requestId, String isFIleAttached, String reportingDate,
@@ -1833,9 +1892,6 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 
 			}
 			httpPost.setEntity(multipartEntity);
-			
-
-          
 
 //			 Execute request
 			try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
@@ -1987,5 +2043,199 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 //			return exceptionCode;
 //		}
 //	}
-	
+//	public void alertMail(TemplateScheduleVb templateScheduleVb ) {
+//		try {
+//			// Fetch mail configuration from Vision variables
+//			final String hostName = commonDao.findVisionVariableValue("RG_MAIL_HOST");
+//			final String mailPort = commonDao.findVisionVariableValue("RG_MAIL_PORT");
+//			final String authFlag = commonDao.findVisionVariableValue("RG_MAIL_SMTP_AUTH"); // "true" or "false"
+//			final String username = commonDao.findVisionVariableValue("RG_MAIL_ID");
+//			final String password = commonDao.findVisionVariableValue("RG_MAIL_PWD");
+//			boolean useAuth = "true".equalsIgnoreCase(authFlag);
+//			// Set mail properties
+//			Properties props = new Properties();
+//			props.put("mail.smtp.host", hostName);
+//			props.put("mail.smtp.port", mailPort);
+//			props.put("mail.smtp.starttls.enable", "true");
+//			props.put("mail.smtp.auth", String.valueOf(useAuth));
+//
+//			Session session = Session.getInstance(props, new jakarta.mail.Authenticator() {
+//				protected PasswordAuthentication getPasswordAuthentication() {
+//					return new PasswordAuthentication(username, password);
+//				}
+//			});
+//			
+//			TemplateScheduleVb mailDetails  =templateScheduleDao.fetchTemplatemailSchedule(templateScheduleVb);
+//			String data = emailData(mailDetails);
+//			StringJoiner toMail = new StringJoiner(",");
+//			toMail.add( ValidationUtil.isValid(mailDetails.getMakerMailId())? mailDetails.getMakerMailId() :"");
+//			toMail.add( ValidationUtil.isValid(mailDetails.getSubmitterMailId())? mailDetails.getSubmitterMailId() :"");
+//			Message message = new MimeMessage(session);
+//			message.setFrom(new InternetAddress(username));
+//			message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toMail.toString()));
+//			message.setSubject("RegTech - Submission Status");
+//			String Header = "Dear Team, Good day. ";
+//					String body = "Please find the templates attached below.";
+//			String footer = "-----------------------------------------------------------\n"
+//					+ "This is a system generated mail, Please do not reply.\n"
+//					+ "-----------------------------------------------------------";
+//			String fullContent = "<html><body>" + Header + "<br>" + body
+//					+ "<br><br>" + data + "<br>" + footer + "</body></html>";
+//
+//			message.setContent(fullContent, "text/html");
+//			Transport.send(message);
+//
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//	}
+	public void alertMail(TemplateScheduleVb templateScheduleVb) {
+	    try {
+	        // Fetch mail configuration from Vision variables
+	        final String hostName = commonDao.findVisionVariableValue("RG_MAIL_HOST");
+	        final String mailPort = commonDao.findVisionVariableValue("RG_MAIL_PORT");
+	        final String authFlag = commonDao.findVisionVariableValue("RG_MAIL_SMTP_AUTH"); // "true" or "false"
+	        final String username = commonDao.findVisionVariableValue("RG_MAIL_ID");
+	        final String password = commonDao.findVisionVariableValue("RG_MAIL_PWD");
+	        
+	        System.out.println("Host Name"+hostName);
+	        System.out.println("Mail Port"+mailPort);
+	        System.out.println("Auth Flag"+authFlag);
+	        System.out.println("User Name"+username);
+	        System.out.println("Password "+password);
+	        
+	        logger.info("Host Name"+hostName);
+	        logger.info("Mail Port"+mailPort);
+	        logger.info("Auth Flag"+authFlag);
+	        logger.info("User Name"+username);
+	        logger.info("Password "+password);
+
+	        boolean useAuth = Boolean.parseBoolean(authFlag);
+
+	        // Mail properties
+	        Properties props = new Properties();
+	        props.put("mail.smtp.host", hostName);
+	        props.put("mail.smtp.port", mailPort);
+	        props.put("mail.smtp.starttls.enable", "true");
+	        props.put("mail.smtp.auth", String.valueOf(useAuth));
+
+	        Session session = Session.getInstance(props, new jakarta.mail.Authenticator() {
+	            @Override
+	            protected PasswordAuthentication getPasswordAuthentication() {
+	                return new PasswordAuthentication(username, password);
+	            }
+	        });
+
+	        // Fetch mail details from DB
+	        TemplateScheduleVb mailDetails = templateScheduleDao.fetchTemplatemailSchedule(templateScheduleVb);
+	        if(mailDetails == null && !ValidationUtil.isValid(mailDetails)) {
+	        	return;
+	        }
+	        String data = emailData(mailDetails);
+
+	        // Collect recipients
+	        List<String> recipients = new ArrayList<>();
+	        if (ValidationUtil.isValid(mailDetails.getMakerMailId())) {
+	        	System.out.println("Maker Mail "+mailDetails.getMakerMailId());
+	        	logger.info("Maker Mail "+mailDetails.getMakerMailId());
+	            recipients.add(mailDetails.getMakerMailId());
+	        }
+	        if (ValidationUtil.isValid(mailDetails.getSubmitterMailId())) {
+	            recipients.add(mailDetails.getSubmitterMailId());
+	            System.out.println("Submitter Mail "+mailDetails.getSubmitterMailId());
+	            logger.info("Submitter Mail "+mailDetails.getSubmitterMailId());
+	        }
+
+	        if (recipients.isEmpty()) {
+	            System.out.println("⚠ No valid recipients found. Skipping mail.");
+	            logger.info("⚠ No valid recipients found. Skipping mail.");
+	            return;
+	        }
+
+	        // Build message
+	        Message message = new MimeMessage(session);
+	        message.setFrom(new InternetAddress(username));
+	        message.setRecipients(Message.RecipientType.TO,
+	                InternetAddress.parse(String.join(",", recipients)));
+	        message.setSubject("RegTech - Submission Status");
+
+	        StringBuilder content = new StringBuilder();
+	        content.append("<html><body>")
+	               .append("<p>Dear Team, Good day.</p>")
+	               .append("<p>Please find the templates attached below.</p>")
+	               .append("<br>").append(data).append("<br>")
+	               .append("<hr>")
+	               .append("<p style='color:gray;font-size:12px;'>")
+	               .append("This is a system generated mail, Please do not reply.")
+	               .append("</p>")
+	               .append("</body></html>");
+
+	        message.setContent(content.toString(), "text/html; charset=UTF-8");
+
+	        Transport.send(message);
+	        System.out.println("✅ Mail sent successfully to: " + recipients);
+	        logger.info("✅ Mail sent successfully to: " + recipients);
+
+	    } catch (Exception e) {
+	        e.printStackTrace(); // replace with logger.error("Mail sending failed", e);
+	    }
+	}
+
+
+	public String emailData(TemplateScheduleVb templateScheduleVb) {
+	    StringBuilder html = new StringBuilder();
+
+	    // Header wrapper
+	    html.append("<html><body>")
+	        .append("<table width='80%' cellspacing='0' cellpadding='0' align='center' ")
+	        .append("style='font:normal 12px Arial,Helvetica,sans-serif;border:solid 4px #006599;border-top:none;'>")
+	        .append("<tr><td valign='top'>")
+
+	        // Title Bar
+	        .append("<table width='100%' cellspacing='0' cellpadding='0' border='0'>")
+	        .append("<tr>")
+	        .append("<td height='41' style='font:normal 14px Arial,Helvetica,sans-serif;")
+	        .append("color:#FFF;padding:4px;background-color:#006599;'>")
+	        .append("<strong>GDI Submission Status Report</strong>")
+	        .append("</td>")
+	        .append("</tr></table>");
+
+	    // Data Table
+	    html.append("<table width='100%' cellspacing='0' cellpadding='0' border='0' ")
+	        .append("style='font-size:12px;border:1px solid #dfe8f6;'>")
+
+	        // Table Header Row
+	        .append("<tr style='background-color:#1E8B75;color:white;text-align:center;'>")
+	        .append("<th style='padding:5px;border-right:1px solid #FFF;'>TEMPLATE_ID</th>")
+	        .append("<th style='padding:5px;border-right:1px solid #FFF;'>TEMPLATE_DESCRIPTION</th>")
+	        .append("<th style='padding:5px;border-right:1px solid #FFF;'>SUBMISSION_DATE</th>")
+	        .append("<th style='padding:5px;border-right:1px solid #FFF;'>REPORTING_DATE</th>")
+	        .append("<th style='padding:5px;border-right:1px solid #FFF;'>PROCESS_STATUS</th>")
+	        .append("</tr>");
+
+	    // Data Row
+	    html.append("<tr style='background-color:#FFF;font-size:11px;'>")
+	        .append("<td style='padding:5px;border-right:1px solid #CCC;'>")
+	        .append(nullSafe(templateScheduleVb.getTemplateId())).append("</td>")
+	        .append("<td style='padding:5px;border-right:1px solid #CCC;'>")
+	        .append(nullSafe(templateScheduleVb.getTemplateName())).append("</td>")
+	        .append("<td style='padding:5px;border-right:1px solid #CCC;'>")
+	        .append(nullSafe(templateScheduleVb.getSubmissionDate())).append("</td>")
+	        .append("<td style='padding:5px;border-right:1px solid #CCC;'>")
+	        .append(nullSafe(templateScheduleVb.getReportingDate())).append("</td>")
+	        .append("<td style='padding:5px;border-right:1px solid #CCC;'>")
+	        .append(nullSafe(templateScheduleVb.getProcessStatusDesc())).append("</td>")
+	        .append("</tr>");
+
+	    // Close
+	    html.append("</table></td></tr></table></body></html>");
+
+	    return html.toString();
+	}
+
+	// Helper to avoid null values showing as "null"
+	private String nullSafe(Object value) {
+	    return value != null ? value.toString() : "";
+	}
+
 }

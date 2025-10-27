@@ -339,7 +339,7 @@ try {
 	    StringBuilder query = new StringBuilder();
 	    System.out.println(1);
 	    
-	    query.append("UPDATE RG_PROCESS_CONTROLS SET RG_PROCESS_STATUS = ?, RECORD_INDICATOR = ?");
+	    query.append("UPDATE RG_PROCESS_CONTROLS SET RG_PROCESS_STATUS = ?, RECORD_INDICATOR = ?,DATE_LAST_MODIFIED = "+systemDate);
 
 	    List<Object> args = new ArrayList<>();
 	    args.add(processStatus);
@@ -364,7 +364,7 @@ try { System.out.println(2);
 	public int updateTemplatesHeader(String processStatus, TemplateScheduleVb dObj) {
 	    setServiceDefaults();
 	    StringBuilder query = new StringBuilder();
-	    query.append("UPDATE RG_TEMPLATES_HEADER SET STATUS = ?, RECORD_INDICATOR = ?");
+	    query.append("UPDATE RG_TEMPLATES_HEADER SET STATUS = ?, RECORD_INDICATOR = ?,DATE_LAST_MODIFIED="+systemDate);
 
 	    List<Object> args = new ArrayList<>();
 	    args.add(processStatus);

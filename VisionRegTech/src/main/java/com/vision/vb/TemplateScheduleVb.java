@@ -19,23 +19,22 @@ public class TemplateScheduleVb extends CommonVb {
 	private String duration = "";
 	private String lastSucessfulDate = "";
 	private String counter = "";
-	private String scheduleStatus ="";
+	private String scheduleStatus = "";
 	private String logFile = "";
 	public String sourceType;
 	public String sourceTypeDesc;
 	private String restartProcess = "";
-	private String xlName="";
-	private String businessDate= "";
-	private String scheduleDate= "";
-	private String query= "";
-	
+	private String xlName = "";
+	private String businessDate = "";
+	private String scheduleDate = "";
+	private String query = "";
 
 	private String basicFilterStr = "";
 	private String sourceTable = "";
 	private int version = 0;
-	List dataLst  = null;
-	List errorLst  = null;
-	List cmtLst  = null;
+	List dataLst = null;
+	List errorLst = null;
+	List cmtLst = null;
 	private String errorMessage = "";
 	private String status = "";
 	private int errorCount = 0;
@@ -43,26 +42,27 @@ public class TemplateScheduleVb extends CommonVb {
 	public String typeOfSubmission;
 	public int categoryTypeAt = 5008;
 	public String categoryType;
-	
-	
-	//audit
-	private String auditTrailSequenceId= "";
-	private String dateTimeStamp= "";
-	private String auditDescription= "";
-	private String auditDescriptionDetail= "";
+
+	// audit
+	private String auditTrailSequenceId = "";
+	private String dateTimeStamp = "";
+	private String auditDescription = "";
+	private String auditDescriptionDetail = "";
 	private boolean errorFlag = false;
-	
-	//JSON
+
+	// JSON
 	private String jsonFile = "";
-	private String requestNo ="";
-	private String cbStatus ="";
-	private String table="";
+	private String requestNo = "";
+	private String cbStatus = "";
+	private String table = "";
 	private String comments = "";
-	private long submitter ;
+	private long submitter;
 	private String submitterName = "";
-	
-	
+	private String makerMailId = "";
+	private String submitterMailId = "";
+
 	private String submissionDate = "";
+
 	public String getSubmissionDate() {
 		return submissionDate;
 	}
@@ -112,7 +112,7 @@ public class TemplateScheduleVb extends CommonVb {
 	}
 
 	List<ColumnHeadersVb> columnHeaderLst = null;
-	
+
 	public String getProcessFrequencyDesc() {
 		return processFrequencyDesc;
 	}
@@ -289,8 +289,6 @@ public class TemplateScheduleVb extends CommonVb {
 		this.scheduleDate = scheduleDate;
 	}
 
-	
-
 	public List<ColumnHeadersVb> getColumnHeaderLst() {
 		return columnHeaderLst;
 	}
@@ -314,6 +312,7 @@ public class TemplateScheduleVb extends CommonVb {
 	public void setBasicFilterStr(String basicFilterStr) {
 		this.basicFilterStr = basicFilterStr;
 	}
+
 	public String getTemplateId() {
 		return templateId;
 	}
@@ -409,6 +408,7 @@ public class TemplateScheduleVb extends CommonVb {
 	public void setAuditDescriptionDetail(String auditDescriptionDetail) {
 		this.auditDescriptionDetail = auditDescriptionDetail;
 	}
+
 	public int getCategoryTypeAt() {
 		return categoryTypeAt;
 	}
@@ -449,7 +449,6 @@ public class TemplateScheduleVb extends CommonVb {
 		this.cmtLst = cmtLst;
 	}
 
-
 	public String getSubmitterName() {
 		return submitterName;
 	}
@@ -464,5 +463,21 @@ public class TemplateScheduleVb extends CommonVb {
 
 	public void setSubmitter(long submitter) {
 		this.submitter = submitter;
+	}
+
+	public String getMakerMailId() {
+		return makerMailId;
+	}
+
+	public void setMakerMailId(String makerMailId) {
+		this.makerMailId = makerMailId;
+	}
+
+	public String getSubmitterMailId() {
+		return submitterMailId;
+	}
+
+	public void setSubmitterMailId(String submitterMailId) {
+		this.submitterMailId = submitterMailId;
 	}
 }
