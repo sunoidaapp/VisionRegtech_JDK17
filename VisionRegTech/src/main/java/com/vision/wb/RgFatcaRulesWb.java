@@ -71,6 +71,8 @@ public class RgFatcaRulesWb extends AbstractDynaWorkerBean<RgFatcaRulesVb> {
 			arrListLocal.add(country + "-" + leBook);
 			collTemp = commonDao.getLegalEntity();
 			arrListLocal.add(collTemp);
+			String custTables =  commonDao.findVisionVariableValue("CUST_TABLES");
+			arrListLocal.add(custTables);
 			return arrListLocal;
 		} catch (Exception ex) {
 			ex.printStackTrace();

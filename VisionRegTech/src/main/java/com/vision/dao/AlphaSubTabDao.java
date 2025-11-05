@@ -645,4 +645,49 @@ public class AlphaSubTabDao extends AbstractDao<AlphaSubTabVb> {
 		lParams[0] = pAlphaTab;
 		return  getJdbcTemplate().query(sql, lParams, getMapper());
 	}
+	@SuppressWarnings("unchecked")
+	public AlphaSubTabVb findAlphaTab(int pAlphaTab) throws DataAccessException {
+		String sql = "SELECT ALPHA_TAB, ALPHA_TAB_DESCRIPTION, READ_ONLY, ALPHA_TAB_STATUS_NT, ALPHA_TAB_STATUS, RECORD_INDICATOR_NT, RECORD_INDICATOR, MAKER, VERIFIER, INTERNAL_STATUS, DATE_LAST_MODIFIED, DATE_CREATION FROM ALPHA_TAB WHERE ALPHA_TAB_STATUS = 0 AND ALPHA_TAB = ?  ";
+		Object[] lParams = new Object[1];
+		lParams[0] = pAlphaTab;
+		List<AlphaSubTabVb> alphaSubTabVb = getJdbcTemplate().query(sql, lParams, getAlphaMapper());
+		List<AlphaSubTabVb> children = findAlphaSubTab(pAlphaTab);
+		if (alphaSubTabVb != null && !alphaSubTabVb.isEmpty()) {
+			if (children != null && !children.isEmpty()) {
+				alphaSubTabVb.get(0).setChildren(children);
+			}
+			return alphaSubTabVb.get(0);
+		} else
+			return new AlphaSubTabVb();
+
+	}
+
+	@SuppressWarnings("unchecked")
+	public List<AlphaSubTabVb> findAlphaSubTab(int pAlphaTab) throws DataAccessException {
+		String sql = "SELECT ALPHA_TAB, ALPHA_SUB_TAB, ALPHA_SUBTAB_DESCRIPTION, ALPHA_SUBTAB_STATUS_NT, ALPHA_SUBTAB_STATUS, RECORD_INDICATOR_NT, RECORD_INDICATOR, MAKER, VERIFIER, INTERNAL_STATUS, DATE_LAST_MODIFIED, DATE_CREATION FROM ALPHA_SUB_TAB WHERE ALPHA_SUBTAB_STATUS = 0 AND ALPHA_TAB = ?  ";
+		Object[] lParams = new Object[1];
+		lParams[0] = pAlphaTab;
+		return getJdbcTemplate().query(sql, lParams, getMapper());
+	}
+
+	protected RowMapper getAlphaMapper() {
+		RowMapper mapper = new RowMapper() {
+			public Object mapRow(ResultSet rs, int rowNum) throws SQLException {
+				AlphaSubTabVb alphaSubTabVb = new AlphaSubTabVb();
+				alphaSubTabVb.setAlphaTab(rs.getInt("ALPHA_TAB"));
+				alphaSubTabVb.setDescription(rs.getString("ALPHA_TAB_DESCRIPTION"));
+				alphaSubTabVb.setAlphaSubTabStatusNt(rs.getInt("ALPHA_TAB_STATUS_NT"));
+				alphaSubTabVb.setDbStatus(rs.getInt("ALPHA_TAB_STATUS"));
+				alphaSubTabVb.setRecordIndicatorNt(rs.getInt("RECORD_INDICATOR_NT"));
+				alphaSubTabVb.setRecordIndicator(rs.getInt("RECORD_INDICATOR"));
+				alphaSubTabVb.setMaker(rs.getLong("MAKER"));
+				alphaSubTabVb.setVerifier(rs.getLong("VERIFIER"));
+				alphaSubTabVb.setInternalStatus(rs.getInt("INTERNAL_STATUS"));
+				alphaSubTabVb.setDateCreation(rs.getString("DATE_CREATION"));
+				alphaSubTabVb.setDateLastModified(rs.getString("DATE_LAST_MODIFIED"));
+				return alphaSubTabVb;
+			}
+		};
+		return mapper;
+	}
 }

@@ -24,6 +24,18 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.Vector;
 
+import jakarta.mail.Authenticator;
+import jakarta.mail.Message;
+import jakarta.mail.Multipart;
+import jakarta.mail.PasswordAuthentication;
+import jakarta.mail.Session;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeBodyPart;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
+import jakarta.servlet.ServletContext;
+
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,17 +65,6 @@ import com.vision.vb.UserRestrictionVb;
 import com.vision.vb.VisionUsersVb;
 
 import freemarker.template.Configuration;
-import jakarta.mail.Authenticator;
-import jakarta.mail.Message;
-import jakarta.mail.Multipart;
-import jakarta.mail.PasswordAuthentication;
-import jakarta.mail.Session;
-import jakarta.mail.Transport;
-import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeBodyPart;
-import jakarta.mail.internet.MimeMessage;
-import jakarta.mail.internet.MimeMultipart;
-import jakarta.servlet.ServletContext;
 /**
  * @author kiran-kumar.karra
  *
@@ -228,7 +229,7 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 					visionUsersVb.setProductAttribute(rs.getString("PRODUCT_ATTRIBUTE").trim());
 				if (ValidationUtil.isValid(rs.getString("SBU_CODE")))
 					visionUsersVb.setSbuCode(rs.getString("SBU_CODE").trim());
-				visionUsersVb.setSbuCodeAt(rs.getInt("SBU_CODE_AT"));
+//				visionUsersVb.setSbuCodeAt(rs.getInt("SBU_CODE_AT"));
 				if (ValidationUtil.isValid(rs.getString("OUC_ATTRIBUTE")))
 					visionUsersVb.setOucAttribute(rs.getString("OUC_ATTRIBUTE").trim());
 				if (ValidationUtil.isValid(rs.getString("PRODUCT_SUPER_GROUP")))
@@ -600,7 +601,9 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 					+ " TAppr.UPDATE_RESTRICTION, TAppr.LEGAL_VEHICLE,"
 					+ " TAppr.COUNTRY, TAppr.LE_BOOK,"
 					+ " TAppr.REGION_PROVINCE, TAppr.BUSINESS_GROUP, TAppr.PRODUCT_SUPER_GROUP,"
-					+ " TAppr.OUC_ATTRIBUTE, TAppr.SBU_CODE, TAppr.SBU_CODE_AT, TAppr.PRODUCT_ATTRIBUTE,"
+					+ " TAppr.OUC_ATTRIBUTE, TAppr.SBU_CODE,"
+//					+ " TAppr.SBU_CODE_AT, "
+					+ "TAppr.PRODUCT_ATTRIBUTE,"
 					+ " TAppr.ACCOUNT_OFFICER, TAppr.GCID_ACCESS, TAppr.USER_STATUS_NT, TAppr.USER_STATUS,"
 					+ " To_Char(TAppr.USER_STATUS_DATE, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') USER_STATUS_DATE, TAppr.MAKER,"
 					+ " TAppr.VERIFIER, TAppr.INTERNAL_STATUS, TAppr.RECORD_INDICATOR_NT,"
@@ -610,7 +613,7 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 					+ " TAppr.ENABLE_WIDGETS, (SELECT App_Theme FROM PRD_APP_THEME S1 WHERE S1.VISION_ID=TAppr.VISION_ID AND APPLICATION_ID= ?) APP_THEME,  "
 					+ " (SELECT Report_Slide_Theme FROM PRD_APP_THEME S1 WHERE S1.VISION_ID=TAppr.VISION_ID AND APPLICATION_ID = ?) Report_Slide_Theme, "
 					+ " (SELECT Language FROM PRD_APP_THEME S1 WHERE S1.VISION_ID=TAppr.VISION_ID AND APPLICATION_ID = ?) Language "
-					+ " From VISION_USERS TAppr WHERE USER_STATUS = 0 AND RECORD_INDICATOR = 0 AND UPPER(USER_LOGIN_ID) =UPPER(?) AND (UNSUCCESSFUL_LOGIN_ATTEMPTS is NULL OR UNSUCCESSFUL_LOGIN_ATTEMPTS <= 3)");
+					+ " From VISION_USERS_VW TAppr WHERE USER_STATUS = 0 AND RECORD_INDICATOR = 0 AND UPPER(USER_LOGIN_ID) =UPPER(?) AND (UNSUCCESSFUL_LOGIN_ATTEMPTS is NULL OR UNSUCCESSFUL_LOGIN_ATTEMPTS <= 3)");
 		} else if ("MSSQL".equalsIgnoreCase(databaseType)) {
 			strQueryAppr = new StringBuffer("SELECT TAppr.VISION_ID,TAppr.USER_NAME,"
 					+ " TAppr.USER_LOGIN_ID,  TAppr.USER_EMAIL_ID,"
@@ -642,7 +645,7 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 			
 			objParams[0] = productName;
 			objParams[1] = productName;
-			objParams[2] = productName;
+			objParams[2] = productName;	
 			objParams[3] = dObj.getUserLoginId();
 			return getJdbcTemplate().query(strQueryAppr.toString(), objParams, getMapper1());
 
@@ -2877,7 +2880,11 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 //		ExceptionCode exceptionCode = new ExceptionCode();
 //		try {
 //		    // Set email properties
-//		    Properties props = getEmailProperites();
+//		    Properties props = new Properties();
+//		    props.put("mail.smtp.auth", "true");
+//		    props.put("mail.smtp.starttls.enable", "true");
+//		    props.put("mail.smtp.host", "smtp.gmail.com");
+//		    props.put("mail.smtp.port", "587");
 //
 //		    // Use secure authentication (replace with actual credentials or load from config)
 //		    final String username = commonDao.findVisionVariableValue("SUPPORT_MAIL_ID");
@@ -2953,6 +2960,31 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 //		}
 //		return exceptionCode;
 //
+//	}
+
+//	Properties props = System.getProperties();
+//
+//	public void getEmailProperites() {
+//		/*
+//		 * props.put("mail.smtp.auth", "true"); props.put("mail.smtp.starttls.enable",
+//		 * "true"); props.put("mail.smtp.socketFactory.fallback", "true");
+//		 * props.put("mail.smtp.port", "587"); String host = "smtp.gmail.com";
+//		 * props.put("mail.smtp.host", host);
+//		 */
+//
+//		props.put("mail.smtp.auth", "true");
+//		props.put("mail.smtp.starttls.enable", "true");
+//		props.put("mail.smtp.host", host);
+//		props.put("mail.smtp.port", port);
+//		props.setProperty("mail.smtp.ssl.protocols", "TLSv1.2");
+//	}
+//
+//	public class PopupAuthenticator extends Authenticator {
+//		public PasswordAuthentication getPasswordAuthentication() {
+//			String authUserName = username;// "vision.support@kdic.go.ke";
+//			String authPassWord = password; // "App!@!0n@123";
+//			return new PasswordAuthentication(authUserName, authPassWord);
+//		}
 //	}
 	@SuppressWarnings({ "static-access", "deprecation" })
 	public ExceptionCode prepareAndSendMail(VisionUsersVb vObject, String otp, String resultForgotBy) {
@@ -3058,9 +3090,10 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		return exceptionCode;
 
 	}
+
 	Properties props = System.getProperties();
 
-	public Properties getEmailProperites() {
+	public void getEmailProperites() {
 		/*
 		 * props.put("mail.smtp.auth", "true"); props.put("mail.smtp.starttls.enable",
 		 * "true"); props.put("mail.smtp.socketFactory.fallback", "true");
@@ -3073,7 +3106,6 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		props.put("mail.smtp.host", host);
 		props.put("mail.smtp.port", port);
 		props.setProperty("mail.smtp.ssl.protocols", "TLSv1.2");
-		return props;
 	}
 
 	public class PopupAuthenticator extends Authenticator {

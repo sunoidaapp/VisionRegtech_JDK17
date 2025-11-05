@@ -1184,7 +1184,7 @@ public class TemplateConfigWb extends AbstractDynaWorkerBean<TemplateConfigVb> {
 	protected ExceptionCode doValidate(TemplateConfigVb vObject) {
 		ExceptionCode exceptionCode = new ExceptionCode();
 		String operation = vObject.getActionType();
-		String srtRestrion = commonDao.getRestrictionsByUsers("35", operation);
+		String srtRestrion = commonDao.getRestrictionsByUsers("20", operation);
 		if (!"Y".equalsIgnoreCase(srtRestrion)) {
 			exceptionCode = new ExceptionCode();
 			exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);

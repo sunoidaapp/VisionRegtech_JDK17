@@ -701,6 +701,20 @@ public class GenericMappingDesignDao extends AbstractDao<TemplateNameGBMVb> {
 						CommonUtils.addToQuerySearch(" upper(TPend.PROGRAM) " + val, strBufPending,
 								data.getJoinType());
 						break;
+					case "programDesc":
+						CommonUtils.addToQuerySearch(" upper(TAppr.PROGRAM_DESC) " + val, strBufApprove,
+								data.getJoinType());
+						CommonUtils.addToQuerySearch(" upper(TPend.PROGRAM_DESC) " + val, strBufPending,
+								data.getJoinType());
+						break;
+						
+					case "executionSequence":
+						CommonUtils.addToQuerySearch(" upper(TAppr.EXECUTION_SEQUENCE) " + val, strBufApprove,
+								data.getJoinType());
+						CommonUtils.addToQuerySearch(" upper(TPend.EXECUTION_SEQUENCE) " + val, strBufPending,
+								data.getJoinType());
+						break;
+						
 						
 					case "leBook":
 						CommonUtils.addToQuerySearch(" upper(TAppr.LE_BOOK) " + val, strBufApprove,
@@ -2100,8 +2114,8 @@ public class GenericMappingDesignDao extends AbstractDao<TemplateNameGBMVb> {
 	}
 	@Override
 	protected void setServiceDefaults(){
-		serviceName = "GenricMappingDesign";
-		serviceDesc = "Genric Mapping Design";
+		serviceName = "GenericMappingDesign";
+		serviceDesc = "Generic Mapping Design";
 		tableName = "GENERIC_BUILD_MAPPINGS";
 		childTableName = "GENERIC_BUILD_MAPPINGS";
 		intCurrentUserId = SessionContextHolder.getContext().getVisionId();

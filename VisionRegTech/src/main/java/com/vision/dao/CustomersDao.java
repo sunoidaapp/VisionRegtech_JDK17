@@ -6,6 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
+import jakarta.annotation.PostConstruct;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.UncategorizedSQLException;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
@@ -32,6 +35,11 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 			"RECORD_INDICATOR_DESC");
 	String RecordIndicatorNtPendDesc = ValidationUtil.numAlphaTabDescritpionQuery("NT", 7, "TPend.RECORD_INDICATOR",
 			"RECORD_INDICATOR_DESC");
+	// Use SpEL to initialize customersTable directly
+	@Value("#{ '${app.cloud}' == 'Y' ? 'CRS_CUSTOMERS' : 'CUSTOMERS' }")
+	private String Customers;
+	@Value("#{ '${app.cloud}' == 'Y' ? 'CRS_CUSTOMER_EXTRAS' : 'CUSTOMER_EXTRAS' }")
+	private String CustomersExtras;
 
 	@Override
 	protected RowMapper getMapper() {
@@ -206,13 +214,13 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				customersVb.setDualNationality1(rs.getString("DUAL_NATIONALITY_1"));
 				customersVb.setDualNationality2(rs.getString("DUAL_NATIONALITY_2"));
 				customersVb.setDualNationality3(rs.getString("DUAL_NATIONALITY_3"));
-				
+
 				return customersVb;
 			}
 		};
 		return mapper;
 	}
-	
+
 	protected RowMapper getQueryResultMapper() {
 		RowMapper mapper = new RowMapper() {
 			public Object mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -385,11 +393,11 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				customersVb.setDualNationality1(rs.getString("DUAL_NATIONALITY_1"));
 				customersVb.setDualNationality2(rs.getString("DUAL_NATIONALITY_2"));
 				customersVb.setDualNationality3(rs.getString("DUAL_NATIONALITY_3"));
-				
+
 				customersVb.setDualNationality1Desc(rs.getString("DUAL_NATIONALITY_1_DESC"));
 				customersVb.setDualNationality2Desc(rs.getString("DUAL_NATIONALITY_2_DESC"));
 				customersVb.setDualNationality3Desc(rs.getString("DUAL_NATIONALITY_3_DESC"));
-				
+
 				return customersVb;
 			}
 		};
@@ -400,8 +408,7 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 		VisionUsersVb visionUsersVb = SessionContextHolder.getContext();
 		Vector<Object> params = new Vector<Object>();
 		StringBuffer strBufApprove = new StringBuffer("SELECT * FROM (Select TAppr.COUNTRY,"
-				+ "TAppr.LE_BOOK, TAppr.CUSTOMER_ID, TAppr.CUSTOMER_NAME,"
-				+ "TAppr.CUSTOMER_ACRONYM, "
+				+ "TAppr.LE_BOOK, TAppr.CUSTOMER_ID, TAppr.CUSTOMER_NAME," + "TAppr.CUSTOMER_ACRONYM, "
 //				+ "To_Char(TAppr.CUSTOMER_OPEN_DATE, 'DD-MM-RRRR') CUSTOMER_OPEN_DATE, "
 				+ dbFunctionFormats("TAPPR.CUSTOMER_OPEN_DATE", "DATE_FORMAT", null) + " CUSTOMER_OPEN_DATE," + " "
 				+ "TAppr.VISION_OUC, TAppr.VISION_SBU_AT,"
@@ -427,10 +434,10 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ "TAppr.COMM_STATE, TAppr.COMM_PIN_CODE, TAppr.PHONE_NUMBER, TAppr.COMM_STATE_AT, TAppr.COMM_CITY_AT,"
 				+ "TAppr.CUSTOMER_STATUS_NT, TAppr.CUSTOMER_STATUS," + customerStatusNtApprDesc
 				+ " ,TAppr.RECORD_INDICATOR_NT, TAppr.RECORD_INDICATOR," + RecordIndicatorNtApprDesc
-				+ " ,TAppr.MAKER, TAppr.VERIFIER, TAppr.INTERNAL_STATUS," + makerApprDesc + " , " + verifierApprDesc +" , "
-				+ dbFunctionFormats("TAPPR.DATE_LAST_MODIFIED", "DATETIME_FORMAT", null) + " DATE_LAST_MODIFIED," + " "
-				+ dbFunctionFormats("TAPPR.DATE_CREATION", "DATETIME_FORMAT", null) + " DATE_CREATION ,"
-				+ "TAppr.CRS_FLAG,TAppr.FATCA_FLAG,"
+				+ " ,TAppr.MAKER, TAppr.VERIFIER, TAppr.INTERNAL_STATUS," + makerApprDesc + " , " + verifierApprDesc
+				+ " , " + dbFunctionFormats("TAPPR.DATE_LAST_MODIFIED", "DATETIME_FORMAT", null)
+				+ " DATE_LAST_MODIFIED," + " " + dbFunctionFormats("TAPPR.DATE_CREATION", "DATETIME_FORMAT", null)
+				+ " DATE_CREATION ," + "TAppr.CRS_FLAG,TAppr.FATCA_FLAG,"
 				+ "(SELECT NAICS_DESCRIPTION FROM NAICS_CODES WHERE NAICS_CODE = TAppr.NAICS_CODE) NAICS_CODE_DESC\r\n"
 				+ ",(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = TAppr.CB_DOMICILE) CB_DOMICILE_DESC\r\n"
 				+ ",(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = TAppr.CB_NATIONALITY)CB_NATIONALITY_DESC\r\n"
@@ -445,17 +452,17 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = TAppr.CUSTOMER_ATTRIBUTE_1) CUSTOMER_ATTRIBUTE_1_DESC\r\n"
 				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = TAppr.CUSTOMER_ATTRIBUTE_2) CUSTOMER_ATTRIBUTE_2_DESC\r\n"
 				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = TAppr.CUSTOMER_ATTRIBUTE_3) CUSTOMER_ATTRIBUTE_3_DESC"
-				+ ",(SELECT OUC_DESCRIPTION AS DESCRIPTION FROM   OUC_CODES WHERE VISION_OUC = TAPPR.VISION_OUC AND OUC_STATUS = 0) VISION_OUC_DESC "
+				+ ",(SELECT OUC_DESCRIPTION AS DESCRIPTION FROM   OUC_CODES t1  WHERE T1.COUNTRY = TAPPR.COUNTRY AND T1.LE_BOOK = TAPPR.LE_BOOK AND t1.VISION_OUC = TAPPR.VISION_OUC AND OUC_STATUS = 0) VISION_OUC_DESC "
 				+ ",TAPPR.FATCA_OVERRIDE,TAPPR.CRS_OVERRIDE, T1.DUAL_NATIONALITY_1, T1.DUAL_NATIONALITY_2, T1.DUAL_NATIONALITY_3 "
-				+ "FROM CUSTOMERS TAPPR INNER JOIN CUSTOMER_EXTRAS T1 ON ( TAPPR.COUNTRY= T1.COUNTRY AND TAPPR.LE_BOOK= T1.LE_BOOK AND TAPPR.CUSTOMER_ID = T1.CUSTOMER_ID) "
+				+ "FROM " + Customers
+				+ " TAPPR INNER JOIN "+CustomersExtras+" T1 ON ( TAPPR.COUNTRY= T1.COUNTRY AND TAPPR.LE_BOOK= T1.LE_BOOK AND TAPPR.CUSTOMER_ID = T1.CUSTOMER_ID) "
 				+ ") TAPPR ");
 
 		String strWhereNotExists = new String(" Not Exists (Select TPend.COUNTRY,"
 				+ "TPend.LE_BOOK, TPend.CUSTOMER_ID, TPend.CUSTOMER_ACRONYM, TPend.RECORD_INDICATOR, TPend.MAKER, TPend.VERIFIER"
 				+ "  From CUSTOMERS_PEND TPend Where TPend.COUNTRY = TAppr.COUNTRY And TPend.LE_BOOK = TAppr.LE_BOOK And TPend.CUSTOMER_ID = TAppr.CUSTOMER_ID)");
 		StringBuffer strBufPending = new StringBuffer("SELECT * FROM (Select TPend.COUNTRY,"
-				+ "TPend.LE_BOOK, TPend.CUSTOMER_ID, TPend.CUSTOMER_NAME,"
-				+ "TPend.CUSTOMER_ACRONYM,"
+				+ "TPend.LE_BOOK, TPend.CUSTOMER_ID, TPend.CUSTOMER_NAME," + "TPend.CUSTOMER_ACRONYM,"
 //				+ " To_Char(TPend.CUSTOMER_OPEN_DATE, 'DD-MM-RRRR') CUSTOMER_OPEN_DATE, "
 				+ dbFunctionFormats("TPend.CUSTOMER_OPEN_DATE", "DATE_FORMAT", null) + " CUSTOMER_OPEN_DATE," + " "
 				+ "TPend.VISION_OUC, TPend.VISION_SBU_AT,"
@@ -481,10 +488,10 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ "TPend.COMM_STATE, TPend.COMM_PIN_CODE, TPend.PHONE_NUMBER, TPend.COMM_STATE_AT, TPend.COMM_CITY_AT,"
 				+ "TPend.CUSTOMER_STATUS_NT, TPend.CUSTOMER_STATUS," + customerStatusNtPendDesc
 				+ " ,TPend.RECORD_INDICATOR_NT, TPend.RECORD_INDICATOR," + RecordIndicatorNtPendDesc
-				+ " ,TPend.MAKER, TPend.VERIFIER, TPend.INTERNAL_STATUS," + makerPendDesc + " , " + verifierPendDesc +" , "
-				+ dbFunctionFormats("TPend.DATE_LAST_MODIFIED", "DATETIME_FORMAT", null) + " DATE_LAST_MODIFIED," + " "
-				+ dbFunctionFormats("TPend.DATE_CREATION", "DATETIME_FORMAT", null) + " DATE_CREATION ,"
-				+ "TPend.CRS_FLAG,TPend.FATCA_FLAG,"
+				+ " ,TPend.MAKER, TPend.VERIFIER, TPend.INTERNAL_STATUS," + makerPendDesc + " , " + verifierPendDesc
+				+ " , " + dbFunctionFormats("TPend.DATE_LAST_MODIFIED", "DATETIME_FORMAT", null)
+				+ " DATE_LAST_MODIFIED," + " " + dbFunctionFormats("TPend.DATE_CREATION", "DATETIME_FORMAT", null)
+				+ " DATE_CREATION ," + "TPend.CRS_FLAG,TPend.FATCA_FLAG,"
 				+ "(SELECT NAICS_DESCRIPTION FROM NAICS_CODES WHERE NAICS_CODE = TPend.NAICS_CODE) NAICS_CODE_DESC\r\n"
 				+ ",(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = TPend.CB_DOMICILE) CB_DOMICILE_DESC "
 				+ ",(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = TPend.CB_NATIONALITY)CB_NATIONALITY_DESC\r\n"
@@ -499,9 +506,10 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = TPend.CUSTOMER_ATTRIBUTE_1) CUSTOMER_ATTRIBUTE_1_DESC\r\n"
 				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = TPend.CUSTOMER_ATTRIBUTE_2) CUSTOMER_ATTRIBUTE_2_DESC\r\n"
 				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = TPend.CUSTOMER_ATTRIBUTE_3) CUSTOMER_ATTRIBUTE_3_DESC"
-				+ ",(SELECT OUC_DESCRIPTION AS DESCRIPTION FROM OUC_CODES WHERE VISION_OUC = TPend.VISION_OUC AND OUC_STATUS = 0) VISION_OUC_DESC "
+				+ ",(SELECT OUC_DESCRIPTION AS DESCRIPTION FROM OUC_CODES t1  WHERE T1.COUNTRY = TPend.COUNTRY AND T1.LE_BOOK = TPend.LE_BOOK  AND  t1.VISION_OUC = TPend.VISION_OUC AND OUC_STATUS = 0) VISION_OUC_DESC "
 				+ ",TPend.FATCA_OVERRIDE, TPend.CRS_OVERRIDE, T2.DUAL_NATIONALITY_1, T2.DUAL_NATIONALITY_2, T2.DUAL_NATIONALITY_3 "
-				+ " FROM CUSTOMERS_PEND TPEND INNER JOIN CUSTOMER_EXTRAS_PEND T2 ON ( TPEND.COUNTRY= T2.COUNTRY AND TPEND.LE_BOOK= T2.LE_BOOK AND TPEND.CUSTOMER_ID= T2.CUSTOMER_ID)"
+				+ " FROM " + Customers
+				+ "_PEND TPEND INNER JOIN "+CustomersExtras+"_PEND T2 ON ( TPEND.COUNTRY= T2.COUNTRY AND TPEND.LE_BOOK= T2.LE_BOOK AND TPEND.CUSTOMER_ID= T2.CUSTOMER_ID)"
 				+ " ) TPend ");
 		try {
 			if (dObj.getSmartSearchOpt() != null && dObj.getSmartSearchOpt().size() > 0) {
@@ -892,12 +900,10 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 		final int intKeyFieldsCount = 3;
 		setServiceDefaults();
 		String strQueryAppr = new String("Select TAppr.COUNTRY,"
-				+ "TAppr.LE_BOOK, TAppr.CUSTOMER_ID, TAppr.CUSTOMER_NAME,"
-				+ "TAppr.CUSTOMER_ACRONYM, "
+				+ "TAppr.LE_BOOK, TAppr.CUSTOMER_ID, TAppr.CUSTOMER_NAME," + "TAppr.CUSTOMER_ACRONYM, "
 //				+ " To_Char(TAppr.CUSTOMER_OPEN_DATE, 'DD-MM-RRRR') CUSTOMER_OPEN_DATE,"
 				+ dbFunctionFormats("TAppr.CUSTOMER_OPEN_DATE", "DATE_FORMAT", null) + " CUSTOMER_OPEN_DATE," + " "
-				+ " TAppr.VISION_OUC, TAppr.VISION_SBU_AT,"
-				+ " TAppr.GLOBAL_CUSTOMER_ID, TAppr.NAICS_CODE,"
+				+ " TAppr.VISION_OUC, TAppr.VISION_SBU_AT," + " TAppr.GLOBAL_CUSTOMER_ID, TAppr.NAICS_CODE,"
 				+ "TAPPR.VISION_SBU, (SELECT ALPHA_SUBTAB_DESCRIPTION FROM ALPHA_SUB_TAB WHERE ALPHA_SUB_TAB = TAPPR.VISION_SBU AND ALPHA_TAB = 3)   VISION_SBU_DESC"
 				+ " ,TAppr.CB_ORG_CODE_AT, TAppr.CB_ORG_CODE, TAppr.CB_ECONOMIC_ACT_CODE_AT,"
 				+ "TAppr.CB_ECONOMIC_ACT_CODE, TAppr.CB_DOMICILE,"
@@ -919,10 +925,10 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ "TAppr.COMM_STATE, TAppr.COMM_PIN_CODE, TAppr.PHONE_NUMBER, TAppr.COMM_STATE_AT, TAppr.COMM_CITY_AT,"
 				+ "TAppr.CUSTOMER_STATUS_NT, TAppr.CUSTOMER_STATUS," + customerStatusNtApprDesc
 				+ " ,TAppr.RECORD_INDICATOR_NT, TAppr.RECORD_INDICATOR," + RecordIndicatorNtApprDesc
-				+ " ,TAppr.MAKER, TAppr.VERIFIER, TAppr.INTERNAL_STATUS," + makerApprDesc + " , " + verifierApprDesc +" , "
-				+ dbFunctionFormats("TAppr.DATE_LAST_MODIFIED", "DATETIME_FORMAT", null) + " DATE_LAST_MODIFIED," + " "
-				+ dbFunctionFormats("TAppr.DATE_CREATION", "DATETIME_FORMAT", null) + " DATE_CREATION ,"
-				+ "TAppr.CRS_FLAG,TAppr.FATCA_FLAG,"
+				+ " ,TAppr.MAKER, TAppr.VERIFIER, TAppr.INTERNAL_STATUS," + makerApprDesc + " , " + verifierApprDesc
+				+ " , " + dbFunctionFormats("TAppr.DATE_LAST_MODIFIED", "DATETIME_FORMAT", null)
+				+ " DATE_LAST_MODIFIED," + " " + dbFunctionFormats("TAppr.DATE_CREATION", "DATETIME_FORMAT", null)
+				+ " DATE_CREATION ," + "TAppr.CRS_FLAG,TAppr.FATCA_FLAG,"
 				+ "(SELECT NAICS_DESCRIPTION FROM NAICS_CODES WHERE NAICS_CODE = TAppr.NAICS_CODE) NAICS_CODE_DESC\r\n"
 				+ ",(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = TAppr.CB_DOMICILE) CB_DOMICILE_DESC\r\n"
 				+ ",(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = TAppr.CB_NATIONALITY)CB_NATIONALITY_DESC\r\n"
@@ -937,20 +943,19 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = TAppr.CUSTOMER_ATTRIBUTE_1) CUSTOMER_ATTRIBUTE_1_DESC\r\n"
 				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = TAppr.CUSTOMER_ATTRIBUTE_2) CUSTOMER_ATTRIBUTE_2_DESC\r\n"
 				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = TAppr.CUSTOMER_ATTRIBUTE_3) CUSTOMER_ATTRIBUTE_3_DESC"
-				+ ",(SELECT OUC_DESCRIPTION AS DESCRIPTION FROM   OUC_CODES WHERE VISION_OUC = TAPPR.VISION_OUC AND OUC_STATUS = 0) VISION_OUC_DESC "
+				+ ",(SELECT OUC_DESCRIPTION AS DESCRIPTION FROM   OUC_CODES t1 WHERE T1.COUNTRY = TAPPR.COUNTRY AND T1.LE_BOOK = TAPPR.LE_BOOK AND t1.VISION_OUC = TAPPR.VISION_OUC AND OUC_STATUS = 0) VISION_OUC_DESC "
 				+ ",TAppr.FATCA_OVERRIDE,TAppr.CRS_OVERRIDE, "
 				+ "  T1.DUAL_NATIONALITY_1, (SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = T1.DUAL_NATIONALITY_1 )DUAL_NATIONALITY_1_desc,"
 				+ " T1.DUAL_NATIONALITY_2,(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = T1.DUAL_NATIONALITY_2 )DUAL_NATIONALITY_2_desc,"
 				+ " T1.DUAL_NATIONALITY_3,(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = T1.DUAL_NATIONALITY_3 )DUAL_NATIONALITY_3_desc"
-				+ " FROM CUSTOMERS TAPPR INNER JOIN CUSTOMER_EXTRAS T1 ON( TAPPR.COUNTRY= T1.COUNTRY AND TAPPR.LE_BOOK= T1.LE_BOOK AND TAPPR.CUSTOMER_ID= T1.CUSTOMER_ID) "
+				+ " FROM " + Customers
+				+ " TAPPR INNER JOIN "+CustomersExtras+" T1 ON( TAPPR.COUNTRY= T1.COUNTRY AND TAPPR.LE_BOOK= T1.LE_BOOK AND TAPPR.CUSTOMER_ID= T1.CUSTOMER_ID) "
 				+ " WHERE TAPPR.COUNTRY = ? AND TAPPR.LE_BOOK = ? AND TAPPR.CUSTOMER_ID = ? ");
 
 		String strQueryPend = new String("Select TPend.COUNTRY,"
-				+ "TPend.LE_BOOK, TPend.CUSTOMER_ID, TPend.CUSTOMER_NAME,"
-				+ "TPend.CUSTOMER_ACRONYM, "
+				+ "TPend.LE_BOOK, TPend.CUSTOMER_ID, TPend.CUSTOMER_NAME," + "TPend.CUSTOMER_ACRONYM, "
 				+ dbFunctionFormats("TPend.CUSTOMER_OPEN_DATE", "DATE_FORMAT", null) + " CUSTOMER_OPEN_DATE," + " "
-				+ " TPend.VISION_OUC, TPend.VISION_SBU_AT,"
-				+ " TPend.GLOBAL_CUSTOMER_ID, TPend.NAICS_CODE,"
+				+ " TPend.VISION_OUC, TPend.VISION_SBU_AT," + " TPend.GLOBAL_CUSTOMER_ID, TPend.NAICS_CODE,"
 				+ " TPend.VISION_SBU, (SELECT ALPHA_SUBTAB_DESCRIPTION FROM ALPHA_SUB_TAB WHERE ALPHA_SUB_TAB = TPend.VISION_SBU AND ALPHA_TAB = 3)   VISION_SBU_DESC"
 				+ " ,TPend.CB_ORG_CODE_AT, TPend.CB_ORG_CODE, TPend.CB_ECONOMIC_ACT_CODE_AT,"
 				+ "TPend.CB_ECONOMIC_ACT_CODE, TPend.CB_DOMICILE,"
@@ -972,10 +977,10 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ "TPend.COMM_PIN_CODE, TPend.PHONE_NUMBER, TPend.COMM_STATE_AT, TPend.COMM_CITY_AT,"
 				+ "TPend.CUSTOMER_STATUS_NT, TPend.CUSTOMER_STATUS," + customerStatusNtPendDesc
 				+ " ,TPend.RECORD_INDICATOR_NT, TPend.RECORD_INDICATOR," + RecordIndicatorNtPendDesc
-				+ " ,TPend.MAKER, TPend.VERIFIER, TPend.INTERNAL_STATUS," + makerPendDesc + " , " + verifierPendDesc +" , "
-				+ dbFunctionFormats("TPend.DATE_LAST_MODIFIED", "DATETIME_FORMAT", null) + " DATE_LAST_MODIFIED," + " "
-				+ dbFunctionFormats("TPend.DATE_CREATION", "DATETIME_FORMAT", null) + " DATE_CREATION ,"
-				+ "TPend.CRS_FLAG,TPend.FATCA_FLAG,"
+				+ " ,TPend.MAKER, TPend.VERIFIER, TPend.INTERNAL_STATUS," + makerPendDesc + " , " + verifierPendDesc
+				+ " , " + dbFunctionFormats("TPend.DATE_LAST_MODIFIED", "DATETIME_FORMAT", null)
+				+ " DATE_LAST_MODIFIED," + " " + dbFunctionFormats("TPend.DATE_CREATION", "DATETIME_FORMAT", null)
+				+ " DATE_CREATION ," + "TPend.CRS_FLAG,TPend.FATCA_FLAG,"
 				+ "(SELECT NAICS_DESCRIPTION FROM NAICS_CODES WHERE NAICS_CODE = Tpend.NAICS_CODE) NAICS_CODE_DESC\r\n"
 				+ ",(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = Tpend.CB_DOMICILE) CB_DOMICILE_DESC\r\n"
 				+ ",(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = Tpend.CB_NATIONALITY)CB_NATIONALITY_DESC\r\n"
@@ -990,14 +995,15 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = Tpend.CUSTOMER_ATTRIBUTE_1) CUSTOMER_ATTRIBUTE_1_DESC\r\n"
 				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = Tpend.CUSTOMER_ATTRIBUTE_2) CUSTOMER_ATTRIBUTE_2_DESC\r\n"
 				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = Tpend.CUSTOMER_ATTRIBUTE_3) CUSTOMER_ATTRIBUTE_3_DESC"
-				+ ",(SELECT OUC_DESCRIPTION AS DESCRIPTION FROM   OUC_CODES WHERE VISION_OUC = Tpend.VISION_OUC AND OUC_STATUS = 0) VISION_OUC_DESC,"
-				 +" Tpend.ACCOUNT_OFFICER, "
+				+ ",(SELECT OUC_DESCRIPTION AS DESCRIPTION FROM   OUC_CODES t1 WHERE T1.COUNTRY = TPend.COUNTRY AND T1.LE_BOOK = TPend.LE_BOOK  AND  t1.VISION_OUC = TPend.VISION_OUC AND OUC_STATUS = 0) VISION_OUC_DESC,"
+				+ " Tpend.ACCOUNT_OFFICER, "
 				+ "(SELECT  AO_NAME  AS DESCRIPTION FROM ACCOUNT_OFFICERS WHERE COUNTRY = Tpend.COUNTRY AND LE_BOOK = Tpend.LE_BOOK AND ACCOUNT_OFFICER = Tpend.ACCOUNT_OFFICER ) ACCOUNT_OFFICER_DESC "
 				+ ",TPend.FATCA_OVERRIDE,TPend.CRS_OVERRIDE,"
 				+ "  T2.DUAL_NATIONALITY_1, (SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = T2.DUAL_NATIONALITY_1 )DUAL_NATIONALITY_1_desc,"
 				+ " T2.DUAL_NATIONALITY_2,(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = T2.DUAL_NATIONALITY_2 )DUAL_NATIONALITY_2_desc,"
 				+ " T2.DUAL_NATIONALITY_3,(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = T2.DUAL_NATIONALITY_3 )DUAL_NATIONALITY_3_desc"
-				+ " From CUSTOMERS_PEND TPend INNER JOIN CUSTOMER_EXTRAS_PEND T2 ON ( TPend.COUNTRY= T2.COUNTRY AND TPend.LE_BOOK= T2.LE_BOOK AND TPend.CUSTOMER_ID= T2.CUSTOMER_ID) "
+				+ " From " + Customers
+				+ "_PEND TPend INNER JOIN "+CustomersExtras+"_PEND T2 ON ( TPend.COUNTRY= T2.COUNTRY AND TPend.LE_BOOK= T2.LE_BOOK AND TPend.CUSTOMER_ID= T2.CUSTOMER_ID) "
 				+ " Where TPend.COUNTRY = ? AND TPend.LE_BOOK = ? AND TPend.CUSTOMER_ID = ?");
 
 		Object objParams[] = new Object[intKeyFieldsCount];
@@ -1055,10 +1061,11 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 
 	@Override
 	protected int doInsertionAppr(CustomersVb vObject) {
-		if(!ValidationUtil.isValid(vObject.getNaicsCode())) {
+		if (!ValidationUtil.isValid(vObject.getNaicsCode())) {
 			vObject.setNaicsCode("999999");
 		}
-		String query = "Insert Into CUSTOMERS ( COUNTRY, LE_BOOK, CUSTOMER_OPEN_DATE, CUSTOMER_ID, CUSTOMER_NAME, CUSTOMER_ACRONYM, "
+		String query = "Insert Into " + Customers
+				+ " ( COUNTRY, LE_BOOK, CUSTOMER_OPEN_DATE, CUSTOMER_ID, CUSTOMER_NAME, CUSTOMER_ACRONYM, "
 				+ "VISION_OUC, VISION_SBU_AT, VISION_SBU, GLOBAL_CUSTOMER_ID, NAICS_CODE, CB_ORG_CODE_AT,"
 				+ "CB_ORG_CODE, CB_ECONOMIC_ACT_CODE_AT, CB_ECONOMIC_ACT_CODE, CB_DOMICILE, CB_NATIONALITY,"
 				+ "CB_RESIDENCE, CB_MAJOR_PARTY_INDICATOR, CUSTOMER_ID_TYPE_AT, CUSTOMER_ID_TYPE, ID_DETAILS,"
@@ -1071,8 +1078,10 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ "COMM_ADDRESS_1, COMM_ADDRESS_2, COMM_CITY_AT, COMM_CITY, COMM_STATE_AT, COMM_STATE, COMM_PIN_CODE, PHONE_NUMBER,"
 				+ "CUSTOMER_STATUS_NT, CUSTOMER_STATUS, RECORD_INDICATOR_NT, RECORD_INDICATOR, MAKER,"
 				+ "VERIFIER, INTERNAL_STATUS, DATE_LAST_MODIFIED, DATE_CREATION,CRS_FLAG,FATCA_FLAG,FATCA_OVERRIDE,CRS_OVERRIDE )"
-				+ "Values (?, ?, "+dateConvert+", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
-				+ "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"+systemDate+","+systemDate+",?,?,?,?)";
+				+ "Values (?, ?, " + dateConvert
+				+ ", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
+				+ "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
+				+ systemDate + "," + systemDate + ",?,?,?,?)";
 		Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getCustomerOpenDate(),
 				vObject.getCustomerId(), vObject.getCustomerName(), vObject.getCustomerAcronym(),
 				vObject.getVisionOuc(), vObject.getVisionSbuAt(), vObject.getVisionSbu(), vObject.getGlobalCustomerId(),
@@ -1087,24 +1096,25 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				vObject.getObligorRiskRating(), vObject.getRelatedPartyAt(), vObject.getRelatedParty(),
 				vObject.getCustomerTieringAt(), vObject.getCustomerTiering(), vObject.getSalesAcquisitionChannelAt(),
 				vObject.getSalesAcquisitionChannel(), vObject.getMarketingCampaign(), vObject.getCrosssaleReferId(),
-				vObject.getCustomerIndicatorAt(),vObject.getCustomerIndicator(), vObject.getNumOfAccounts(), vObject.getCustomerAttribute1(),
-				vObject.getCustomerAttribute2(), vObject.getCustomerAttribute3(), vObject.getCustomerSexAT(),
-				vObject.getCustomerSex(), vObject.getCommAddress1(), vObject.getCommAddress2(), vObject.getCommCityAt(),
-				vObject.getCommCity(), vObject.getCommStateAt(), vObject.getCommState(), vObject.getCommPinCode(),
-				vObject.getPhoneNumber(), vObject.getCustomerStatusNt(), vObject.getCustomerStatus(),
-				vObject.getRecordIndicatorNt(), vObject.getRecordIndicator(), vObject.getMaker(), vObject.getVerifier(),
-				vObject.getInternalStatus(), vObject.getCrsFlag(), vObject.getFatcaFlag(), vObject.getFatcaOverRide(),
-				vObject.getCrsOverRide() };
+				vObject.getCustomerIndicatorAt(), vObject.getCustomerIndicator(), vObject.getNumOfAccounts(),
+				vObject.getCustomerAttribute1(), vObject.getCustomerAttribute2(), vObject.getCustomerAttribute3(),
+				vObject.getCustomerSexAT(), vObject.getCustomerSex(), vObject.getCommAddress1(),
+				vObject.getCommAddress2(), vObject.getCommCityAt(), vObject.getCommCity(), vObject.getCommStateAt(),
+				vObject.getCommState(), vObject.getCommPinCode(), vObject.getPhoneNumber(),
+				vObject.getCustomerStatusNt(), vObject.getCustomerStatus(), vObject.getRecordIndicatorNt(),
+				vObject.getRecordIndicator(), vObject.getMaker(), vObject.getVerifier(), vObject.getInternalStatus(),
+				vObject.getCrsFlag(), vObject.getFatcaFlag(), vObject.getFatcaOverRide(), vObject.getCrsOverRide() };
 		return getJdbcTemplate().update(query, args);
 	}
 
 	@Override
 	protected int doInsertionPend(CustomersVb vObject) {
-		if(!ValidationUtil.isValid(vObject.getNaicsCode())) {
+		if (!ValidationUtil.isValid(vObject.getNaicsCode())) {
 			vObject.setNaicsCode("999999");
 		}
 
-		String query = "Insert Into CUSTOMERS_PEND ( COUNTRY, LE_BOOK, CUSTOMER_OPEN_DATE, CUSTOMER_ID, CUSTOMER_NAME, CUSTOMER_ACRONYM, "
+		String query = "Insert Into " + Customers
+				+ "_PEND ( COUNTRY, LE_BOOK, CUSTOMER_OPEN_DATE, CUSTOMER_ID, CUSTOMER_NAME, CUSTOMER_ACRONYM, "
 				+ "VISION_OUC, VISION_SBU_AT, VISION_SBU, GLOBAL_CUSTOMER_ID, NAICS_CODE, CB_ORG_CODE_AT,"
 				+ "CB_ORG_CODE, CB_ECONOMIC_ACT_CODE_AT, CB_ECONOMIC_ACT_CODE, CB_DOMICILE, CB_NATIONALITY,"
 				+ "CB_RESIDENCE, CB_MAJOR_PARTY_INDICATOR, CUSTOMER_ID_TYPE_AT, CUSTOMER_ID_TYPE, ID_DETAILS,"
@@ -1117,8 +1127,10 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ "COMM_ADDRESS_1, COMM_ADDRESS_2, COMM_CITY_AT, COMM_CITY, COMM_STATE_AT, COMM_STATE, COMM_PIN_CODE, PHONE_NUMBER,"
 				+ "CUSTOMER_STATUS_NT, CUSTOMER_STATUS, RECORD_INDICATOR_NT, RECORD_INDICATOR, MAKER,"
 				+ "VERIFIER, INTERNAL_STATUS, DATE_LAST_MODIFIED, DATE_CREATION,CRS_FLAG,FATCA_FLAG,FATCA_OVERRIDE,CRS_OVERRIDE)"
-				+ "Values (?, ?, "+dateConvert+", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?"
-				+ ", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"+systemDate+","+systemDate+",?,?,?,?)";
+				+ "Values (?, ?, " + dateConvert
+				+ ", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?"
+				+ ", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
+				+ systemDate + "," + systemDate + ",?,?,?,?)";
 		Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getCustomerOpenDate(),
 				vObject.getCustomerId(), vObject.getCustomerName(), vObject.getCustomerAcronym(),
 				vObject.getVisionOuc(), vObject.getVisionSbuAt(), vObject.getVisionSbu(), vObject.getGlobalCustomerId(),
@@ -1133,23 +1145,24 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				vObject.getObligorRiskRating(), vObject.getRelatedPartyAt(), vObject.getRelatedParty(),
 				vObject.getCustomerTieringAt(), vObject.getCustomerTiering(), vObject.getSalesAcquisitionChannelAt(),
 				vObject.getSalesAcquisitionChannel(), vObject.getMarketingCampaign(), vObject.getCrosssaleReferId(),
-				vObject.getCustomerIndicatorAt(),vObject.getCustomerIndicator(), vObject.getNumOfAccounts(), vObject.getCustomerAttribute1(),
-				vObject.getCustomerAttribute2(), vObject.getCustomerAttribute3(), vObject.getCustomerSexAT(),
-				vObject.getCustomerSex(), vObject.getCommAddress1(), vObject.getCommAddress2(), vObject.getCommCityAt(),
-				vObject.getCommCity(), vObject.getCommStateAt(), vObject.getCommState(), vObject.getCommPinCode(),
-				vObject.getPhoneNumber(), vObject.getCustomerStatusNt(), vObject.getCustomerStatus(),
-				vObject.getRecordIndicatorNt(), vObject.getRecordIndicator(), vObject.getMaker(), vObject.getVerifier(),
-				vObject.getInternalStatus(), vObject.getCrsFlag(), vObject.getFatcaFlag(), vObject.getFatcaOverRide(),
-				vObject.getCrsOverRide() };
+				vObject.getCustomerIndicatorAt(), vObject.getCustomerIndicator(), vObject.getNumOfAccounts(),
+				vObject.getCustomerAttribute1(), vObject.getCustomerAttribute2(), vObject.getCustomerAttribute3(),
+				vObject.getCustomerSexAT(), vObject.getCustomerSex(), vObject.getCommAddress1(),
+				vObject.getCommAddress2(), vObject.getCommCityAt(), vObject.getCommCity(), vObject.getCommStateAt(),
+				vObject.getCommState(), vObject.getCommPinCode(), vObject.getPhoneNumber(),
+				vObject.getCustomerStatusNt(), vObject.getCustomerStatus(), vObject.getRecordIndicatorNt(),
+				vObject.getRecordIndicator(), vObject.getMaker(), vObject.getVerifier(), vObject.getInternalStatus(),
+				vObject.getCrsFlag(), vObject.getFatcaFlag(), vObject.getFatcaOverRide(), vObject.getCrsOverRide() };
 		return getJdbcTemplate().update(query, args);
 	}
 
 	@Override
 	protected int doInsertionPendWithDc(CustomersVb vObject) {
-		if(!ValidationUtil.isValid(vObject.getNaicsCode())) {
+		if (!ValidationUtil.isValid(vObject.getNaicsCode())) {
 			vObject.setNaicsCode("999999");
 		}
-		String query = "Insert Into CUSTOMERS_PEND ( COUNTRY, LE_BOOK, CUSTOMER_OPEN_DATE, CUSTOMER_ID, CUSTOMER_NAME, CUSTOMER_ACRONYM, "
+		String query = "Insert Into " + Customers
+				+ "_PEND ( COUNTRY, LE_BOOK, CUSTOMER_OPEN_DATE, CUSTOMER_ID, CUSTOMER_NAME, CUSTOMER_ACRONYM, "
 				+ "VISION_OUC, VISION_SBU_AT, VISION_SBU, GLOBAL_CUSTOMER_ID, NAICS_CODE, CB_ORG_CODE_AT,"
 				+ "CB_ORG_CODE, CB_ECONOMIC_ACT_CODE_AT, CB_ECONOMIC_ACT_CODE, CB_DOMICILE, CB_NATIONALITY,"
 				+ "CB_RESIDENCE, CB_MAJOR_PARTY_INDICATOR, CUSTOMER_ID_TYPE_AT, CUSTOMER_ID_TYPE, ID_DETAILS,"
@@ -1162,8 +1175,10 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ "COMM_ADDRESS_1, COMM_ADDRESS_2, COMM_CITY_AT, COMM_CITY, COMM_STATE_AT, COMM_STATE, COMM_PIN_CODE, PHONE_NUMBER,"
 				+ "CUSTOMER_STATUS_NT, CUSTOMER_STATUS, RECORD_INDICATOR_NT, RECORD_INDICATOR, MAKER,"
 				+ "VERIFIER, INTERNAL_STATUS, DATE_LAST_MODIFIED, DATE_CREATION,CRS_FLAG,FATCA_FLAG,FATCA_OVERRIDE,CRS_OVERRIDE)"
-				+ "Values (?, ?, "+dateConvert+", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
-				+ " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"+systemDate+", "+dateTimeConvert+",?,?,?,?)";
+				+ "Values (?, ?, " + dateConvert
+				+ ", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
+				+ " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?," + systemDate + ", "
+				+ dateTimeConvert + ",?,?,?,?)";
 		Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getCustomerOpenDate(),
 				vObject.getCustomerId(), vObject.getCustomerName(), vObject.getCustomerAcronym(),
 				vObject.getVisionOuc(), vObject.getVisionSbuAt(), vObject.getVisionSbu(), vObject.getGlobalCustomerId(),
@@ -1191,7 +1206,8 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 
 	@Override
 	protected int doUpdateAppr(CustomersVb vObject) {
-		String query = "Update CUSTOMERS set CUSTOMER_OPEN_DATE = "+dateConvert+", CUSTOMER_NAME = ?, CUSTOMER_ACRONYM = ?, "
+		String query = "Update " + Customers + " set CUSTOMER_OPEN_DATE = " + dateConvert
+				+ ", CUSTOMER_NAME = ?, CUSTOMER_ACRONYM = ?, "
 				+ "VISION_OUC = ?, VISION_SBU_AT = ?, VISION_SBU = ?, GLOBAL_CUSTOMER_ID = ?, NAICS_CODE = ?, CB_ORG_CODE_AT = ?,"
 				+ "CB_ORG_CODE = ?, CB_ECONOMIC_ACT_CODE_AT = ?, CB_ECONOMIC_ACT_CODE = ?, CB_DOMICILE = ?, CB_NATIONALITY = ?,"
 				+ "CB_RESIDENCE = ?, CB_MAJOR_PARTY_INDICATOR = ?, CUSTOMER_ID_TYPE_AT = ?, CUSTOMER_ID_TYPE = ?, ID_DETAILS = ?,"
@@ -1231,7 +1247,8 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 
 	@Override
 	protected int doUpdatePend(CustomersVb vObject) {
-		String query = "Update CUSTOMERS_PEND set CUSTOMER_OPEN_DATE = "+dateConvert+", CUSTOMER_NAME = ?, CUSTOMER_ACRONYM = ?, "
+		String query = "Update " + Customers + "_PEND set CUSTOMER_OPEN_DATE = " + dateConvert
+				+ ", CUSTOMER_NAME = ?, CUSTOMER_ACRONYM = ?, "
 				+ "VISION_OUC = ?, VISION_SBU_AT = ?, VISION_SBU = ?, GLOBAL_CUSTOMER_ID = ?, NAICS_CODE = ?, CB_ORG_CODE_AT = ?,"
 				+ "CB_ORG_CODE = ?, CB_ECONOMIC_ACT_CODE_AT = ?, CB_ECONOMIC_ACT_CODE = ?, CB_DOMICILE = ?, CB_NATIONALITY = ?,"
 				+ "CB_RESIDENCE = ?, CB_MAJOR_PARTY_INDICATOR = ?, CUSTOMER_ID_TYPE_AT = ?, CUSTOMER_ID_TYPE = ?, ID_DETAILS = ?,"
@@ -1271,14 +1288,14 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 
 	@Override
 	protected int doDeleteAppr(CustomersVb vObject) {
-		String query = "Delete From CUSTOMERS Where COUNTRY = ? AND LE_BOOK = ? AND CUSTOMER_ID = ?";
+		String query = "Delete From " + Customers + " Where COUNTRY = ? AND LE_BOOK = ? AND CUSTOMER_ID = ?";
 		Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getCustomerId() };
 		return getJdbcTemplate().update(query, args);
 	}
 
 	@Override
 	protected int deletePendingRecord(CustomersVb vObject) {
-		String query = "Delete From CUSTOMERS_PEND Where COUNTRY = ? AND LE_BOOK = ? AND CUSTOMER_ID = ?";
+		String query = "Delete From " + Customers + "_PEND Where COUNTRY = ? AND LE_BOOK = ? AND CUSTOMER_ID = ?";
 		Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getCustomerId() };
 		return getJdbcTemplate().update(query, args);
 	}
@@ -1759,8 +1776,8 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 
 		int count = 0;
 		final int intKeyFieldsCount = 3;
-		String strQuery = new String(
-				"Select  count(1) From CUSTOMERS Where CUSTOMER_ID = ? AND COUNTRY = ? AND LE_BOOK=? AND CUSTOMER_STATUS = 0");
+		String strQuery = new String("Select  count(1) From " + Customers
+				+ " Where CUSTOMER_ID = ? AND COUNTRY = ? AND LE_BOOK=? AND CUSTOMER_STATUS = 0");
 		Object objParams[] = new Object[intKeyFieldsCount];
 		objParams[0] = vObDlyVb.getGlobalCustomerId();
 		objParams[1] = vObDlyVb.getCountry();
@@ -1793,7 +1810,8 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 	public int validatePrimaryCID(CustomersVb vObDlyVb) {
 		int count = 0;
 		final int intKeyFieldsCount = 2;
-		String strQuery = new String("Select  count(1)  From CUSTOMERS Where COUNTRY "+pipeLine+"'-'"+pipeLine+"LE_BOOK = ? AND CUSTOMER_ID = ?");
+		String strQuery = new String("Select  count(1)  From " + Customers + " Where COUNTRY " + pipeLine + "'-'"
+				+ pipeLine + "LE_BOOK = ? AND CUSTOMER_ID = ?");
 		Object objParams[] = new Object[intKeyFieldsCount];
 		objParams[0] = vObDlyVb.getEntity();
 		objParams[1] = vObDlyVb.getPrimaryCid();
@@ -1810,7 +1828,8 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 
 		int count = 0;
 		final int intKeyFieldsCount = 2;
-		String strQuery = new String("Select  count(1)  From CUSTOMERS Where COUNTRY "+pipeLine+"'-'"+pipeLine+"LE_BOOK = ? AND CUSTOMER_ID = ?");
+		String strQuery = new String("Select  count(1)  From " + Customers + " Where COUNTRY " + pipeLine + "'-'"
+				+ pipeLine + "LE_BOOK = ? AND CUSTOMER_ID = ?");
 		Object objParams[] = new Object[intKeyFieldsCount];
 		objParams[0] = vObDlyVb.getEntity();
 		objParams[1] = vObDlyVb.getParentCid();
@@ -1827,7 +1846,8 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 
 		int count = 0;
 		final int intKeyFieldsCount = 2;
-		String strQuery = new String("Select  count(1)  From CUSTOMERS Where COUNTRY "+pipeLine+"'-'"+pipeLine+"LE_BOOK = ? AND CUSTOMER_ID = ?");
+		String strQuery = new String("Select  count(1)  From " + Customers + " Where COUNTRY " + pipeLine + "'-'"
+				+ pipeLine + "LE_BOOK = ? AND CUSTOMER_ID = ?");
 		Object objParams[] = new Object[intKeyFieldsCount];
 		objParams[0] = vObDlyVb.getEntity();
 		objParams[1] = vObDlyVb.getUltimateParent();
@@ -2126,7 +2146,7 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 			return getResultObject(Constants.SUCCESSFUL_OPERATION);
 		}
 	}
-	
+
 	protected ExceptionCode doDeleteApprRecordForNonTrans(CustomersVb vObject) throws RuntimeCustomException {
 		List<CustomersVb> collTemp = null;
 		ExceptionCode exceptionCode = null;
@@ -2202,7 +2222,7 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 		}
 		return exceptionCode;
 	}
-	
+
 	protected ExceptionCode doDeleteRecordForNonTrans(CustomersVb vObject) throws RuntimeCustomException {
 		CustomersVb vObjectlocal = null;
 		List<CustomersVb> collTemp = null;
@@ -2266,10 +2286,10 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 	}
 
 	protected int doInsertionApprForCustExtras(CustomersVb vObject) {
-		String query = "INSERT INTO CUSTOMER_EXTRAS (COUNTRY, LE_BOOK, CUSTOMER_ID, CUS_EXTRAS_STATUS_NT, CUS_EXTRAS_STATUS, "
+		String query = "INSERT INTO "+CustomersExtras+" (COUNTRY, LE_BOOK, CUSTOMER_ID, CUS_EXTRAS_STATUS_NT, CUS_EXTRAS_STATUS, "
 				+ "RECORD_INDICATOR_NT, RECORD_INDICATOR, MAKER, VERIFIER, INTERNAL_STATUS, "
 				+ "DATE_CREATION, DATE_LAST_MODIFIED, DUAL_NATIONALITY_1, DUAL_NATIONALITY_2, DUAL_NATIONALITY_3) "
-				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "+systemDate+", "+systemDate+", ?, ?, ?)";
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " + systemDate + ", " + systemDate + ", ?, ?, ?)";
 		Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getCustomerId(),
 				vObject.getCusExtrasStatusNt(), vObject.getCusExtrasStatus(), vObject.getRecordIndicatorNt(),
 				vObject.getRecordIndicator(), vObject.getMaker(), vObject.getVerifier(), vObject.getInternalStatus(),
@@ -2279,22 +2299,22 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 	}
 
 	protected int doInsertionPendForCustExtras(CustomersVb vObject) {
-		String query = "INSERT INTO CUSTOMER_EXTRAS_PEND (COUNTRY, LE_BOOK, CUSTOMER_ID, CUS_EXTRAS_STATUS_NT, "
+		String query = "INSERT INTO "+CustomersExtras+"_PEND (COUNTRY, LE_BOOK, CUSTOMER_ID, CUS_EXTRAS_STATUS_NT, "
 				+ "CUS_EXTRAS_STATUS, RECORD_INDICATOR_NT, RECORD_INDICATOR, MAKER, VERIFIER, INTERNAL_STATUS, "
 				+ "DATE_CREATION, DATE_LAST_MODIFIED, DUAL_NATIONALITY_1, DUAL_NATIONALITY_2, DUAL_NATIONALITY_3) "
-				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "+systemDate+", "+systemDate+", ?, ?, ?)";
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " + systemDate + ", " + systemDate + ", ?, ?, ?)";
 		Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getCustomerId(),
 				vObject.getCusExtrasStatusNt(), vObject.getCusExtrasStatus(), vObject.getRecordIndicatorNt(),
 				vObject.getRecordIndicator(), vObject.getMaker(), vObject.getVerifier(), vObject.getInternalStatus(),
 				vObject.getDualNationality1(), vObject.getDualNationality2(), vObject.getDualNationality3() };
 		return getJdbcTemplate().update(query, args);
 	}
-	
+
 	protected int doInsertionPendWithDcForCustExtras(CustomersVb vObject) {
-		String query = "INSERT INTO CUSTOMER_EXTRAS_PEND (COUNTRY, LE_BOOK, CUSTOMER_ID, CUS_EXTRAS_STATUS_NT, "
+		String query = "INSERT INTO "+CustomersExtras+"_PEND (COUNTRY, LE_BOOK, CUSTOMER_ID, CUS_EXTRAS_STATUS_NT, "
 				+ "CUS_EXTRAS_STATUS, RECORD_INDICATOR_NT, RECORD_INDICATOR, MAKER, VERIFIER, INTERNAL_STATUS, "
 				+ "DATE_CREATION, DATE_LAST_MODIFIED, DUAL_NATIONALITY_1, DUAL_NATIONALITY_2, DUAL_NATIONALITY_3) "
-				+ "Values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "+systemDate+", "+dateTimeConvert+", ?, ?, ?)";
+				+ "Values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " + systemDate + ", " + dateTimeConvert + ", ?, ?, ?)";
 		Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getCustomerId(),
 				vObject.getCusExtrasStatusNt(), vObject.getCusExtrasStatus(), vObject.getRecordIndicatorNt(),
 				vObject.getRecordIndicator(), vObject.getMaker(), vObject.getVerifier(), vObject.getInternalStatus(),
@@ -2302,11 +2322,11 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				vObject.getDualNationality3() };
 		return getJdbcTemplate().update(query, args);
 	}
-	
+
 	protected int doUpdateApprForCustExtras(CustomersVb vObject) {
-		String query = "UPDATE CUSTOMER_EXTRAS SET "
+		String query = "UPDATE "+CustomersExtras+" SET "
 				+ " DUAL_NATIONALITY_1 = ?, DUAL_NATIONALITY_2 = ?, DUAL_NATIONALITY_3 = ?, "
-				+ " RECORD_INDICATOR = ?, CUS_EXTRAS_STATUS = ?, DATE_LAST_MODIFIED =  "+systemDate
+				+ " RECORD_INDICATOR = ?, CUS_EXTRAS_STATUS = ?, DATE_LAST_MODIFIED =  " + systemDate
 				+ " WHERE COUNTRY = ? AND LE_BOOK = ? AND CUSTOMER_ID = ?";
 		Object[] args = { vObject.getDualNationality1(), vObject.getDualNationality2(), vObject.getDualNationality3(),
 				vObject.getRecordIndicator(), vObject.getCusExtrasStatus(), vObject.getCountry(), vObject.getLeBook(),
@@ -2315,9 +2335,9 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 	}
 
 	protected int doUpdatePendForCustExtras(CustomersVb vObject) {
-		String query = "UPDATE CUSTOMER_EXTRAS_PEND SET "
+		String query = "UPDATE "+CustomersExtras+"_PEND SET "
 				+ " DUAL_NATIONALITY_1 = ?, DUAL_NATIONALITY_2 = ?, DUAL_NATIONALITY_3 = ?, "
-				+ " RECORD_INDICATOR = ?, CUS_EXTRAS_STATUS = ?, DATE_LAST_MODIFIED =  "+systemDate
+				+ " RECORD_INDICATOR = ?, CUS_EXTRAS_STATUS = ?, DATE_LAST_MODIFIED =  " + systemDate
 				+ " WHERE COUNTRY = ? AND LE_BOOK = ? AND CUSTOMER_ID = ?";
 		Object[] args = { vObject.getDualNationality1(), vObject.getDualNationality2(), vObject.getDualNationality3(),
 				vObject.getRecordIndicator(), vObject.getCusExtrasStatus(), vObject.getCountry(), vObject.getLeBook(),
@@ -2326,13 +2346,13 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 	}
 
 	protected int doDeleteApprForCustExtras(CustomersVb vObject) {
-		String query = "Delete From CUSTOMER_EXTRAS Where COUNTRY = ? AND LE_BOOK = ? AND CUSTOMER_ID = ? ";
+		String query = "Delete From "+CustomersExtras+" Where COUNTRY = ? AND LE_BOOK = ? AND CUSTOMER_ID = ? ";
 		Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getCustomerId() };
 		return getJdbcTemplate().update(query, args);
 	}
 
 	protected int doDeletePendForCustExtras(CustomersVb vObject) {
-		String query = " Delete From CUSTOMER_EXTRAS_PEND Where COUNTRY = ? AND LE_BOOK = ? AND CUSTOMER_ID = ? ";
+		String query = " Delete From "+CustomersExtras+"_PEND Where COUNTRY = ? AND LE_BOOK = ? AND CUSTOMER_ID = ? ";
 		Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getCustomerId() };
 		return getJdbcTemplate().update(query, args);
 	}
@@ -2345,7 +2365,7 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 		strCurrentOperation = Constants.APPROVE;
 		setServiceDefaults();
 		try {
-			if("RUNNING".equalsIgnoreCase(getBuildStatus(vObject))){
+			if ("RUNNING".equalsIgnoreCase(getBuildStatus(vObject))) {
 				exceptionCode = getResultObject(Constants.BUILD_IS_RUNNING_APPROVE);
 				throw buildRuntimeCustomException(exceptionCode);
 			}
@@ -2353,43 +2373,43 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 			vObject.setVerifier(getIntCurrentUserId());
 			vObject.setRecordIndicator(Constants.STATUS_ZERO);
 			collTemp = doSelectPendingRecord(vObject);
-			if (collTemp == null){
+			if (collTemp == null) {
 				exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
 				throw buildRuntimeCustomException(exceptionCode);
 			}
 
-			if (collTemp.size() == 0){
+			if (collTemp.size() == 0) {
 				exceptionCode = getResultObject(Constants.NO_SUCH_PENDING_RECORD);
 				throw buildRuntimeCustomException(exceptionCode);
 			}
 
-			vObjectlocal = ((ArrayList<CustomersVb>)collTemp).get(0);
+			vObjectlocal = ((ArrayList<CustomersVb>) collTemp).get(0);
 
-			if (vObjectlocal.getMaker() == getIntCurrentUserId()){
+			if (vObjectlocal.getMaker() == getIntCurrentUserId()) {
 				exceptionCode = getResultObject(Constants.MAKER_CANNOT_APPROVE);
 				throw buildRuntimeCustomException(exceptionCode);
 			}
 
 			// If it's NOT addition, collect the existing record contents from the
 			// Approved table and keep it aside, for writing audit information later.
-			if (vObjectlocal.getRecordIndicator() != Constants.STATUS_INSERT){
+			if (vObjectlocal.getRecordIndicator() != Constants.STATUS_INSERT) {
 				collTemp = selectApprovedRecord(vObject);
-				if (collTemp == null || collTemp.isEmpty()){
+				if (collTemp == null || collTemp.isEmpty()) {
 					exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
 					throw buildRuntimeCustomException(exceptionCode);
 				}
-				oldContents = ((ArrayList<CustomersVb>)collTemp).get(0);
+				oldContents = ((ArrayList<CustomersVb>) collTemp).get(0);
 			}
 
-			if (vObjectlocal.getRecordIndicator() == Constants.STATUS_INSERT){  // Add authorization
+			if (vObjectlocal.getRecordIndicator() == Constants.STATUS_INSERT) { // Add authorization
 				// Write the contents of the Pending table record to the Approved table
 				vObjectlocal.setRecordIndicator(Constants.STATUS_ZERO);
 				vObjectlocal.setVerifier(getIntCurrentUserId());
 				retVal = doInsertionAppr(vObjectlocal);
-				if (retVal != Constants.SUCCESSFUL_OPERATION){
+				if (retVal != Constants.SUCCESSFUL_OPERATION) {
 					exceptionCode = getResultObject(retVal);
 					throw buildRuntimeCustomException(exceptionCode);
-				}else {
+				} else {
 					retVal = doInsertionApprForCustExtras(vObjectlocal);
 				}
 				if (retVal != Constants.SUCCESSFUL_OPERATION) {
@@ -2403,23 +2423,23 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				vObject.setDateLastModified(systemDate);
 				vObject.setDateCreation(systemDate);
 				strApproveOperation = Constants.ADD;
-			}else if (vObjectlocal.getRecordIndicator() == Constants.STATUS_UPDATE){ // Modify authorization
-			
+			} else if (vObjectlocal.getRecordIndicator() == Constants.STATUS_UPDATE) { // Modify authorization
+
 				collTemp = selectApprovedRecord(vObject);
-				if (collTemp == null || collTemp.isEmpty()){
+				if (collTemp == null || collTemp.isEmpty()) {
 					exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
 					throw buildRuntimeCustomException(exceptionCode);
-				}	
+				}
 
 				// If record already exists in the approved table, reject the addition
-				if (collTemp.size() > 0 ){
-					//retVal = doUpdateAppr(vObjectlocal, MISConstants.ACTIVATE);
+				if (collTemp.size() > 0) {
+					// retVal = doUpdateAppr(vObjectlocal, MISConstants.ACTIVATE);
 					vObjectlocal.setVerifier(getIntCurrentUserId());
 					vObjectlocal.setRecordIndicator(Constants.STATUS_ZERO);
 					retVal = doUpdateAppr(vObjectlocal);
 				}
 				// Modify the existing contents of the record in Approved table
-				if (retVal != Constants.SUCCESSFUL_OPERATION){
+				if (retVal != Constants.SUCCESSFUL_OPERATION) {
 					exceptionCode = getResultObject(retVal);
 					throw buildRuntimeCustomException(exceptionCode);
 				} else {
@@ -2435,40 +2455,38 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				vObject.setDateLastModified(systemDate);
 				// Set the current operation to write to audit log
 				strApproveOperation = Constants.MODIFY;
-			}
-			else if (vObjectlocal.getRecordIndicator() == Constants.STATUS_DELETE){ // Delete authorization
-				if(staticDelete){
-					// Update the existing record status in the Approved table to delete 
+			} else if (vObjectlocal.getRecordIndicator() == Constants.STATUS_DELETE) { // Delete authorization
+				if (staticDelete) {
+					// Update the existing record status in the Approved table to delete
 					setStatus(vObjectlocal, Constants.PASSIVATE);
 					vObjectlocal.setRecordIndicator(Constants.STATUS_ZERO);
 					vObjectlocal.setVerifier(getIntCurrentUserId());
 					retVal = doUpdateAppr(vObjectlocal);
-					if (retVal != Constants.SUCCESSFUL_OPERATION){
+					if (retVal != Constants.SUCCESSFUL_OPERATION) {
 						exceptionCode = getResultObject(retVal);
 						throw buildRuntimeCustomException(exceptionCode);
+					} else {
+						retVal = doUpdateApprForCustExtras(vObjectlocal);
 					}
-					 else {
-							retVal = doUpdateApprForCustExtras(vObjectlocal);
-						}
-						if (retVal != Constants.SUCCESSFUL_OPERATION) {
-							exceptionCode = getResultObject(retVal);
-							throw buildRuntimeCustomException(exceptionCode);
-						} else {
-							exceptionCode = getResultObject(Constants.SUCCESSFUL_OPERATION);
-						}
+					if (retVal != Constants.SUCCESSFUL_OPERATION) {
+						exceptionCode = getResultObject(retVal);
+						throw buildRuntimeCustomException(exceptionCode);
+					} else {
+						exceptionCode = getResultObject(Constants.SUCCESSFUL_OPERATION);
+					}
 					setStatus(vObject, Constants.PASSIVATE);
 					String systemDate = getSystemDate();
 					vObject.setDateLastModified(systemDate);
 
-				}else{
-					// Delete the existing record from the Approved table 
+				} else {
+					// Delete the existing record from the Approved table
 					retVal = doDeleteAppr(vObjectlocal);
-					if (retVal != Constants.SUCCESSFUL_OPERATION){
+					if (retVal != Constants.SUCCESSFUL_OPERATION) {
 						exceptionCode = getResultObject(retVal);
 						throw buildRuntimeCustomException(exceptionCode);
 					}
 					retVal = doDeleteApprForCustExtras(vObjectlocal);
-					if (retVal != Constants.SUCCESSFUL_OPERATION){
+					if (retVal != Constants.SUCCESSFUL_OPERATION) {
 						exceptionCode = getResultObject(retVal);
 						throw buildRuntimeCustomException(exceptionCode);
 					}
@@ -2477,90 +2495,89 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				}
 				// Set the current operation to write to audit log
 				strApproveOperation = Constants.DELETE;
-			}
-			else{
+			} else {
 				exceptionCode = getResultObject(Constants.INVALID_STATUS_FLAG_IN_DATABASE);
 				throw buildRuntimeCustomException(exceptionCode);
-			}	
+			}
 
 			// Delete the record from the Pending table
 			retVal = deletePendingRecord(vObjectlocal);
 
-			if (retVal != Constants.SUCCESSFUL_OPERATION){
+			if (retVal != Constants.SUCCESSFUL_OPERATION) {
 				exceptionCode = getResultObject(retVal);
 				throw buildRuntimeCustomException(exceptionCode);
 			}
 			retVal = doDeletePendForCustExtras(vObject);
-			if (retVal != Constants.SUCCESSFUL_OPERATION){
+			if (retVal != Constants.SUCCESSFUL_OPERATION) {
 				exceptionCode = getResultObject(retVal);
 				throw buildRuntimeCustomException(exceptionCode);
 			}
 			// Set the internal status to Approved
 			vObject.setInternalStatus(0);
 			vObject.setRecordIndicator(Constants.STATUS_ZERO);
-			if (vObjectlocal.getRecordIndicator() == Constants.STATUS_DELETE && !staticDelete){
+			if (vObjectlocal.getRecordIndicator() == Constants.STATUS_DELETE && !staticDelete) {
 				exceptionCode = writeAuditLog(null, oldContents);
 				vObject.setRecordIndicator(-1);
-			}
-			else
+			} else
 				exceptionCode = writeAuditLog(vObjectlocal, oldContents);
 
-			if(exceptionCode.getErrorCode() != Constants.SUCCESSFUL_OPERATION){
+			if (exceptionCode.getErrorCode() != Constants.SUCCESSFUL_OPERATION) {
 				exceptionCode = getResultObject(Constants.AUDIT_TRAIL_ERROR);
 				throw buildRuntimeCustomException(exceptionCode);
 			}
 			return getResultObject(Constants.SUCCESSFUL_OPERATION);
-		}catch (UncategorizedSQLException uSQLEcxception) {
+		} catch (UncategorizedSQLException uSQLEcxception) {
 			strErrorDesc = parseErrorMsg(uSQLEcxception);
 			exceptionCode = getResultObject(Constants.WE_HAVE_ERROR_DESCRIPTION);
 			throw buildRuntimeCustomException(exceptionCode);
-		}catch(Exception ex){
-			logger.error("Error in Approve.",ex);
-			logger.error( ((vObject==null)? "vObject is Null":vObject.toString()));
+		} catch (Exception ex) {
+			logger.error("Error in Approve.", ex);
+			logger.error(((vObject == null) ? "vObject is Null" : vObject.toString()));
 			strErrorDesc = ex.getMessage();
 			exceptionCode = getResultObject(Constants.WE_HAVE_ERROR_DESCRIPTION);
 			throw buildRuntimeCustomException(exceptionCode);
 		}
 	}
-	public ExceptionCode doRejectRecord(CustomersVb vObject)throws RuntimeCustomException {
+
+	public ExceptionCode doRejectRecord(CustomersVb vObject) throws RuntimeCustomException {
 		CustomersVb vObjectlocal = null;
 		List<CustomersVb> collTemp = null;
 		ExceptionCode exceptionCode = null;
 		setServiceDefaults();
-		strErrorDesc  = "";
+		strErrorDesc = "";
 		strCurrentOperation = Constants.REJECT;
 		vObject.setMaker(getIntCurrentUserId());
 		try {
-			if(vObject.getRecordIndicator() == 1 || vObject.getRecordIndicator() == 3 )
-			    vObject.setRecordIndicator(0);
-			    else
-				   vObject.setRecordIndicator(-1);
+			if (vObject.getRecordIndicator() == 1 || vObject.getRecordIndicator() == 3)
+				vObject.setRecordIndicator(0);
+			else
+				vObject.setRecordIndicator(-1);
 			// See if such a pending request exists in the pending table
 			collTemp = doSelectPendingRecord(vObject);
-			if (collTemp == null){
+			if (collTemp == null) {
 				exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
 				throw buildRuntimeCustomException(exceptionCode);
 			}
-			if (collTemp.size() == 0){
+			if (collTemp.size() == 0) {
 				exceptionCode = getResultObject(Constants.NO_SUCH_PENDING_RECORD);
 				throw buildRuntimeCustomException(exceptionCode);
 			}
-			vObjectlocal = ((ArrayList<CustomersVb>)collTemp).get(0);
+			vObjectlocal = ((ArrayList<CustomersVb>) collTemp).get(0);
 			// Delete the record from the Pending table
-			if (deletePendingRecord(vObjectlocal) == 0){
+			if (deletePendingRecord(vObjectlocal) == 0) {
 				exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
 				throw buildRuntimeCustomException(exceptionCode);
-			}else {
-				retVal =doDeletePendForCustExtras(vObjectlocal);
+			} else {
+				retVal = doDeletePendForCustExtras(vObjectlocal);
 			}
 			return getResultObject(Constants.SUCCESSFUL_OPERATION);
-		}catch (UncategorizedSQLException uSQLEcxception) {
+		} catch (UncategorizedSQLException uSQLEcxception) {
 			strErrorDesc = parseErrorMsg(uSQLEcxception);
 			exceptionCode = getResultObject(Constants.WE_HAVE_ERROR_DESCRIPTION);
 			throw buildRuntimeCustomException(exceptionCode);
-		}catch(Exception ex){
-			logger.error("Error in Reject.",ex);
-			logger.error( ((vObject==null)? "vObject is Null":vObject.toString()));
+		} catch (Exception ex) {
+			logger.error("Error in Reject.", ex);
+			logger.error(((vObject == null) ? "vObject is Null" : vObject.toString()));
 			strErrorDesc = ex.getMessage();
 			exceptionCode = getResultObject(Constants.WE_HAVE_ERROR_DESCRIPTION);
 			throw buildRuntimeCustomException(exceptionCode);

@@ -39,6 +39,9 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPClientConfig;
 import org.apache.commons.net.ftp.FTPConnectionClosedException;
@@ -82,8 +85,10 @@ import com.vision.vb.FileInfoVb;
 import com.vision.vb.LoadXlVb;
 import com.vision.vb.VisionUploadVb;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+
+
+
+
 
 @Component
 public class VisionUploadWb extends AbstractDynaWorkerBean<VisionUploadVb> implements ApplicationContextAware {
@@ -371,9 +376,6 @@ public class VisionUploadWb extends AbstractDynaWorkerBean<VisionUploadVb> imple
 			String fileExtension = "xlsx";
 			String uploadDir = "";
 			uploadDir = getUploadDir();
-			
-			System.out.println("uploadDir-->"+uploadDir);
-			
 			fileName = fileName.toUpperCase();
 			fileName = fileName.substring(0, fileName.lastIndexOf('.')) + "_"
 					+ SessionContextHolder.getContext().getVisionId() + "." + fileExtension + "";
@@ -1775,7 +1777,7 @@ public class VisionUploadWb extends AbstractDynaWorkerBean<VisionUploadVb> imple
 	public ExceptionCode doValidate(VisionUploadVb vObject) {
 		ExceptionCode exceptionCode = new ExceptionCode();
 		String operation = vObject.getActionType();
-		String srtRestrion = getCommonDao().getRestrictionsByUsers("45", operation);
+		String srtRestrion = getCommonDao().getRestrictionsByUsers("15", operation);
 		if (!"Y".equalsIgnoreCase(srtRestrion)) {
 			exceptionCode = new ExceptionCode();
 			exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);

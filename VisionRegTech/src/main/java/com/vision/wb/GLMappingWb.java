@@ -49,7 +49,7 @@ public class GLMappingWb extends AbstractDynaWorkerBean<GLMappingVb> {
 			arrListLocal.add(collTemp);
 			collTemp = numSubTabDao.findActiveNumSubTabsByNumTab(7);// record indicator
 			arrListLocal.add(collTemp);
-			collTemp = alphaSubTabDao.findActiveAlphaSubTabsByAlphaTab(1004);// GL_MAPPING_ATTRIBUTE_TYPE_AT
+			collTemp = alphaSubTabDao.findActiveAlphaSubTabsByAlphaTab(5007);// GL_MAPPING_ATTRIBUTE_TYPE_AT
 			arrListLocal.add(collTemp);
 			collTemp = glMappingDao.getTemplatName();// Template names
 			arrListLocal.add(collTemp);

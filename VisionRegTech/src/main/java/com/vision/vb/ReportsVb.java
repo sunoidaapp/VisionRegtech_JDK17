@@ -97,6 +97,8 @@ public class ReportsVb extends CommonVb {
 	private String tileData = "";
 	private String widgetTheme = "";
 	
+	private String csvDelimiter = "";
+	
 	public String getApplicationTheme() {
 		return applicationTheme;
 	}
@@ -578,4 +580,11 @@ public class ReportsVb extends CommonVb {
 	public void setWidgetTheme(String widgetTheme) {
 		this.widgetTheme = widgetTheme;
 	}
+	public String getCsvDelimiter() {
+		return csvDelimiter;
+	}
+	public void setCsvDelimiter(String csvDelimiter) {
+		this.csvDelimiter = csvDelimiter;
+	}
+	
 }

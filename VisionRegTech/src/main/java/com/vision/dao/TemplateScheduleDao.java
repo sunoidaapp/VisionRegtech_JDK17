@@ -30,6 +30,7 @@ import java.util.StringJoiner;
 import java.util.Vector;
 import java.util.stream.Collectors;
 
+import jakarta.servlet.ServletContext;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -79,8 +80,6 @@ import com.vision.vb.TemplateMappingVb;
 import com.vision.vb.TemplateScheduleVb;
 import com.vision.vb.VisionUsersVb;
 import com.vision.wb.TemplateConfigWb;
-
-import jakarta.servlet.ServletContext;
 
 @Component
 public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> implements ServletContextAware {
@@ -699,8 +698,9 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 				CommonUtils.addToQuery(vObject.getSourceTableFilter(), query);
 				if (cloud.equalsIgnoreCase("Y") && !vObject.getCategoryType().equalsIgnoreCase("RG")) {
 					query.append(" AND     TAPPR.COUNTRY = T3.COUNTRY    AND TAPPR.LE_BOOK = T3.LE_BOOK"
-							+ "       AND TAPPR.CUSTOMER_ID = T3.CUSTOMER_ID"
-							+ "       AND TAPPR.MESSAGE_REF_ID = T2.MESSAGE_REF_ID");
+//							+ "       AND TAPPR.CUSTOMER_ID = T3.CUSTOMER_ID"
+//							+ "       AND TAPPR.MESSAGE_REF_ID = T2.MESSAGE_REF_ID"
+							);
 				}
 				StringBuffer newQuery = new StringBuffer("SELECT * FROM (" + query + ") TAPPR");
 				query = newQuery;
@@ -923,7 +923,7 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 	public List<TemplateScheduleVb> getTemplateSchedulesAudit(TemplateScheduleVb dObj) {
 		String logCondition = "";
 		if (!dObj.isReview()) {
-			logCondition = "AND T1.DATETIME_STAMP >= T2.PROCESS_START_TIME ";
+			logCondition = "AND T1.DATETIME_STAMP <= T2.PROCESS_START_TIME ";
 		}
 
 		String query = new String("Select T1.Audit_Trail_Sequence_Id, " + dateFormat + "(Datetime_Stamp ,"
@@ -1450,15 +1450,15 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 					+ " '.JSON' AS Jsonfile," + dateFormat + "      (T1.SUBMISSION_DATE ," + formatdate
 					+ ")SUBMISSION_DATE," + " T2.cbk_file_name  CSV_FILE_NAME," + " T1.REQUEST_NO, T1.CB_STATUS , "
 					+ " (SELECT MIN(USER_NAME) FROM VISION_USERS WHERE VISION_ID = " + getDbFunction("NVL")
-					+ "(T1.SUBMITTER,0) ) SUBMITTER_NAME,T1.SUBMITTER," + "               'ACTUAL' TABLES"
-					+ " FROM RG_TEMPLATES_HEADER T1 " + " JOIN RG_TEMPLATE_CONFIG T2  "
-					+ "     ON T1.TEMPLATE_ID = T2.TEMPLATE_ID " + "     AND T1.COUNTRY = T2.COUNTRY "
-					+ "     AND T1.LE_BOOK = T2.LE_BOOK AND T1.STATUS !=' ' " + " JOIN RG_PROCESS_CONTROLS T3  "
-					+ "     ON T1.TEMPLATE_ID = T3.TEMPLATE_ID " + "     AND T1.SUBMISSION_DATE = T3.SUBMISSION_DATE "
-					+ "     AND T1.COUNTRY = T3.COUNTRY " + "     AND T1.LE_BOOK = T3.LE_BOOK "
-					+ " JOIN PRD_TEMPLATE_ACCESS A1  " + "     ON T1.TEMPLATE_ID = A1.TEMPLATE_ID "
-					+ "     AND A1.USER_GROUP = '" + userGroup + "'     AND A1.USER_PROFILE =  '" + userProfile
-					+ "' 	WHERE  " + "     T2.TEMPLATE_STATUS = 0 ");
+					+ "(T1.SUBMITTER,0) ) SUBMITTER_NAME,T1.SUBMITTER," 
+					+ "               'ACTUAL' TABLES" + " FROM RG_TEMPLATES_HEADER T1 "
+					+ " JOIN RG_TEMPLATE_CONFIG T2  " + "     ON T1.TEMPLATE_ID = T2.TEMPLATE_ID "
+					+ "     AND T1.COUNTRY = T2.COUNTRY " + "     AND T1.LE_BOOK = T2.LE_BOOK AND T1.STATUS !=' ' "
+					+ " JOIN RG_PROCESS_CONTROLS T3  " + "     ON T1.TEMPLATE_ID = T3.TEMPLATE_ID "
+					+ "     AND T1.SUBMISSION_DATE = T3.SUBMISSION_DATE " + "     AND T1.COUNTRY = T3.COUNTRY "
+					+ "     AND T1.LE_BOOK = T3.LE_BOOK " + " JOIN PRD_TEMPLATE_ACCESS A1  "
+					+ "     ON T1.TEMPLATE_ID = A1.TEMPLATE_ID " + "     AND A1.USER_GROUP = '" + userGroup
+					+ "'     AND A1.USER_PROFILE =  '" + userProfile + "' 	WHERE  " + "     T2.TEMPLATE_STATUS = 0 ");
 
 			String orderBy = "  ORDER BY T1.SUBMISSION_DATE, " + "  CASE PROCESS_FREQUENCY " + "  WHEN 'I' THEN 1 "
 					+ "  WHEN 'D' THEN 2 " + "  WHEN 'W' THEN 3 " + "  WHEN 'M' THEN 4 " + "  WHEN 'Q' THEN 5 "
@@ -1784,7 +1784,7 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 				vObject.setVerifier(0);
 				System.out.println("1");
 				retVal = updateTemplateHeaders(vObject, true);
-				retVal = updateProcessControls(vObject, true);
+				retVal =updateProcessControls(vObject, true);
 				exceptionCode = getResultObject(retVal);
 				exceptionCode.setOtherInfo(vObject.getProcessStatus());
 			}
@@ -1826,7 +1826,7 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 			vObject.setVerifier(intCurrentUserId);
 			retVal = updateTemplateHeaders(vObject, false);
 			retVal = updateProcessControls(vObject, false);
-			if (retVal == Constants.SUCCESSFUL_OPERATION) {
+			if(retVal == Constants.SUCCESSFUL_OPERATION) {
 				retVal = saveComments(vObject);
 			}
 			exceptionCode = getResultObject(retVal);
@@ -2898,46 +2898,70 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 //			String versionNo = " WHERE VERSION_NO = (SELECT MAX(VERSION_NO ) FROM " + vObject.getSourceTable() + " )";
 
 			for (TemplateMappingVb templateMappingVb : vObject.getMappinglst()) {
-				selectColumns.add(templateMappingVb.getSourceColumn());
-//				selectColumns.add(templateMappingVb.getSourceColumn().toUpperCase());
-
+			    String col = templateMappingVb.getSourceColumn();
+			 // If the column already contains TO_CHAR, use it as-is
+			    if (col.toUpperCase().startsWith("TO_CHAR")) {
+			        selectColumns.add(col);
+			    } else if ("TIMESTAMP".equalsIgnoreCase(col)) { 
+			        selectColumns.add("TO_CHAR(SYSDATE, 'RRRR-MM-DD HH24:MI:SS') AS Timestamp");
+			    } else if (col.toUpperCase().startsWith("CONCAT")) { 
+			    	  selectColumns.add(col + " AS " + templateMappingVb.getTargetColumn());
+			    } 
+			    else {
+			        selectColumns.add("T1." + col + " AS " + templateMappingVb.getTargetColumn());
+//			    	selectColumns.add(  col + " AS " + templateMappingVb.getTargetColumn());
+			    }
 			}
 
 			String headerQuery = "ENTITY_BUILDING_IDENTIFIER,ENTITY_STREET,ENTITY_COUNTRY_CODE,LEGAL_ADDRESS_TYPE,ENTITY_NAME,ENTITY_CITY,"
 					+ "SENDING_COMPANY_IN,TRANSMITTING_COUNTRY, RECEIVING_COUNTRY, MESSAGE_TYPE, WARNING, CONTACT, MESSAGE_TYPE_INDIC, DOC_TYPE_IN ";
 
+			if(cloud.equalsIgnoreCase("Y")) {
+				 headerQuery = 
+					    "T3.ENTITY_BUILDING_IDENTIFIER, T3.ENTITY_STREET, T3.ENTITY_COUNTRY_CODE, " +
+					    "T3.LEGAL_ADDRESS_TYPE, T3.ENTITY_NAME, T3.ENTITY_CITY, " +
+					    "T3.SENDING_COMPANY_IN AS SENDING_COMPANY_T3, " +
+					    "T3.TRANSMITTING_COUNTRY AS TRANSMITTING_COUNTRY_T3, " +
+					    "T3.RECEIVING_COUNTRY AS RECEIVING_COUNTRY_T3, " +
+					    "T3.MESSAGE_TYPE AS MESSAGE_TYPE_T3, " +
+					    "T3.WARNING AS WARNING_T3, " +
+					    "T3.CONTACT AS CONTACT_T3, " +
+					    "T3.MESSAGE_TYPE_INDIC AS MESSAGE_TYPE_INDIC_T3, " +
+					    "T3.DOC_TYPE_IN AS DOC_TYPE_IN_T3";
+
+			}
 			if (!cloud.equalsIgnoreCase("Y")) {
-				query += selectColumns.toString() + " ," + headerQuery + " FROM " + vObject.getSourceTable() + " T1,"
-						+ vObject.getCbkFileName() + " ";
-//				query += versionNo;
-				if (ValidationUtil.isValid(filter)) {
-					query += " where " + filter + " AND ";
-				}
-//				else {
-//					query += " where ";
-//				}
+			    query += selectColumns.toString() + " ," + headerQuery + " FROM " + vObject.getSourceTable() + " T1"
+			            + vObject.getCbkFileName() + " ";
 			} else {
-				query += selectColumns.toString() + " ," + headerQuery + " FROM " + vObject.getSourceTable() + " T1,"
-						+ vObject.getCbkFileName();
-//				query += versionNo;
-				if (ValidationUtil.isValid(filter)) {
-					query += " where " + filter + " AND ";
-				} else {
-					query += " where ";
-				}
-				String cond = "      T1.COUNTRY = T3.COUNTRY    AND T1.LE_BOOK = T3.LE_BOOK"
-						+ "       AND T1.CUSTOMER_ID = T3.CUSTOMER_ID"
-						+ "       AND T1.MESSAGE_REF_ID = T2.MESSAGE_REF_ID";
-				query += cond;
+			    query += selectColumns.toString() + " ," + headerQuery + " FROM " + vObject.getSourceTable() + " T1, "
+			            + vObject.getCbkFileName() + " ";
+			    String cond = " T1.COUNTRY = T3.COUNTRY AND T1.LE_BOOK = T3.LE_BOOK ";
+			    query += " WHERE " + cond;
 			}
+
+			// Add filter condition
+			if (ValidationUtil.isValid(filter)) {
+			    if (query.toLowerCase().contains(" where ")) {
+			        query += " AND " + filter;
+			    } else {
+			        query += " WHERE " + filter;
+			    }
+			}
+
+			// Add source table filter condition
 			if (ValidationUtil.isValid(vObject.getSourceTableFilter())
-					&& !"NA".equalsIgnoreCase(vObject.getSourceTableFilter())) {
-				query += " where " + vObject.getSourceTableFilter();
+			        && !"NA".equalsIgnoreCase(vObject.getSourceTableFilter())) {
+			    if (query.toLowerCase().contains(" where ")) {
+			        query += " AND " + vObject.getSourceTableFilter();
+			    } else {
+			        query += " WHERE " + vObject.getSourceTableFilter();
+			    }
 			}
 
-			String oderBy = " ORDER BY ROW_ID ";
+			String orderBy = " ORDER BY ROW_ID";
+			query = query.concat(orderBy);
 
-			query = query.concat(oderBy);
 			String tmpFilePath = System.getProperty("java.io.tmpdir");
 			String xmlFilePath = tmpFilePath + File.separator + vObject.getSourceTable() + ".xml";
 
@@ -2953,10 +2977,11 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 						int columnCount = metaData.getColumnCount();
 						Map<String, String> columnNameMap = new HashMap<>(); // Only stores column name mappings
 
+						
 						for (int i = 1; i <= columnCount; i++) {
-							String originalColumnName = metaData.getColumnLabel(i);
-							String normalizedKey = originalColumnName.replaceAll("_", "").toUpperCase();
-							columnNameMap.put(normalizedKey, originalColumnName);
+						    String originalColumnName = metaData.getColumnLabel(i);
+						    String normalizedKey = originalColumnName.replaceAll("_", "").toUpperCase();
+						    columnNameMap.put(normalizedKey, originalColumnName); 
 						}
 						int row = rs.getRow();
 
@@ -2984,45 +3009,38 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 //							tagElement(xmlBuilder, "crs:ReportingPeriod", rs.getString("REPORTING_PERIOD"));
 //							tagElement(xmlBuilder, "crs:Timestamp", rs.getString("Timestamp"));
 //							xmlBuilder.append("</crs:MessageSpec>");
-
+							
 							/* modified by gokulkumar */
 							xmlBuilder.append("<crs:MessageSpec>");
 							if (columnNameMap.containsKey("SENDINGCOMPANYIN")) {
-								tagElement(xmlBuilder, "crs:SendingCompanyIN",
-										rs.getString(columnNameMap.get("SENDINGCOMPANYIN")));
+							    tagElement(xmlBuilder, "crs:SendingCompanyIN", rs.getString(columnNameMap.get("SENDINGCOMPANYIN")));
 							}
 							if (columnNameMap.containsKey("TRANSMITTINGCOUNTRY")) {
-								tagElement(xmlBuilder, "crs:TransmittingCountry",
-										rs.getString(columnNameMap.get("TRANSMITTINGCOUNTRY")));
+							    tagElement(xmlBuilder, "crs:TransmittingCountry", rs.getString(columnNameMap.get("TRANSMITTINGCOUNTRY")));
 							}
 							if (columnNameMap.containsKey("RECEIVINGCOUNTRY")) {
-								tagElement(xmlBuilder, "crs:ReceivingCountry",
-										rs.getString(columnNameMap.get("RECEIVINGCOUNTRY")));
+							    tagElement(xmlBuilder, "crs:ReceivingCountry", rs.getString(columnNameMap.get("RECEIVINGCOUNTRY")));
 							}
 							if (columnNameMap.containsKey("MESSAGETYPE")) {
-								tagElement(xmlBuilder, "crs:MessageType",
-										rs.getString(columnNameMap.get("MESSAGETYPE")));
+							    tagElement(xmlBuilder, "crs:MessageType", rs.getString(columnNameMap.get("MESSAGETYPE")));
 							}
 							if (columnNameMap.containsKey("WARNING")) {
-								tagElement(xmlBuilder, "crs:Warning", rs.getString(columnNameMap.get("WARNING")));
+							    tagElement(xmlBuilder, "crs:Warning", rs.getString(columnNameMap.get("WARNING")));
 							}
 							if (columnNameMap.containsKey("CONTACT")) {
-								tagElement(xmlBuilder, "crs:Contact", rs.getString(columnNameMap.get("CONTACT")));
+							    tagElement(xmlBuilder, "crs:Contact", rs.getString(columnNameMap.get("CONTACT")));
 							}
 							if (columnNameMap.containsKey("MESSAGEREFID")) {
-								tagElement(xmlBuilder, "crs:MessageRefId",
-										rs.getString(columnNameMap.get("MESSAGEREFID")));
+							    tagElement(xmlBuilder, "crs:MessageRefId", rs.getString(columnNameMap.get("MESSAGEREFID")));
 							}
 							if (columnNameMap.containsKey("MESSAGETYPEINDIC")) {
-								tagElement(xmlBuilder, "crs:MessageTypeIndic",
-										rs.getString(columnNameMap.get("MESSAGETYPEINDIC")));
+							    tagElement(xmlBuilder, "crs:MessageTypeIndic", rs.getString(columnNameMap.get("MESSAGETYPEINDIC")));
 							}
 							if (columnNameMap.containsKey("REPORTINGPERIOD")) {
-								tagElement(xmlBuilder, "crs:ReportingPeriod",
-										rs.getString(columnNameMap.get("REPORTINGPERIOD")));
+							    tagElement(xmlBuilder, "crs:ReportingPeriod", rs.getString(columnNameMap.get("REPORTINGPERIOD")));
 							}
 							if (columnNameMap.containsKey("TIMESTAMP")) {
-								tagElement(xmlBuilder, "crs:Timestamp", rs.getString(columnNameMap.get("TIMESTAMP")));
+							    tagElement(xmlBuilder, "crs:Timestamp", rs.getString(columnNameMap.get("TIMESTAMP")));
 							}
 
 							xmlBuilder.append("</crs:MessageSpec>");
@@ -3034,26 +3052,28 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 //							tagElementWithAttribute(xmlBuilder, "crs:IN", rs.getString("SENDING_COMPANY_IN"),
 //									"issuedBy", rs.getString("ENTITY_COUNTRY_CODE"));
 //							tagElement(xmlBuilder, "crs:Name", rs.getString("ENTITY_NAME"));
-
+							
 							/* modified by gokulkumar */
 							// CRS Body
 							xmlBuilder.append("<crs:CrsBody>");
 							xmlBuilder.append("<crs:ReportingFI>");
 
 							if (columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
-								tagElement(xmlBuilder, "crs:ResCountryCode",
-										rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
+							    tagElement(xmlBuilder, "crs:ResCountryCode", rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
 							}
-							if (columnNameMap.containsKey("SENDINGCOMPANYIN")
-									&& columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
-								tagElementWithAttribute(xmlBuilder, "crs:IN",
-										rs.getString(columnNameMap.get("SENDINGCOMPANYIN")), "issuedBy",
-										rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
+							if (columnNameMap.containsKey("SENDINGCOMPANYIN") && columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
+							    tagElementWithAttribute(xmlBuilder,
+							        "crs:IN",
+							        rs.getString(columnNameMap.get("SENDINGCOMPANYIN")),
+							        "issuedBy",
+							        rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE"))
+							    );
 							}
 							if (columnNameMap.containsKey("ENTITYNAME")) {
-								tagElement(xmlBuilder, "crs:Name", rs.getString(columnNameMap.get("ENTITYNAME")));
+							    tagElement(xmlBuilder, "crs:Name", rs.getString(columnNameMap.get("ENTITYNAME")));
 							}
-
+							
+							
 							// Address
 //							xmlBuilder.append(
 //									"<crs:Address legalAddressType=\"" + rs.getString("LEGAL_ADDRESS_TYPE") + "\">");
@@ -3065,36 +3085,34 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 //							tagElement(xmlBuilder, "cfc:City", rs.getString("ENTITY_CITY"));
 //							xmlBuilder.append("</cfc:AddressFix>");
 //							xmlBuilder.append("</crs:Address>");
-
+							
 							/* modified by gokulkumar */
 							// Address
 							if (columnNameMap.containsKey("LEGALADDRESSTYPE")) {
-								xmlBuilder.append("<crs:Address legalAddressType=\"")
-										.append(rs.getString(columnNameMap.get("LEGALADDRESSTYPE"))).append("\">");
+							    xmlBuilder.append("<crs:Address legalAddressType=\"")
+							              .append(rs.getString(columnNameMap.get("LEGALADDRESSTYPE")))
+							              .append("\">");
 
-								if (columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
-									tagElement(xmlBuilder, "cfc:CountryCode",
-											rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
-								}
+							    if (columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
+							        tagElement(xmlBuilder, "cfc:CountryCode", rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
+							    }
 
-								xmlBuilder.append("<cfc:AddressFix>");
+							    xmlBuilder.append("<cfc:AddressFix>");
 
-								if (columnNameMap.containsKey("ENTITYSTREET")) {
-									tagElement(xmlBuilder, "cfc:Street",
-											rs.getString(columnNameMap.get("ENTITYSTREET")));
-								}
+							    if (columnNameMap.containsKey("ENTITYSTREET")) {
+							        tagElement(xmlBuilder, "cfc:Street", rs.getString(columnNameMap.get("ENTITYSTREET")));
+							    }
 
-								if (columnNameMap.containsKey("ENTITYBUILDINGIDENTIFIER")) {
-									tagElement(xmlBuilder, "cfc:BuildingIdentifier",
-											rs.getString(columnNameMap.get("ENTITYBUILDINGIDENTIFIER")));
-								}
+							    if (columnNameMap.containsKey("ENTITYBUILDINGIDENTIFIER")) {
+							        tagElement(xmlBuilder, "cfc:BuildingIdentifier", rs.getString(columnNameMap.get("ENTITYBUILDINGIDENTIFIER")));
+							    }
 
-								if (columnNameMap.containsKey("ENTITYCITY")) {
-									tagElement(xmlBuilder, "cfc:City", rs.getString(columnNameMap.get("ENTITYCITY")));
-								}
+							    if (columnNameMap.containsKey("ENTITYCITY")) {
+							        tagElement(xmlBuilder, "cfc:City", rs.getString(columnNameMap.get("ENTITYCITY")));
+							    }
 
-								xmlBuilder.append("</cfc:AddressFix>");
-								xmlBuilder.append("</crs:Address>");
+							    xmlBuilder.append("</cfc:AddressFix>");
+							    xmlBuilder.append("</crs:Address>");
 							}
 
 							// DocSpec
@@ -3104,18 +3122,17 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 //							xmlBuilder.append("</crs:DocSpec>");
 //							xmlBuilder.append("</crs:ReportingFI>");
 //							xmlBuilder.append("<crs:ReportingGroup>");
-
+							
 							/* modified by gokulkumar */
 							// DocSpec
 							xmlBuilder.append("<crs:DocSpec>");
 
 							if (columnNameMap.containsKey("DOCTYPEINDIC")) {
-								tagElement(xmlBuilder, "stf:DocTypeIndic",
-										rs.getString(columnNameMap.get("DOCTYPEINDIC")));
+							    tagElement(xmlBuilder, "stf:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
 							}
 
 							if (columnNameMap.containsKey("MESSAGEREFID")) {
-								tagElement(xmlBuilder, "stf:DocRefId", rs.getString(columnNameMap.get("MESSAGEREFID")));
+							    tagElement(xmlBuilder, "stf:DocRefId", rs.getString(columnNameMap.get("MESSAGEREFID")));
 							}
 
 							xmlBuilder.append("</crs:DocSpec>");
@@ -3128,18 +3145,19 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 						xmlBuilder.append("<crs:AccountReport>");
 						xmlBuilder.append("<crs:DocSpec>");
 //						tagElement(xmlBuilder, "stf:DocTypeIndic", rs.getString("DOC_TYPE_IN"));
-
+						
 						if (columnNameMap.containsKey("DOCTYPEINDIC")) {
-							tagElement(xmlBuilder, "stf:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
+						    tagElement(xmlBuilder, "stf:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
 						}
-
+						
 //						tagElement(xmlBuilder, "stf:DocRefId", rs.getString("DOC_REF_ID"));
-
+						
 						if (columnNameMap.containsKey("DOCREFID")) {
-							tagElement(xmlBuilder, "stf:DocRefId", rs.getString(columnNameMap.get("DOCREFID")));
+						    tagElement(xmlBuilder, "stf:DocRefId", rs.getString(columnNameMap.get("DOCREFID")));
 						}
 						xmlBuilder.append("</crs:DocSpec>");
-
+					 
+						
 //						tagElementWithAttributes(xmlBuilder, "crs:AccountNumber", rs.getString("ACCOUNT_NUMBER"),
 //								"AcctNumberType", rs.getString("ACCOUNT_TYPE"), "UndocumentedAccount",
 //								// String.valueOf(rs.getString("TAX_ID_NUMBER") == null), "ClosedAccount",
@@ -3148,31 +3166,33 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 //										|| "CLOSED".equalsIgnoreCase(rs.getString("ACCOUNT_STATUS"))),
 //								"DormantAccount",
 //								String.valueOf("DORMANT".equalsIgnoreCase(rs.getString("ACCOUNT_STATUS"))));
-
+						
 						/* modified by gokulkumar */
 						String accountNumber = columnNameMap.containsKey("ACCOUNTNUMBER")
-								? rs.getString(columnNameMap.get("ACCOUNTNUMBER"))
-								: null;
+							    ? rs.getString(columnNameMap.get("ACCOUNTNUMBER")) : null;
 
-						String accountType = columnNameMap.containsKey("ACCOUNTTYPE")
-								? rs.getString(columnNameMap.get("ACCOUNTTYPE"))
-								: "";
+							String accountType = columnNameMap.containsKey("ACCOUNTTYPE")
+							    ? rs.getString(columnNameMap.get("ACCOUNTTYPE")) : "";
 
-						String accountStatus = columnNameMap.containsKey("ACCOUNTSTATUS")
-								? rs.getString(columnNameMap.get("ACCOUNTSTATUS"))
-								: null;
+							String accountStatus = columnNameMap.containsKey("ACCOUNTSTATUS")
+							    ? rs.getString(columnNameMap.get("ACCOUNTSTATUS")) : null;
 
-						if (accountNumber != null) {
-							tagElementWithAttributes(xmlBuilder, "crs:AccountNumber", accountNumber, "AcctNumberType",
-									accountType, "UndocumentedAccount", "false", // hardcoded as in original
-									"ClosedAccount",
-									accountStatus != null && ("INACTIVE".equalsIgnoreCase(accountStatus)
-											|| "CLOSED".equalsIgnoreCase(accountStatus)) ? "true" : "false",
-									"DormantAccount",
-									accountStatus != null && "DORMANT".equalsIgnoreCase(accountStatus) ? "true"
-											: "false");
-						}
+							if (accountNumber != null) {
+							    tagElementWithAttributes(
+							        xmlBuilder,
+							        "crs:AccountNumber",
+							        accountNumber,
+							        "AcctNumberType", accountType,
+							        "UndocumentedAccount", "false", // hardcoded as in original
+							        "ClosedAccount", accountStatus != null &&
+							            ("INACTIVE".equalsIgnoreCase(accountStatus) || "CLOSED".equalsIgnoreCase(accountStatus)) ? "true" : "false",
+							        "DormantAccount", accountStatus != null &&
+							            "DORMANT".equalsIgnoreCase(accountStatus) ? "true" : "false"
+							    );
+							}
 
+						
+						
 //						// AccountHolder
 //						xmlBuilder.append("<crs:AccountHolder>");
 //						xmlBuilder.append("<crs:Individual>");
@@ -3188,38 +3208,35 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 //						tagElement(xmlBuilder, "crs:FirstName", rs.getString("FIRST_NAME"));
 //						tagElement(xmlBuilder, "crs:LastName", rs.getString("LAST_NAME"));
 //						xmlBuilder.append("</crs:Name>");
-
-						/* modified by gokulkumar */
+						
+							/* modified by gokulkumar */
 						// AccountHolder
 						xmlBuilder.append("<crs:AccountHolder>");
 						xmlBuilder.append("<crs:Individual>");
 						// ResCountryCode
 						if (columnNameMap.containsKey("RESCOUNTRYCODE")) {
-							tagElement(xmlBuilder, "crs:ResCountryCode",
-									rs.getString(columnNameMap.get("RESCOUNTRYCODE")));
+						    tagElement(xmlBuilder, "crs:ResCountryCode", rs.getString(columnNameMap.get("RESCOUNTRYCODE")));
 						}
 						// TIN with attribute "issuedBy"
-						String taxIdNumber = columnNameMap.containsKey("TAXIDNUMBER")
-								? rs.getString(columnNameMap.get("TAXIDNUMBER"))
-								: null;
-						String resCountryCode = columnNameMap.containsKey("RESCOUNTRYCODE")
-								? rs.getString(columnNameMap.get("RESCOUNTRYCODE"))
-								: null;
+						String taxIdNumber = columnNameMap.containsKey("TAXIDNUMBER") 
+						        ? rs.getString(columnNameMap.get("TAXIDNUMBER")) : null;
+						String resCountryCode = columnNameMap.containsKey("RESCOUNTRYCODE") 
+						        ? rs.getString(columnNameMap.get("RESCOUNTRYCODE")) : null;
 
 						if (taxIdNumber != null) {
-							tagElementWithAttribute(xmlBuilder, "crs:TIN", taxIdNumber, "issuedBy",
-									resCountryCode != null ? resCountryCode : "");
+						    tagElementWithAttribute(xmlBuilder, "crs:TIN", taxIdNumber, "issuedBy", resCountryCode != null ? resCountryCode : "");
 						}
 						// Name section
 						xmlBuilder.append("<crs:Name>");
 						if (columnNameMap.containsKey("FIRSTNAME")) {
-							tagElement(xmlBuilder, "crs:FirstName", rs.getString(columnNameMap.get("FIRSTNAME")));
+						    tagElement(xmlBuilder, "crs:FirstName", rs.getString(columnNameMap.get("FIRSTNAME")));
 						}
 
 						if (columnNameMap.containsKey("LASTNAME")) {
-							tagElement(xmlBuilder, "crs:LastName", rs.getString(columnNameMap.get("LASTNAME")));
+						    tagElement(xmlBuilder, "crs:LastName", rs.getString(columnNameMap.get("LASTNAME")));
 						}
 						xmlBuilder.append("</crs:Name>");
+
 
 						// address
 
@@ -3235,45 +3252,46 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 //						tagElement(xmlBuilder, "cfc:City", rs.getString("CITY") != null ? rs.getString("CITY") : "");
 //						xmlBuilder.append("</cfc:AddressFix>");
 //						xmlBuilder.append("</crs:Address>");
-
+						
 						/* modified by gokulkumar */
 						// address
 						xmlBuilder.append("<crs:Address>");
 
 						// CountryCode
 						if (columnNameMap.containsKey("COUNTRYCODE")) {
-							tagElement(xmlBuilder, "cfc:CountryCode", rs.getString(columnNameMap.get("COUNTRYCODE")));
+						    tagElement(xmlBuilder, "cfc:CountryCode", rs.getString(columnNameMap.get("COUNTRYCODE")));
 						}
 
 						xmlBuilder.append("<cfc:AddressFix>");
 
 						// Street
 						if (columnNameMap.containsKey("STREET")) {
-							String street = rs.getString(columnNameMap.get("STREET"));
-							tagElement(xmlBuilder, "cfc:Street", street != null ? street : "");
+						    String street = rs.getString(columnNameMap.get("STREET"));
+						    tagElement(xmlBuilder, "cfc:Street", street != null ? street : "");
 						}
 
 						// BuildingIdentifier
 						if (columnNameMap.containsKey("BUILDINGIDENTIFIER")) {
-							String buildingId = rs.getString(columnNameMap.get("BUILDINGIDENTIFIER"));
-							tagElement(xmlBuilder, "cfc:BuildingIdentifier", buildingId != null ? buildingId : "");
+						    String buildingId = rs.getString(columnNameMap.get("BUILDINGIDENTIFIER"));
+						    tagElement(xmlBuilder, "cfc:BuildingIdentifier", buildingId != null ? buildingId : "");
 						}
 
 						// PostCode
 						if (columnNameMap.containsKey("POSTCODE")) {
-							String postCode = rs.getString(columnNameMap.get("POSTCODE"));
-							tagElement(xmlBuilder, "cfc:PostCode", postCode != null ? postCode : "");
+						    String postCode = rs.getString(columnNameMap.get("POSTCODE"));
+						    tagElement(xmlBuilder, "cfc:PostCode", postCode != null ? postCode : "");
 						}
 
 						// City
 						if (columnNameMap.containsKey("CITY")) {
-							String city = rs.getString(columnNameMap.get("CITY"));
-							tagElement(xmlBuilder, "cfc:City", city != null ? city : "");
+						    String city = rs.getString(columnNameMap.get("CITY"));
+						    tagElement(xmlBuilder, "cfc:City", city != null ? city : "");
 						}
 
 						xmlBuilder.append("</cfc:AddressFix>");
 						xmlBuilder.append("</crs:Address>");
 
+						
 						// bIRTH INFO
 //						xmlBuilder.append("<crs:BirthInfo>");
 //						tagElement(xmlBuilder, "crs:BirthDate",
@@ -3282,62 +3300,70 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 //
 //						xmlBuilder.append("</crs:Individual>");
 //						xmlBuilder.append("</crs:AccountHolder>");
-
+						
+						
 						/* modified by gokulkumar */
 						// BirthInfo
 						xmlBuilder.append("<crs:BirthInfo>");
 						if (columnNameMap.containsKey("DATEOFBIRTH")) {
-							String birthDate = rs.getString(columnNameMap.get("DATEOFBIRTH"));
-							tagElement(xmlBuilder, "crs:BirthDate", birthDate != null ? birthDate : "");
+						    String birthDate = rs.getString(columnNameMap.get("DATEOFBIRTH"));
+						    tagElement(xmlBuilder, "crs:BirthDate", birthDate != null ? birthDate : "");
 						}
 						xmlBuilder.append("</crs:BirthInfo>");
 						xmlBuilder.append("</crs:Individual>");
 						xmlBuilder.append("</crs:AccountHolder>");
 
+
 						// Account Balance
 //						tagElementWithAttribute(xmlBuilder, "crs:AccountBalance",
 //								rs.getString("ACCOUNT_BALANCE") != null ? rs.getString("ACCOUNT_BALANCE") : "",
 //								"currCode", rs.getString("ACCT_CURRENCY"));
-
+						
 						/* modified by gokulkumar */
 						// Account Balance
 						String accountBalance = columnNameMap.containsKey("ACCOUNTBALANCE")
-								? rs.getString(columnNameMap.get("ACCOUNTBALANCE"))
-								: null;
+						        ? rs.getString(columnNameMap.get("ACCOUNTBALANCE")) : null;
 
 						String acctCurrency = columnNameMap.containsKey("ACCTCURRENCY")
-								? rs.getString(columnNameMap.get("ACCTCURRENCY"))
-								: null;
+						        ? rs.getString(columnNameMap.get("ACCTCURRENCY")) : null;
 
 						if (accountBalance != null) {
-							tagElementWithAttribute(xmlBuilder, "crs:AccountBalance", accountBalance, "currCode",
-									acctCurrency != null ? acctCurrency : "");
+						    tagElementWithAttribute(
+						        xmlBuilder,
+						        "crs:AccountBalance",
+						        accountBalance,
+						        "currCode", acctCurrency != null ? acctCurrency : ""
+						    );
 						}
 
+						
 						// Payment
 //						xmlBuilder.append("<crs:Payment>");
 //						tagElement(xmlBuilder, "crs:Type", "CRS502");
 //						tagElementWithAttribute(xmlBuilder, "crs:PaymentAmnt",
 //								rs.getString("FD_INT_PAID") != null ? rs.getString("FD_INT_PAID") : "", "currCode",
 //								rs.getString("ACCT_CURRENCY"));
-
+						
 						/* modified by gokulkumar */
 						// Payment
 						xmlBuilder.append("<crs:Payment>");
 						tagElement(xmlBuilder, "crs:Type", "CRS502"); // hardcoded value
 
 						String fdIntPaid = columnNameMap.containsKey("FDINTPAID")
-								? rs.getString(columnNameMap.get("FDINTPAID"))
-								: null;
+						        ? rs.getString(columnNameMap.get("FDINTPAID")) : null;
 
 						String Currency = columnNameMap.containsKey("ACCTCURRENCY")
-								? rs.getString(columnNameMap.get("ACCTCURRENCY"))
-								: null;
+						        ? rs.getString(columnNameMap.get("ACCTCURRENCY")) : null;
 
 						if (fdIntPaid != null) {
-							tagElementWithAttribute(xmlBuilder, "crs:PaymentAmnt", fdIntPaid, "currCode",
-									Currency != null ? Currency : "");
+						    tagElementWithAttribute(
+						        xmlBuilder,
+						        "crs:PaymentAmnt",
+						        fdIntPaid,
+						        "currCode", Currency != null ? Currency : ""
+						    );
 						}
+
 
 						xmlBuilder.append("</crs:Payment>");
 
@@ -3443,8 +3469,12 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 	public ExceptionCode templateValidation(TemplateScheduleVb templateScheduleVb) {
 		ExceptionCode exceptionCode = new ExceptionCode();
 		String Status = "";
+		if(!"Y".equalsIgnoreCase(cloud)) {
 		exceptionCode = callProcTovalidateTemplate(templateScheduleVb);
-
+		}else {
+			exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
+		}
+		
 		if (exceptionCode.getErrorCode() != Constants.SUCCESSFUL_OPERATION) {
 			templateScheduleCronDao.updateProcessControl("VE", templateScheduleVb, false);
 			templateScheduleCronDao.updateProcessControlheader("VE", "", "", templateScheduleVb);
@@ -3632,35 +3662,31 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 		setServiceDefaults();
 		String sql = " INSERT INTO RG_TEMPLATES_COMMENTS (TEMPLATE_ID, SUBMISSION_DATE, REPORTING_DATE, COUNTRY, "
 				+ " LE_BOOK, COMMENTS, MAKER, VERIFIER, STATUS, RECORD_INDICATOR, DATE_LAST_MODIFIED, DATE_CREATION) "
-				+ " VALUES ( ?," + dateConvert + "," + dateConvert + ",?,?,?,?,?,?,?," + getDbFunction("SYSDATE") + ","
-				+ getDbFunction("SYSDATE") + ")";
+				+ " VALUES ( ?,"+dateConvert+","+dateConvert+",?,?,?,?,?,?,?," + getDbFunction("SYSDATE") + "," + getDbFunction("SYSDATE") + ")";
 		Object[] args = { vObject.getTemplateId(), vObject.getSubmissionDate(), vObject.getReportingDate(),
 				vObject.getCountry(), vObject.getLeBook(), vObject.getComments(), intCurrentUserId, intCurrentUserId,
-				vObject.getProcessStatus(), vObject.getRecordIndicator() };
+				vObject.getProcessStatus(),vObject.getRecordIndicator() };
 		return getJdbcTemplate().update(sql, args);
 	}
-
-	public ArrayList<TemplateScheduleVb> getCommmentsLst(TemplateScheduleVb vObject) {
+	public ArrayList<TemplateScheduleVb> getCommmentsLst(TemplateScheduleVb vObject){
 		ArrayList<TemplateScheduleVb> collTemp = new ArrayList<>();
 		try {
 			String sql = " SELECT TEMPLATE_ID, SUBMISSION_DATE, REPORTING_DATE, STATUS_AT, RECORD_INDICATOR_AT, COUNTRY, LE_BOOK, COMMENTS, MAKER, "
 					+ " VERIFIER, STATUS, RECORD_INDICATOR, "
 					+ dbFunctionFormats("TAPPR.DATE_LAST_MODIFIED", "DATETIME_FORMAT", null)
 					+ " DATE_LAST_MODIFIED,TAPPR.DATE_LAST_MODIFIED DATE_LAST_MODIFIED_1," + " "
-					+ dbFunctionFormats("TAPPR.DATE_CREATION", "DATETIME_FORMAT", null) + " DATE_CREATION ," + " "
-					+ makerApprDesc + " , " + verifierApprDesc + " , "
-					+ recordIndicatorAtDesc.replaceAll("T1.", "TAPPR.") + " FROM RG_TEMPLATES_COMMENTS TAPPR "
-					+ " where COUNTRY= ? AND " + " LE_BOOK= ? AND TEMPLATE_ID= ? AND SUBMISSION_DATE= " + dateConvert
-					+ " AND REPORTING_DATE= " + dateConvert + "ORDER BY DATE_LAST_MODIFIED_1 DESC ";
-			Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getTemplateId(),
-					vObject.getSubmissionDate(), vObject.getReportingDate() };
-			collTemp = (ArrayList<TemplateScheduleVb>) getJdbcTemplate().query(sql, args, getCommentsMapper());
-		} catch (Exception e) {
+					+ dbFunctionFormats("TAPPR.DATE_CREATION", "DATETIME_FORMAT", null) + " DATE_CREATION ,"
+					+ " "+makerApprDesc +" , "+verifierApprDesc +" , "+recordIndicatorAtDesc.replaceAll("T1.", "TAPPR.")
+					+ " FROM RG_TEMPLATES_COMMENTS TAPPR " + " where COUNTRY= ? AND "
+					+ " LE_BOOK= ? AND TEMPLATE_ID= ? AND SUBMISSION_DATE= " + dateConvert + " AND REPORTING_DATE= "
+					+ dateConvert +"ORDER BY DATE_LAST_MODIFIED_1 DESC ";
+			Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getTemplateId(),vObject.getSubmissionDate(),vObject.getReportingDate()};
+			collTemp = (ArrayList<TemplateScheduleVb>) getJdbcTemplate().query(sql, args,getCommentsMapper());
+		} catch(Exception e) {
 			e.printStackTrace();
 		}
 		return collTemp;
 	}
-
 	protected RowMapper getCommentsMapper() {
 		RowMapper mapper = new RowMapper() {
 			@Override
@@ -3685,7 +3711,6 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 		};
 		return mapper;
 	}
-
 	public int insertIntoAuthToken(String token, Timestamp validTill) {
 //
 //	    StringBuilder columns = new StringBuilder("AUTH_TOKEN, VALID_TILL, STATUS_NT, STATUS");
@@ -3714,45 +3739,49 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 		return getJdbcTemplate().update(sql, argsList.toArray());
 
 	}
-
 	public void markTokenAsExpired(String token) {
-		String updateSql = "UPDATE RG_AUTH_TOKEN SET STATUS = 9 WHERE AUTH_TOKEN = ?";
-		getJdbcTemplate().update(updateSql, token);
+	    String updateSql = "UPDATE RG_AUTH_TOKEN SET STATUS = 9 WHERE AUTH_TOKEN = ?";
+	    getJdbcTemplate().update(updateSql, token);
 	}
-
 	public Map<String, Object> fetchActiveAuthToken() {
-		String sql = "SELECT AUTH_TOKEN, VALID_TILL FROM RG_AUTH_TOKEN  WHERE STATUS = 1 ORDER BY VALID_TILL DESC  ";
+	    String sql = "SELECT AUTH_TOKEN, VALID_TILL FROM RG_AUTH_TOKEN  WHERE STATUS = 1 ORDER BY VALID_TILL DESC  ";
 
-		try {
-			return getJdbcTemplate().queryForMap(sql);
-		} catch (Exception e) {
-			return null;
-		}
+	    try {
+	        return getJdbcTemplate().queryForMap(sql);
+	    } catch (Exception e) {
+	        return null;
+	    }
 	}
 
 	public TemplateScheduleVb fetchTemplateSchedule() {
-		String sql = " SELECT T1.COUNTRY, T1.LE_BOOK, T1.TEMPLATE_ID, " +
+	    String sql = " SELECT T1.COUNTRY, T1.LE_BOOK, T1.TEMPLATE_ID, " +
 //	                 "T1.REPORTING_DATE, T1.SUBMISSION_DATE " +
-				dateFormat + "      (T1.SUBMISSION_DATE ," + formatdate + ")SUBMISSION_DATE," + dateFormat
-				+ "      (T1.REPORTING_DATE ," + formatdate + ")REPORTING_DATE "
-				+ " FROM rg_templates_header T1, Rg_Process_Controls T2 " + " WHERE T1.COUNTRY = T2.COUNTRY "
-				+ " AND T1.LE_BOOK = T2.LE_BOOK " + " AND T1.TEMPLATE_ID = T2.TEMPLATE_ID "
-				+ " AND T1.STATUS = T2.RG_PROCESS_STATUS " + " AND T1.STATUS IN ('SI')" + "AND T1.INTERNAL_STATUS  = 1";
+	              dateFormat + "      (T1.SUBMISSION_DATE ," + formatdate
+						+ ")SUBMISSION_DATE,"+
+						  dateFormat + "      (T1.REPORTING_DATE ," + formatdate
+							+ ")REPORTING_DATE " +
+	                 " FROM rg_templates_header T1, Rg_Process_Controls T2 " +
+	                 " WHERE T1.COUNTRY = T2.COUNTRY " +
+	                 " AND T1.LE_BOOK = T2.LE_BOOK " +
+	                 " AND T1.TEMPLATE_ID = T2.TEMPLATE_ID " +
+	                 " AND T1.STATUS = T2.RG_PROCESS_STATUS " +
+	                 " AND T1.STATUS IN ('SI')"
+	                 + "AND T1.INTERNAL_STATUS  = 1";
 
-		List<TemplateScheduleVb> result = jdbcTemplate.query(sql, new RowMapper<TemplateScheduleVb>() {
-			@Override
-			public TemplateScheduleVb mapRow(ResultSet rs, int rowNum) throws SQLException {
-				TemplateScheduleVb vb = new TemplateScheduleVb();
-				vb.setCountry(rs.getString("COUNTRY"));
-				vb.setLeBook(rs.getString("LE_BOOK"));
-				vb.setTemplateId(rs.getString("TEMPLATE_ID"));
-				vb.setReportingDate(rs.getString("REPORTING_DATE"));
-				vb.setSubmissionDate(rs.getString("SUBMISSION_DATE"));
-				return vb;
-			}
-		});
+	    List<TemplateScheduleVb> result = jdbcTemplate.query(sql, new RowMapper<TemplateScheduleVb>() {
+	        @Override
+	        public TemplateScheduleVb mapRow(ResultSet rs, int rowNum) throws SQLException {
+	            TemplateScheduleVb vb = new TemplateScheduleVb();
+	            vb.setCountry(rs.getString("COUNTRY"));
+	            vb.setLeBook(rs.getString("LE_BOOK"));
+	            vb.setTemplateId(rs.getString("TEMPLATE_ID"));
+	            vb.setReportingDate(rs.getString("REPORTING_DATE"));
+	            vb.setSubmissionDate(rs.getString("SUBMISSION_DATE"));
+	            return vb;
+	        }
+	    });
 
-		return result.isEmpty() ? null : result.get(0);
+	    return result.isEmpty() ? null : result.get(0);
 	}
 
 	public TemplateScheduleVb fetchTemplatemailSchedule(TemplateScheduleVb templateScheduleVb) {
@@ -3795,4 +3824,5 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 
 		return result.isEmpty() ? null : result.get(0);
 	}
+
 }

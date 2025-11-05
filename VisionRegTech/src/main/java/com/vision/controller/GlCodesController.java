@@ -16,27 +16,27 @@ import com.vision.exception.ExceptionCode;
 import com.vision.exception.JSONExceptionCode;
 import com.vision.exception.RuntimeCustomException;
 import com.vision.util.Constants;
-import com.vision.vb.GLCodesVb;
+import com.vision.vb.GlCodesVb;
 import com.vision.vb.MenuVb;
-import com.vision.wb.GLCodesWb;
+import com.vision.wb.GlCodesWb;
 
 @RestController
 @RequestMapping("glCodes")
-//@Api(value = "glCodes", description = "GL Codes")
-public class GLCodesController{
+//@Api(value = "glCodes", description = "Gl Codes")
+public class GlCodesController{
 	@Autowired
-	GLCodesWb glCodesWb;
-	/*-------------------------------------GL Codes SCREEN PAGE LOAD------------------------------------------*/
+	GlCodesWb glCodesWb;
+	/*-------------------------------------Gl Codes SCREEN PAGE LOAD------------------------------------------*/
 	@RequestMapping(path = "/pageLoadValues", method = RequestMethod.GET)
-	//@ApiOperation(value = "Page Load Values", notes = "Load AT/NT Values on screen load", response = ResponseEntity.class)
+//	@ApiOperation(value = "Page Load Values", notes = "Load AT/NT Values on screen load", response = ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> pageOnLoad() {
 		JSONExceptionCode jsonExceptionCode = null;
 		try {
 			MenuVb menuVb = new MenuVb();
 			menuVb.setActionType("Clear");
-			System.out.println("PL Start : "+(new Date()).toString());
+
 			ArrayList arrayList = glCodesWb.getPageLoadValues();
-			System.out.println("PL End : "+(new Date()).toString());
+
 			jsonExceptionCode = new JSONExceptionCode(Constants.SUCCESSFUL_OPERATION, "Page Load Values", arrayList);
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 		} catch (RuntimeCustomException rex) {
@@ -45,14 +45,16 @@ public class GLCodesController{
 		}
 	}
 
-	/*------------------------------------GL Codes - FETCH HEADER RECORDS-------------------------------*/
+	/*------------------------------------Gl Codes - FETCH HEADER RECORDS-------------------------------*/
 	@RequestMapping(path = "/getAllQueryResults", method = RequestMethod.POST)
-	//@ApiOperation(value = "Get All profile Data",notes = "Fetch all the existing records from the table",response = ResponseEntity.class)
-	public ResponseEntity<JSONExceptionCode> getAllQueryResults(@RequestBody GLCodesVb vObject) {
+//	@ApiOperation(value = "Get All profile Data",notes = "Fetch all the existing records from the table",response = ResponseEntity.class)
+	public ResponseEntity<JSONExceptionCode> getAllQueryResults(@RequestBody GlCodesVb vObject) {
 		JSONExceptionCode jsonExceptionCode  = null;
 		try{
 			vObject.setActionType("Query");
+			System.out.println("Query Start : "+(new Date()).toString());
 			ExceptionCode exceptionCode = glCodesWb.getAllQueryPopupResult(vObject);
+			System.out.println("Query End : "+(new Date()).toString());
 			jsonExceptionCode = new JSONExceptionCode(Constants.SUCCESSFUL_OPERATION, "Query Results", exceptionCode.getResponse(),exceptionCode.getOtherInfo());
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 		}catch(RuntimeCustomException rex){
@@ -61,8 +63,8 @@ public class GLCodesController{
 		}	
 	}
 	@RequestMapping(path = "/getQueryDetails", method = RequestMethod.POST)
-	//@ApiOperation(value = "Get All ADF Schules",notes = "ADF Schules Details",response = ResponseEntity.class)
-	public ResponseEntity<JSONExceptionCode> queryDetails(@RequestBody GLCodesVb vObject) {
+//	@ApiOperation(value = "Get All ADF Schules",notes = "ADF Schules Details",response = ResponseEntity.class)
+	public ResponseEntity<JSONExceptionCode> queryDetails(@RequestBody GlCodesVb vObject) {
 		JSONExceptionCode jsonExceptionCode  = null;
 		try{
 			vObject.setActionType("Query");
@@ -74,10 +76,10 @@ public class GLCodesController{
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 		}	
 	}
-	/*-------------------------------------ADD GL Codes------------------------------------------*/
-	@RequestMapping(path = "/addGLCodes", method = RequestMethod.POST)
-	//@ApiOperation(value = "Add GL Codes", notes = "Add GL Codes", response = ResponseEntity.class)
-	public ResponseEntity<JSONExceptionCode> add(@RequestBody GLCodesVb vObject) {
+	/*-------------------------------------ADD Gl Codes------------------------------------------*/
+	@RequestMapping(path = "/addGlCodes", method = RequestMethod.POST)
+//	@ApiOperation(value = "Add Gl Codes", notes = "Add Gl Codes", response = ResponseEntity.class)
+	public ResponseEntity<JSONExceptionCode> add(@RequestBody GlCodesVb vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
 		try {
@@ -91,10 +93,10 @@ public class GLCodesController{
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 		}
 	}
-	/*-------------------------------------MODIFY GL Codes------------------------------------------*/
-	@RequestMapping(path = "/modifyGLCodes", method = RequestMethod.POST)
-	//@ApiOperation(value = "Modify GL Codes", notes = "Modify GL Codes Values", response = ResponseEntity.class)
-	public ResponseEntity<JSONExceptionCode> modify(@RequestBody GLCodesVb vObject) {
+	/*-------------------------------------MODIFY Gl Codes------------------------------------------*/
+	@RequestMapping(path = "/modifyGlCodes", method = RequestMethod.POST)
+//	@ApiOperation(value = "Modify Gl Codes", notes = "Modify Gl Codes Values", response = ResponseEntity.class)
+	public ResponseEntity<JSONExceptionCode> modify(@RequestBody GlCodesVb vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
 		try {
@@ -109,10 +111,10 @@ public class GLCodesController{
 		}
 	}
 
-	/*-------------------------------------DELETE GL Codes------------------------------------------*/
-	@RequestMapping(path = "/deleteGLCodes", method = RequestMethod.POST)
-	//@ApiOperation(value = "Delete GL Codes", notes = "Delete existing GL Codes", response = ResponseEntity.class)
-	public ResponseEntity<JSONExceptionCode> delete(@RequestBody GLCodesVb vObject) {
+	/*-------------------------------------DELETE Gl Codes------------------------------------------*/
+	@RequestMapping(path = "/deleteGlCodes", method = RequestMethod.POST)
+//	@ApiOperation(value = "Delete Gl Codes", notes = "Delete existing Gl Codes", response = ResponseEntity.class)
+	public ResponseEntity<JSONExceptionCode> delete(@RequestBody GlCodesVb vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
 		try {
@@ -127,10 +129,10 @@ public class GLCodesController{
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 		}
 	}
-	/*-------------------------------------Reject GL Codes------------------------------------------*/
-	@RequestMapping(path = "/rejectGLCodes", method = RequestMethod.POST)
-	//@ApiOperation(value = "Reject GL Codes", notes = "Reject existing GL Codes", response = ResponseEntity.class)
-	public ResponseEntity<JSONExceptionCode> reject(@RequestBody GLCodesVb vObject) {
+	/*-------------------------------------Reject Gl Codes------------------------------------------*/
+	@RequestMapping(path = "/rejectGlCodes", method = RequestMethod.POST)
+//	@ApiOperation(value = "Reject Gl Codes", notes = "Reject existing Gl Codes", response = ResponseEntity.class)
+	public ResponseEntity<JSONExceptionCode> reject(@RequestBody GlCodesVb vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
 		try {
@@ -146,9 +148,9 @@ public class GLCodesController{
 		}
 	}
 	
-	@RequestMapping(path = "/approveGLCodes", method = RequestMethod.POST)
-	//@ApiOperation(value = "Approve GL Codes", notes = "Approve existing GL Codes", response = ResponseEntity.class)
-	public ResponseEntity<JSONExceptionCode> approve(@RequestBody GLCodesVb vObject) {
+	@RequestMapping(path = "/approveGlCodes", method = RequestMethod.POST)
+//	@ApiOperation(value = "Approve Gl Codes", notes = "Approve existing Gl Codes", response = ResponseEntity.class)
+	public ResponseEntity<JSONExceptionCode> approve(@RequestBody GlCodesVb vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
 		try {
@@ -164,13 +166,13 @@ public class GLCodesController{
 		}
 	}
 	
-	@RequestMapping(path = "/bulkApproveGLCodes", method = RequestMethod.POST)
-	//@ApiOperation(value = "Approve GL Codes", notes = "Approve existing GL Codes", response = ResponseEntity.class)
-	public ResponseEntity<JSONExceptionCode> bulkApprove(@RequestBody List<GLCodesVb> vObjects) {
+	@RequestMapping(path = "/bulkApproveGlCodes", method = RequestMethod.POST)
+//	@ApiOperation(value = "Approve Gl Codes", notes = "Approve existing Gl Codes", response = ResponseEntity.class)
+	public ResponseEntity<JSONExceptionCode> bulkApprove(@RequestBody List<GlCodesVb> vObjects) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
 		try {
-			GLCodesVb vObject = new GLCodesVb();
+			GlCodesVb vObject = new GlCodesVb();
 			vObject.setActionType("Approve");
 			exceptionCode.setOtherInfo(vObject);
 			exceptionCode = glCodesWb.bulkApprove(vObjects, vObject);
@@ -183,13 +185,13 @@ public class GLCodesController{
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 		}
 	}
-	@RequestMapping(path = "/bulkRejectGLCodes", method = RequestMethod.POST)
-	//@ApiOperation(value = "Approve GL Codes", notes = "Approve existing GL Codes", response = ResponseEntity.class)
-	public ResponseEntity<JSONExceptionCode> bulkReject(@RequestBody List<GLCodesVb> vObjects) {
+	@RequestMapping(path = "/bulkRejectGlCodes", method = RequestMethod.POST)
+//	@ApiOperation(value = "Approve Gl Codes", notes = "Approve existing Gl Codes", response = ResponseEntity.class)
+	public ResponseEntity<JSONExceptionCode> bulkReject(@RequestBody List<GlCodesVb> vObjects) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
 		try {
-			GLCodesVb vObject = new GLCodesVb();
+			GlCodesVb vObject = new GlCodesVb();
 			vObject.setActionType("Reject");
 			exceptionCode.setOtherInfo(vObject);
 			exceptionCode = glCodesWb.bulkReject(vObjects, vObject);
@@ -203,9 +205,9 @@ public class GLCodesController{
 		}
 	}	
 	
-	@RequestMapping(path = "/reviewGLCodes", method = RequestMethod.POST)
-	//@ApiOperation(value = "Get Headers", notes = "Fetch all the existing records from the table", response = ResponseEntity.class)
-	public ResponseEntity<JSONExceptionCode> review(@RequestBody GLCodesVb vObject) {
+	@RequestMapping(path = "/reviewGlCodes", method = RequestMethod.POST)
+//	@ApiOperation(value = "Get Headers", notes = "Fetch all the existing records from the table", response = ResponseEntity.class)
+	public ResponseEntity<JSONExceptionCode> review(@RequestBody GlCodesVb vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		try {
 			vObject.setActionType("Query");

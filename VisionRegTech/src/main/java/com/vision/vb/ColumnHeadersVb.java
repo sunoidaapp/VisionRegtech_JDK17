@@ -26,7 +26,7 @@ public class ColumnHeadersVb implements Serializable {
 	private String scaling = "";
 	private String decimalCnt= "";
 	//private Boolean groupingFlag = false;
-	private String sumFlag = "Y";
+	private String sumFlag = "N";
 	private String groupingFlag = "N";
 	private String readOnly ="Y";
 	private String showValue = "N";

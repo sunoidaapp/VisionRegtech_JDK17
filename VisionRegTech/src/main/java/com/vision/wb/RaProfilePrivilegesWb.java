@@ -243,7 +243,7 @@ public class RaProfilePrivilegesWb extends AbstractDynaWorkerBean<RaProfileVb>{
 	protected ExceptionCode doValidate(RaProfileVb vObject){
 		ExceptionCode exceptionCode = null;
 		String operation = vObject.getActionType();
-		String srtRestrion = commonDao.getRestrictionsByUsers("50", operation);
+		String srtRestrion = commonDao.getRestrictionsByUsers("20", operation);
 		if(!"Y".equalsIgnoreCase(srtRestrion)) {
 			exceptionCode = new ExceptionCode();
 			exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);

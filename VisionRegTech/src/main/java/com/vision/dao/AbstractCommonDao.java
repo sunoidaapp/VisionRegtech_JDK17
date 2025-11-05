@@ -62,6 +62,9 @@ public abstract class AbstractCommonDao {
 	protected String verifierApprDesc =  "(SELECT MIN(USER_NAME) FROM VISION_USERS WHERE VISION_ID = "+nullFun+"(TAPPR.VERIFIER,0) ) VERIFIER_NAME";
 	protected String verifierPendDesc =  "(SELECT MIN(USER_NAME) FROM VISION_USERS WHERE VISION_ID = "+nullFun+"(TPend.VERIFIER,0) ) VERIFIER_NAME";
 	
+	String RecordIndicatorApprDesc = ValidationUtil.numAlphaTabDescritpionQuery("NT", 7, "TAppr.RECORD_INDICATOR", "RECORD_INDICATOR_DESC");
+	String RecordIndicatorPendDesc = ValidationUtil.numAlphaTabDescritpionQuery("NT", 7, "TPend.RECORD_INDICATOR", "RECORD_INDICATOR_DESC");	
+	
 	@Value("${app.databaseType}")
 	public void setDatabaseType(String privateName) {
 		AbstractCommonDao.databaseType = privateName;

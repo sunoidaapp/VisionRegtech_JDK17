@@ -1297,5 +1297,57 @@ public class CommonUtils {
 		int b = min + random.nextInt(max - min);
 		return new Color(r, g, b);
 	}
+	public static <T> String replaceCharacterRanges(T input) {
+        String stringInput = String.valueOf(input);
+        // Replace A-Z with 'A'
+        String replaced = stringInput.replaceAll("[A-Z]", "A");
 
+        // Replace a-z with 'a'
+        replaced = replaced.replaceAll("[a-z]", "a");
+
+        // Replace 0-9 with '#'
+        replaced = replaced.replaceAll("[0-9]", "#");
+
+        return replaced;
+    }
+	public static String toCamelCase(String input) {
+	    StringBuilder sb = new StringBuilder();
+	    boolean nextUpper = false;
+
+	    for (int i = 0; i < input.length(); i++) {
+	        char c = input.charAt(i);
+	        if (c == ' ' || c == '_' || c == '-') {
+	            nextUpper = true;
+	        } else {
+	            if (sb.length() == 0) {
+	                sb.append(Character.toLowerCase(c));
+	            } else if (nextUpper) {
+	                sb.append(Character.toUpperCase(c));
+	                nextUpper = false;
+	            } else {
+	                sb.append(Character.toLowerCase(c));
+	            }
+	        }
+	    }
+	    return sb.toString();
+	}
+	public static String toPascalCaseKeepUnderscore(String input) {
+	    StringBuilder sb = new StringBuilder();
+	    boolean nextUpper = true; // capitalize first character
+
+	    for (int i = 0; i < input.length(); i++) {
+	        char c = input.charAt(i);
+	        if (c == ' ' || c == '-') { // remove spaces and hyphens
+	            nextUpper = true;
+	        } else {
+	            if (nextUpper) {
+	                sb.append(Character.toUpperCase(c));
+	                nextUpper = false;
+	            } else {
+	                sb.append(c); // keep underscore and other characters as-is
+	            }
+	        }
+	    }
+	    return sb.toString();
+	}
 }

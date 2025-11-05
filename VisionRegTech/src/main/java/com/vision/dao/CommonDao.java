@@ -18,6 +18,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+
+import jakarta.servlet.ServletContext;
+
 import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +30,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.vision.authentication.SessionContextHolder;
 import com.vision.exception.ExceptionCode;
@@ -40,8 +44,6 @@ import com.vision.vb.MenuVb;
 import com.vision.vb.NotificationsVb;
 import com.vision.vb.ProfileData;
 import com.vision.vb.VisionUsersVb;
-
-import jakarta.servlet.ServletContext;
 
 @Component
 public class CommonDao {
@@ -149,52 +151,82 @@ public class CommonDao {
 	}
 
 	public ArrayList<MenuVb> getSubMenuItemsForMenuGroup(int menuGroup, VisionUsersVb visionUsersVb)
-			throws DataAccessException {
-		String sql = "";
-		if ("ORACLE".equalsIgnoreCase(databaseType)) {
-			sql = " SELECT * " + " FROM PRD_VISION_MENU T1 " + " JOIN PRD_PROFILE_PRIVILEGES_NEW T2  "
-					+ " ON T1.MENU_GROUP = T2.MENU_GROUP " + " WHERE T1.MENU_GROUP = ? " + " AND T1.MENU_STATUS = 0 "
-					+ " AND UPPER(T1.MENU_NAME) != 'SEPERATOR' " + " AND T1.APPLICATION_ACCESS = ? "
-					+ " AND T1.MENU_SEQUENCE = T1.PARENT_SEQUENCE "
-					+ " AND (T2.USER_GROUP || '-' || T2.USER_PROFILE) = ? "
-					+ " AND NOT EXISTS (SELECT 1 FROM PRD_PROFILE_PRIVILEGES_NEW T3 "
-					+ " WHERE T3.MENU_GROUP = T1.MENU_GROUP " + " AND (T3.USER_GROUP || '-' || T3.USER_PROFILE) = ? "
-					+ " AND ',' || TRIM(T3.EXCLUDE_MENU_PROGRAM_LIST) || ',' LIKE '%,' || TRIM(T1.MENU_PROGRAM) || ',%') "
-					+ " ORDER BY T1.PARENT_SEQUENCE, T1.MENU_SEQUENCE ";
-		} else {
-			sql = " SELECT * " + " FROM PRD_VISION_MENU T1 " + " JOIN PRD_PROFILE_PRIVILEGES_NEW T2  "
-					+ " ON T1.MENU_GROUP = T2.MENU_GROUP " + " WHERE T1.MENU_GROUP = ? " + " AND T1.MENU_STATUS = 0 "
-					+ " AND UPPER(T1.MENU_NAME) != 'SEPERATOR' " + " AND T1.APPLICATION_ACCESS = ? "
-					+ " AND T1.MENU_SEQUENCE = T1.PARENT_SEQUENCE "
-					+ " AND (T2.USER_GROUP + '-' + T2.USER_PROFILE) = ? "
-					+ " AND NOT EXISTS (SELECT 1 FROM PRD_PROFILE_PRIVILEGES_NEW T3 "
-					+ " WHERE T3.MENU_GROUP = T1.MENU_GROUP " + " AND (T3.USER_GROUP + '-' + T3.USER_PROFILE) = ? "
-					+ " AND ',' + TRIM(T3.EXCLUDE_MENU_PROGRAM_LIST) + ',' LIKE '%,' + TRIM(T1.MENU_PROGRAM) + ',%') "
-					+ " ORDER BY T1.PARENT_SEQUENCE, T1.MENU_SEQUENCE ";
-		}
-		String grpProfile = visionUsersVb.getUserGroup() + "-" + visionUsersVb.getUserProfile();
-		Object[] lParams = new Object[4];
-		lParams[0] = menuGroup;
-		lParams[1] = productName;
-		lParams[2] = grpProfile;
-		lParams[3] = grpProfile;
-		RowMapper mapper = new RowMapper() {
-			public Object mapRow(ResultSet rs, int rowNum) throws SQLException {
-				MenuVb menuVb = new MenuVb();
-				menuVb.setMenuProgram(rs.getString("MENU_PROGRAM"));
-				menuVb.setMenuName(rs.getString("MENU_NAME"));
-				menuVb.setMenuSequence(rs.getInt("MENU_SEQUENCE"));
-				menuVb.setParentSequence(rs.getInt("PARENT_SEQUENCE"));
-				menuVb.setSeparator(rs.getString("SEPARATOR"));
-				menuVb.setMenuGroup(rs.getInt("MENU_GROUP"));
-				menuVb.setMenuStatus(rs.getInt("MENU_STATUS"));
-				menuVb.setRecordIndicator(rs.getInt("RECORD_INDICATOR"));
-				return menuVb;
-			}
-		};
-		ArrayList<MenuVb> menuList = (ArrayList<MenuVb>) getJdbcTemplate().query(sql, lParams, mapper);
-		return menuList;
+	        throws DataAccessException {
+
+	    String sql = "";
+	    String grpProfile = visionUsersVb.getUserGroup() + "-" + visionUsersVb.getUserProfile();
+
+	    if ("ORACLE".equalsIgnoreCase(databaseType)) {
+	        sql = " SELECT T1.* "
+	            + " FROM PRD_VISION_MENU T1 "
+	            + " JOIN ( "
+	            + "     SELECT DISTINCT MENU_GROUP, USER_GROUP, USER_PROFILE "
+	            + "     FROM PRD_PROFILE_PRIVILEGES_NEW "
+	            + "     WHERE APPLICATION_ACCESS = ? "
+	            + "       AND (USER_GROUP || '-' || USER_PROFILE) = ? "
+	            + " ) T2 ON T1.MENU_GROUP = T2.MENU_GROUP "
+	            + " WHERE T1.MENU_GROUP = ? "
+	            + "   AND T1.MENU_STATUS = 0 "
+	            + "   AND UPPER(T1.MENU_NAME) != 'SEPERATOR' "
+	            + "   AND T1.APPLICATION_ACCESS = ? "
+	            + "   AND T1.MENU_SEQUENCE = T1.PARENT_SEQUENCE "
+	            + "   AND NOT EXISTS ( "
+	            + "       SELECT 1 FROM PRD_PROFILE_PRIVILEGES_NEW T3 "
+	            + "       WHERE T3.MENU_GROUP = T1.MENU_GROUP "
+	            + "         AND (T3.USER_GROUP || '-' || T3.USER_PROFILE) = ? "
+	            + "         AND ',' || TRIM(T3.EXCLUDE_MENU_PROGRAM_LIST) || ',' LIKE '%,' || TRIM(T1.MENU_PROGRAM) || ',%' "
+	            + "   ) "
+	            + " ORDER BY T1.PARENT_SEQUENCE, T1.MENU_SEQUENCE ";
+	    } else {
+	        sql = " SELECT T1.* "
+	            + " FROM PRD_VISION_MENU T1 "
+	            + " JOIN ( "
+	            + "     SELECT DISTINCT MENU_GROUP, USER_GROUP, USER_PROFILE "
+	            + "     FROM PRD_PROFILE_PRIVILEGES_NEW "
+	            + "     WHERE APPLICATION_ACCESS = ? "
+	            + "       AND (USER_GROUP + '-' + USER_PROFILE) = ? "
+	            + " ) T2 ON T1.MENU_GROUP = T2.MENU_GROUP "
+	            + " WHERE T1.MENU_GROUP = ? "
+	            + "   AND T1.MENU_STATUS = 0 "
+	            + "   AND UPPER(T1.MENU_NAME) != 'SEPERATOR' "
+	            + "   AND T1.APPLICATION_ACCESS = ? "
+	            + "   AND T1.MENU_SEQUENCE = T1.PARENT_SEQUENCE "
+	            + "   AND NOT EXISTS ( "
+	            + "       SELECT 1 FROM PRD_PROFILE_PRIVILEGES_NEW T3 "
+	            + "       WHERE T3.MENU_GROUP = T1.MENU_GROUP "
+	            + "         AND (T3.USER_GROUP + '-' + T3.USER_PROFILE) = ? "
+	            + "         AND ',' + TRIM(T3.EXCLUDE_MENU_PROGRAM_LIST) + ',' LIKE '%,' + TRIM(T1.MENU_PROGRAM) + ',%' "
+	            + "   ) "
+	            + " ORDER BY T1.PARENT_SEQUENCE, T1.MENU_SEQUENCE ";
+	    }
+
+	    Object[] lParams = new Object[5];
+	    lParams[0] = productName;    // for T2 subquery APPLICATION_ACCESS
+	    lParams[1] = grpProfile;     // for T2 subquery USER_GROUP-USER_PROFILE
+	    lParams[2] = menuGroup;      // T1.MENU_GROUP
+	    lParams[3] = productName;    // T1.APPLICATION_ACCESS
+	    lParams[4] = grpProfile;     // NOT EXISTS subquery USER_GROUP-USER_PROFILE
+
+	    RowMapper<MenuVb> mapper = new RowMapper<MenuVb>() {
+	        public MenuVb mapRow(ResultSet rs, int rowNum) throws SQLException {
+	            MenuVb menuVb = new MenuVb();
+	            menuVb.setMenuProgram(rs.getString("MENU_PROGRAM"));
+	            menuVb.setMenuName(rs.getString("MENU_NAME"));
+	            menuVb.setMenuSequence(rs.getInt("MENU_SEQUENCE"));
+	            menuVb.setParentSequence(rs.getInt("PARENT_SEQUENCE"));
+	            menuVb.setSeparator(rs.getString("SEPARATOR"));
+	            menuVb.setMenuGroup(rs.getInt("MENU_GROUP"));
+	            menuVb.setMenuStatus(rs.getInt("MENU_STATUS"));
+	            menuVb.setRecordIndicator(rs.getInt("RECORD_INDICATOR"));
+	            return menuVb;
+	        }
+	    };
+
+	    @SuppressWarnings("unchecked")
+	    ArrayList<MenuVb> menuList = (ArrayList<MenuVb>) getJdbcTemplate().query(sql, lParams, mapper);
+	    return menuList;
 	}
+
 
 	public ArrayList<MenuVb> getSubMenuItemsForSubMenuGroup(int menuGroup, int parentSequence, int visionId)
 			throws DataAccessException {
@@ -864,12 +896,12 @@ public class CommonDao {
 		if ("ORACLE".equalsIgnoreCase(databaseType)) {
 			sql = "Select MENU_GROUP_SEQ,MENU_GROUP_NAME,MENU_GROUP_ICON,MENU_PROGRAM, "
 					+ " T2.P_ADD,T2.P_MODIFY,P_DELETE,P_INQUIRY,P_VERIFICATION,P_EXCEL_UPLOAD,P_DOWNLOAD,P_SUBMIT  from PRD_MENU_GROUP T1,PRD_PROFILE_PRIVILEGES_NEW T2 "
-					+ " where T1.MENU_GROUP_Status = 0  and T1.Application_Access = ?  AND T2.USER_GROUP||'-'||T2.USER_PROFILE = ? "
+					+ " where T1.MENU_GROUP_Status = 0 and t2.PROFILE_STATUS =0  and T1.Application_Access = ?  AND T2.USER_GROUP||'-'||T2.USER_PROFILE = ? "
 					+ " AND T1.Application_Access = T2.Application_Access  AND T1.MENU_GROUP_SEQ = T2.MENU_GROUP  ORDER BY Menu_Display_Order ";
 		} else {
 			sql = "Select MENU_GROUP_SEQ,MENU_GROUP_NAME,MENU_GROUP_ICON,MENU_PROGRAM, "
 					+ " T2.P_ADD,T2.P_MODIFY,P_DELETE,P_INQUIRY,P_VERIFICATION,P_EXCEL_UPLOAD,P_DOWNLOAD,P_SUBMIT  from PRD_MENU_GROUP T1,PRD_PROFILE_PRIVILEGES_NEW T2 "
-					+ " where T1.MENU_GROUP_Status = 0  and T1.Application_Access = ?  AND T2.USER_GROUP+'-'+T2.USER_PROFILE = ? "
+					+ " where T1.MENU_GROUP_Status = 0  and t2.PROFILE_STATUS =0 and  T1.Application_Access = ?  AND T2.USER_GROUP+'-'+T2.USER_PROFILE = ? "
 					+ " AND T1.Application_Access = T2.Application_Access  AND T1.MENU_GROUP_SEQ = T2.MENU_GROUP  ORDER BY Menu_Display_Order ";
 		}
 		String grpProfile = "";
@@ -1050,21 +1082,21 @@ public class CommonDao {
 //		return durationSec;
 //	}
 	public String calcDuration(String durationSec) {
-	    // Convert the string to a double first
-	    double duration = Double.parseDouble(durationSec);
+		// Convert the string to a double first
+		double duration = Double.parseDouble(durationSec);
 
-	    // Convert to total seconds as an integer
-	    int totalSeconds = (int) duration;
+		// Convert to total seconds as an integer
+		int totalSeconds = (int) duration;
 
-	    // Break down into minutes and seconds
-	    int minutes = totalSeconds / 60;
-	    int seconds = totalSeconds % 60;
+		// Break down into minutes and seconds
+		int minutes = totalSeconds / 60;
+		int seconds = totalSeconds % 60;
 
-	    // Build the output string
-	    if (minutes > 0)
-	        return minutes + " Min " + seconds + " Sec";
-	    else
-	        return seconds + " Sec";
+		// Build the output string
+		if (minutes > 0)
+			return minutes + " Min " + seconds + " Sec";
+		else
+			return seconds + " Sec";
 	}
 
 	public String getRestrictionsByUsers(String screenName, String operation) throws DataAccessException {
@@ -1206,9 +1238,10 @@ public class CommonDao {
 //		}
 
 	public List<AlphaSubTabVb> getLegalEntity() {
+		VisionUsersVb visionUsersVb = SessionContextHolder.getContext();
 		String sql = "Select Country" + getDbFunction("PIPELINE") + "'-'" + getDbFunction("PIPELINE")
 				+ "LE_Book ALPHA_SUB_TAB,LEB_DESCRIPTION ALPHA_SUBTAB_DESCRIPTION "
-				+ "from LE_Book where LEB_Status = 0 and Country != 'ZZ' Order by Country,LE_Book ";
+				+ "from LE_Book where LEB_Status = 0 and Country != 'ZZ' Order by INTERNAL_STATUS DESC ";
 //			if(clientName.equals("CLOUD")) {
 //				String defaultLvQuery = commonApiDao.getPrdQueryConfig("RA_DEFAULT_LV");
 //				sql = StringUtils.isNotEmpty(defaultLvQuery)?defaultLvQuery:sql;
@@ -1229,4 +1262,10 @@ public class CommonDao {
 		return mapper;
 	}
 
+	@Transactional
+	public int doUpdateVisionVariables(String variable, String value) {
+		String query = "UPDATE VISION_VARIABLES SET VALUE = ? WHERE VARIABLE = ?";
+		Object[] args = { value, variable };
+		return getJdbcTemplate().update(query, args);
+	}
 }

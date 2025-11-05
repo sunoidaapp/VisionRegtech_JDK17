@@ -9,6 +9,7 @@ import java.io.PrintWriter;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,7 @@ import org.xml.sax.SAXException;
 import com.vision.exception.ExceptionCode;
 import com.vision.vb.ColumnHeadersVb;
 import com.vision.vb.ReportStgVb;
+import com.vision.vb.ReportsVb;
 import com.vision.vb.ReportsWriterVb;
 
 
@@ -434,5 +436,116 @@ public class CreateCsv {
 		out.close();
 		fw.close();
 		return CommonUtils.getResultObject("", 1, "", "");
+	}
+
+	public int writeHeadersToCsv(List<ColumnHeadersVb> columnHeaders, ReportsVb reportsVb, FileWriter fw, int rowNum,PrintWriter out,String csvSeparator) {
+		int colNum = 0;
+		try {
+			int maxHeaderRow = columnHeaders.stream().mapToInt(ColumnHeadersVb::getLabelRowNum).max().orElse(0);
+			if (maxHeaderRow >= 2) {
+				rowNum++;
+				for (int loopCount = 0; loopCount < columnHeaders.size(); loopCount++) {
+					ColumnHeadersVb columnHeadersVb1 = columnHeaders.get(loopCount);
+					if (columnHeadersVb1.getCaption().contains("<br/>")) {
+						String value = columnHeadersVb1.getCaption().replaceAll("<br/>", " ");
+						columnHeadersVb1.setCaption(value);
+					}
+					out.print(columnHeadersVb1.getCaption());
+					out.print(csvSeparator);
+					//data[loopCount] = columnHeadersVb1.getCaption();
+					++colNum;
+
+				}
+				/*List<String[]> dataLst = new ArrayList<String[]>();
+				dataLst.add(data);
+				writer.writeAll(dataLst);*/
+
+			} else {
+				for (ColumnHeadersVb columnHeadersVb : columnHeaders) {
+					if (columnHeadersVb.getCaption().contains("<br/>")) {
+						String value = columnHeadersVb.getCaption().replaceAll("<br/>", " ");
+						columnHeadersVb.setCaption(value);
+					}
+					out.print(columnHeadersVb.getCaption());
+					out.print(csvSeparator);
+					//data[colNum] = columnHeadersVb.getCaption();
+					++colNum;
+				}
+				/*List<String[]> dataLst = new ArrayList<String[]>();
+				dataLst.add(data);
+				writer.writeAll(dataLst);*/
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return rowNum;
+	}
+	public int writeDataToCsv(List<ColumnHeadersVb> columnHeaders, List<HashMap<String, String>> dataLst,
+			ReportsVb reportsVb, int currentUserId, FileWriter fw, int rowNum,PrintWriter out,String csvSeparator) {
+		int colNum = 0;
+		String lineSeparator = "\n";
+		try {
+			colNum = 0;
+			int ctr = 1;
+			List<String> colTypes = new ArrayList<String>();
+				Map<Integer,Integer> columnWidths = new HashMap<Integer,Integer>(columnHeaders.size());
+				for(int loopCnt= 0; loopCnt < columnHeaders.size(); loopCnt++){
+					columnWidths.put(Integer.valueOf(loopCnt), Integer.valueOf(-1));
+					ColumnHeadersVb colHVb = columnHeaders.get(loopCnt);
+					if(colHVb.getColspan() <= 1 && colHVb.getNumericColumnNo() != 99) {
+						colTypes.add(colHVb.getColType());
+					}
+				}
+			for (HashMap dataMap : dataLst) {
+				out.print(lineSeparator);
+				for (int loopCount = 0; loopCount < columnHeaders.size(); loopCount++) {
+					ColumnHeadersVb colHeadersVb = columnHeaders.get(loopCount);
+					if(colHeadersVb.getColspan() > 1 || colHeadersVb.getNumericColumnNo() == 99)
+						continue;
+					String type = "";
+					String colType = colHeadersVb.getColType();
+					if ("T".equalsIgnoreCase(colHeadersVb.getColType())) {
+						type = CAP_COL;
+					} else {
+						type = DATA_COL;
+					}
+					if (type.equalsIgnoreCase(CAP_COL)) {
+						String value = "";
+						if (dataMap.containsKey(colHeadersVb.getDbColumnName())) {
+							value = ((dataMap.get(colHeadersVb.getDbColumnName())) != null
+									|| dataMap.get(colHeadersVb.getDbColumnName()) == "")
+											? dataMap.get(colHeadersVb.getDbColumnName()).toString()
+											: "";
+						}
+						if(ValidationUtil.isValid(value)) {
+							out.print(value.toString());
+						}else {
+							out.print("");
+						}
+						out.print(csvSeparator);
+					} else {
+						String value = "";
+						if (dataMap.containsKey(colHeadersVb.getDbColumnName())) {
+							value = ((dataMap.get(colHeadersVb.getDbColumnName())) != null
+									|| dataMap.get(colHeadersVb.getDbColumnName()) == "")
+											? dataMap.get(colHeadersVb.getDbColumnName()).toString()
+											: "";
+						}
+						value = value.replaceAll(",", "");
+						if(ValidationUtil.isValid(value)) {
+							out.print(value.toString());
+						}else {
+							out.print("");
+						}
+						
+						out.print(csvSeparator);
+					}
+				}
+				rowNum++;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return rowNum;
 	}
 }

@@ -18,6 +18,8 @@ import com.vision.util.ValidationUtil;
 import com.vision.vb.AlphaSubTabVb;
 import com.vision.vb.GLMappingVb;
 import com.vision.vb.SmartSearchVb;
+import com.vision.vb.VisionDynamicHashVariablesVb;
+import com.vision.vb.GLMappingVb;
 import com.vision.vb.VisionUsersVb;
 
 @Component
@@ -28,7 +30,7 @@ public class GlMappingDao extends AbstractDao<GLMappingVb> {
 	@Override
 	protected void setServiceDefaults() {
 		serviceName = "GlMapping";
-		serviceDesc = "GL MApping";
+		serviceDesc = "GL Mapping";
 		tableName = "GL_MAPPINGS";
 		childTableName = "GL_MAPPINGS";
 		intCurrentUserId = SessionContextHolder.getContext().getVisionId();
@@ -96,9 +98,7 @@ public class GlMappingDao extends AbstractDao<GLMappingVb> {
 			    +makerApprDesc+" , "+verifierApprDesc+" , "
 			    + RecordIndicatorNtApprDesc+" , "+mappingStatusNtApprDesc 
 			    + " FROM GL_MAPPINGS TAPPR "
-			    +" WHERE TAPPR.COUNTRY =? "
-			    +" AND TAPPR.LE_BOOK = ? "
-			    +" AND TAPPR.TEMPLATE_ID =?)TAppr ");
+			   +")TAppr ");
 
 		strWhereNotExists = new String(
 				" NOT EXISTS (SELECT 'X' FROM GL_MAPPINGS_PEND TPEND WHERE TAPPR.COUNTRY = TPEND.COUNTRY "
@@ -124,9 +124,7 @@ public class GlMappingDao extends AbstractDao<GLMappingVb> {
 			    +makerPendDesc+" , "+verifierPendDesc+" , "
 			    + RecordIndicatorNtPendDesc+" , "+mappingStatusNtPendDesc 
 			    + " FROM GL_MAPPINGS_PEND TPEND"
-			    +" WHERE TPEND.COUNTRY =? "
-			    +" AND TPEND.LE_BOOK = ? "
-			    +" AND TPEND.TEMPLATE_ID =? )TPend");
+			    +" )TPend");
 
 		try {
 
@@ -221,9 +219,18 @@ public class GlMappingDao extends AbstractDao<GLMappingVb> {
 					CommonUtils.addToQuery(" LE_BOOK IN ('" + visionUsersVb.getLeBook() + "') ", strBufPending);
 				}
 			}
-			params.addElement(dObj.getCountry());
-			params.addElement(dObj.getLeBook());
-			params.addElement(dObj.getTemplateId());
+			if (ValidationUtil.isValid(dObj.getCountry())) {
+				CommonUtils.addToQuery(" COUNTRY IN ('" + dObj.getCountry() + "') ", strBufApprove);
+				CommonUtils.addToQuery(" COUNTRY IN ('" + dObj.getCountry() + "') ", strBufPending);
+			}
+			if (ValidationUtil.isValid(dObj.getLeBook())) {
+				String calLeBook = removeDescLeBook(dObj.getLeBook());
+				CommonUtils.addToQuery(" LE_BOOK IN ('" + calLeBook + "') ", strBufApprove);
+				CommonUtils.addToQuery(" LE_BOOK IN ('" + calLeBook + "') ", strBufPending);
+			}
+//			params.addElement(dObj.getCountry());
+//			params.addElement(dObj.getLeBook());
+//			params.addElement(dObj.getTemplateId());
 			
 //			 orderBy = " Order By "+dbFunctionFormats("DATE_LAST_MODIFIED","TO_DATETIME_FORMAT",null)+" DESC";
 			orderBy = " Order by DATE_LAST_MODIFIED DESC";
