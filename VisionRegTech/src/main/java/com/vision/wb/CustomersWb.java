@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import com.vision.authentication.SessionContextHolder;
 import com.vision.dao.AbstractDao;
+import com.vision.dao.CustomerManualDao;
 import com.vision.dao.CustomersDao;
 import com.vision.exception.ExceptionCode;
 import com.vision.util.CommonUtils;
@@ -27,6 +28,8 @@ import com.vision.vb.VisionUsersVb;
 public class CustomersWb extends AbstractWorkerBean<CustomersVb> {
 	@Autowired
 	private CustomersDao customersDao;
+	@Autowired
+	private CustomerManualDao customerManualDao;
 	public static Logger logger = LoggerFactory.getLogger(CustomersWb.class);
 
 	public ArrayList getPageLoadValues() {
@@ -85,6 +88,8 @@ public class CustomersWb extends AbstractWorkerBean<CustomersVb> {
 			}
 			String countryLeBook = country + "-" + leBook;
 			arrListLocal.add(countryLeBook);
+			collTemp = customerManualDao.findAllGroupedAsCustomers();
+			arrListLocal.add(collTemp);
 			return arrListLocal;
 		} catch (Exception ex) {
 			ex.printStackTrace();

@@ -1331,6 +1331,7 @@ public class CommonUtils {
 	    }
 	    return sb.toString();
 	}
+	
 	public static String toPascalCaseKeepUnderscore(String input) {
 	    StringBuilder sb = new StringBuilder();
 	    boolean nextUpper = true; // capitalize first character

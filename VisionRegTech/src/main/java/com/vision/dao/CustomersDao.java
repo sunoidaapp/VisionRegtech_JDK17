@@ -6,8 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
-import jakarta.annotation.PostConstruct;
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.UncategorizedSQLException;
 import org.springframework.jdbc.core.RowMapper;
@@ -40,6 +39,9 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 	private String Customers;
 	@Value("#{ '${app.cloud}' == 'Y' ? 'CRS_CUSTOMER_EXTRAS' : 'CUSTOMER_EXTRAS' }")
 	private String CustomersExtras;
+
+	@Autowired
+	CustomerManualDao customerManualDao;
 
 	@Override
 	protected RowMapper getMapper() {
@@ -397,7 +399,12 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				customersVb.setDualNationality1Desc(rs.getString("DUAL_NATIONALITY_1_DESC"));
 				customersVb.setDualNationality2Desc(rs.getString("DUAL_NATIONALITY_2_DESC"));
 				customersVb.setDualNationality3Desc(rs.getString("DUAL_NATIONALITY_3_DESC"));
-
+				List<CustomerManualColVb> manualList = new ArrayList<CustomerManualColVb>();
+				CustomerManualColVb cmvb = new CustomerManualColVb();
+				cmvb.setEntity(customersVb.getEntity());
+				cmvb.setCustomerId(customersVb.getCustomerId());
+				manualList = customerManualDao.getQueryPopupResults(cmvb);
+				customersVb.setManualList(manualList);
 				return customersVb;
 			}
 		};
@@ -454,8 +461,8 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = TAppr.CUSTOMER_ATTRIBUTE_3) CUSTOMER_ATTRIBUTE_3_DESC"
 				+ ",(SELECT OUC_DESCRIPTION AS DESCRIPTION FROM   OUC_CODES t1  WHERE T1.COUNTRY = TAPPR.COUNTRY AND T1.LE_BOOK = TAPPR.LE_BOOK AND t1.VISION_OUC = TAPPR.VISION_OUC AND OUC_STATUS = 0) VISION_OUC_DESC "
 				+ ",TAPPR.FATCA_OVERRIDE,TAPPR.CRS_OVERRIDE, T1.DUAL_NATIONALITY_1, T1.DUAL_NATIONALITY_2, T1.DUAL_NATIONALITY_3 "
-				+ "FROM " + Customers
-				+ " TAPPR INNER JOIN "+CustomersExtras+" T1 ON ( TAPPR.COUNTRY= T1.COUNTRY AND TAPPR.LE_BOOK= T1.LE_BOOK AND TAPPR.CUSTOMER_ID = T1.CUSTOMER_ID) "
+				+ "FROM " + Customers + " TAPPR INNER JOIN " + CustomersExtras
+				+ " T1 ON ( TAPPR.COUNTRY= T1.COUNTRY AND TAPPR.LE_BOOK= T1.LE_BOOK AND TAPPR.CUSTOMER_ID = T1.CUSTOMER_ID) "
 				+ ") TAPPR ");
 
 		String strWhereNotExists = new String(" Not Exists (Select TPend.COUNTRY,"
@@ -508,8 +515,8 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = TPend.CUSTOMER_ATTRIBUTE_3) CUSTOMER_ATTRIBUTE_3_DESC"
 				+ ",(SELECT OUC_DESCRIPTION AS DESCRIPTION FROM OUC_CODES t1  WHERE T1.COUNTRY = TPend.COUNTRY AND T1.LE_BOOK = TPend.LE_BOOK  AND  t1.VISION_OUC = TPend.VISION_OUC AND OUC_STATUS = 0) VISION_OUC_DESC "
 				+ ",TPend.FATCA_OVERRIDE, TPend.CRS_OVERRIDE, T2.DUAL_NATIONALITY_1, T2.DUAL_NATIONALITY_2, T2.DUAL_NATIONALITY_3 "
-				+ " FROM " + Customers
-				+ "_PEND TPEND INNER JOIN "+CustomersExtras+"_PEND T2 ON ( TPEND.COUNTRY= T2.COUNTRY AND TPEND.LE_BOOK= T2.LE_BOOK AND TPEND.CUSTOMER_ID= T2.CUSTOMER_ID)"
+				+ " FROM " + Customers + "_PEND TPEND INNER JOIN " + CustomersExtras
+				+ "_PEND T2 ON ( TPEND.COUNTRY= T2.COUNTRY AND TPEND.LE_BOOK= T2.LE_BOOK AND TPEND.CUSTOMER_ID= T2.CUSTOMER_ID)"
 				+ " ) TPend ");
 		try {
 			if (dObj.getSmartSearchOpt() != null && dObj.getSmartSearchOpt().size() > 0) {
@@ -948,8 +955,8 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ "  T1.DUAL_NATIONALITY_1, (SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = T1.DUAL_NATIONALITY_1 )DUAL_NATIONALITY_1_desc,"
 				+ " T1.DUAL_NATIONALITY_2,(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = T1.DUAL_NATIONALITY_2 )DUAL_NATIONALITY_2_desc,"
 				+ " T1.DUAL_NATIONALITY_3,(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = T1.DUAL_NATIONALITY_3 )DUAL_NATIONALITY_3_desc"
-				+ " FROM " + Customers
-				+ " TAPPR INNER JOIN "+CustomersExtras+" T1 ON( TAPPR.COUNTRY= T1.COUNTRY AND TAPPR.LE_BOOK= T1.LE_BOOK AND TAPPR.CUSTOMER_ID= T1.CUSTOMER_ID) "
+				+ " FROM " + Customers + " TAPPR INNER JOIN " + CustomersExtras
+				+ " T1 ON( TAPPR.COUNTRY= T1.COUNTRY AND TAPPR.LE_BOOK= T1.LE_BOOK AND TAPPR.CUSTOMER_ID= T1.CUSTOMER_ID) "
 				+ " WHERE TAPPR.COUNTRY = ? AND TAPPR.LE_BOOK = ? AND TAPPR.CUSTOMER_ID = ? ");
 
 		String strQueryPend = new String("Select TPend.COUNTRY,"
@@ -1002,8 +1009,8 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ "  T2.DUAL_NATIONALITY_1, (SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = T2.DUAL_NATIONALITY_1 )DUAL_NATIONALITY_1_desc,"
 				+ " T2.DUAL_NATIONALITY_2,(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = T2.DUAL_NATIONALITY_2 )DUAL_NATIONALITY_2_desc,"
 				+ " T2.DUAL_NATIONALITY_3,(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = T2.DUAL_NATIONALITY_3 )DUAL_NATIONALITY_3_desc"
-				+ " From " + Customers
-				+ "_PEND TPend INNER JOIN "+CustomersExtras+"_PEND T2 ON ( TPend.COUNTRY= T2.COUNTRY AND TPend.LE_BOOK= T2.LE_BOOK AND TPend.CUSTOMER_ID= T2.CUSTOMER_ID) "
+				+ " From " + Customers + "_PEND TPend INNER JOIN " + CustomersExtras
+				+ "_PEND T2 ON ( TPend.COUNTRY= T2.COUNTRY AND TPend.LE_BOOK= T2.LE_BOOK AND TPend.CUSTOMER_ID= T2.CUSTOMER_ID) "
 				+ " Where TPend.COUNTRY = ? AND TPend.LE_BOOK = ? AND TPend.CUSTOMER_ID = ?");
 
 		Object objParams[] = new Object[intKeyFieldsCount];
@@ -1204,87 +1211,110 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 		return getJdbcTemplate().update(query, args);
 	}
 
+//	@Override
+//	protected int doUpdateAppr(CustomersVb vObject) {
+//		String query = "Update " + Customers + " set CUSTOMER_OPEN_DATE = " + dateConvert
+//				+ ", CUSTOMER_NAME = ?, CUSTOMER_ACRONYM = ?, "
+//				+ "VISION_OUC = ?, VISION_SBU_AT = ?, VISION_SBU = ?, GLOBAL_CUSTOMER_ID = ?, NAICS_CODE = ?, CB_ORG_CODE_AT = ?,"
+//				+ "CB_ORG_CODE = ?, CB_ECONOMIC_ACT_CODE_AT = ?, CB_ECONOMIC_ACT_CODE = ?, CB_DOMICILE = ?, CB_NATIONALITY = ?,"
+//				+ "CB_RESIDENCE = ?, CB_MAJOR_PARTY_INDICATOR = ?, CUSTOMER_ID_TYPE_AT = ?, CUSTOMER_ID_TYPE = ?, ID_DETAILS = ?,"
+//				+ "PRIMARY_CID = ?, PARENT_CID = ?, ULTIMATE_PARENT = ?, CUSTOMER_HIERARCHY_1 = ?, CUSTOMER_HIERARCHY_2 = ?,"
+//				+ "CUSTOMER_HIERARCHY_3 = ?, ACCOUNT_OFFICER = ?, CREDIT_CLASSIFICATION_AT = ?, CREDIT_CLASSIFICATION = ?,"
+//				+ "EXTERNAL_RISK_RATING_AT = ?, EXTERNAL_RISK_RATING = ?, OBLIGOR_RISK_RATING_AT = ?, OBLIGOR_RISK_RATING = ?,"
+//				+ "RELATED_PARTY_AT = ?, RELATED_PARTY = ?, CUSTOMER_TIERING_AT = ?, CUSTOMER_TIERING = ?, SALES_ACQUISITION_CHANNEL_AT = ?,"
+//				+ "SALES_ACQUISITION_CHANNEL = ?, MARKETING_CAMPAIGN = ?, CROSSSALE_REFER_ID = ?, CUSTOMER_INDICATOR = ?,"
+//				+ "NUM_OF_ACCOUNTS = ?, CUSTOMER_ATTRIBUTE_1 = ?, CUSTOMER_ATTRIBUTE_2 = ?, CUSTOMER_ATTRIBUTE_3 = ?, CUSTOMER_SEX_AT = ?, CUSTOMER_SEX = ?,"
+//				+ "COMM_ADDRESS_1 = ?, COMM_ADDRESS_2 = ?, COMM_CITY_AT = ?, COMM_CITY = ?, COMM_STATE_AT = ?, COMM_STATE = ?, COMM_PIN_CODE = ?, PHONE_NUMBER = ?,"
+//				+ "CUSTOMER_STATUS_NT = ?, CUSTOMER_STATUS = ?, RECORD_INDICATOR_NT = ?, RECORD_INDICATOR = ?, MAKER = ?,"
+//				+ "VERIFIER = ?, INTERNAL_STATUS = ?, CRS_FLAG = ? ,FATCA_FLAG = ? ,FATCA_OVERRIDE = ?,CRS_OVERRIDE = ? "
+//				+ " ,DATE_LAST_MODIFIED =  " + systemDate + " Where COUNTRY = ? AND LE_BOOK = ? AND CUSTOMER_ID = ? ";
+//		Object[] args = { vObject.getCustomerOpenDate(), vObject.getCustomerName(), vObject.getCustomerAcronym(),
+//				vObject.getVisionOuc(), vObject.getVisionSbuAt(), vObject.getVisionSbu(), vObject.getGlobalCustomerId(),
+//				vObject.getNaicsCode(), vObject.getCbOrgCodeAt(), vObject.getCbOrgCode(),
+//				vObject.getCbEconomicActCodeAt(), vObject.getCbEconomicActCode(), vObject.getCbDomicile(),
+//				vObject.getCbNationality(), vObject.getCbResidence(), vObject.getCbMajorPartyIndicator(),
+//				vObject.getCustomerIdTypeAt(), vObject.getCustomerIdType(), vObject.getIdDetails(),
+//				vObject.getPrimaryCid(), vObject.getParentCid(), vObject.getUltimateParent(),
+//				vObject.getCustomerHierarchy1(), vObject.getCustomerHierarchy2(), vObject.getCustomerHierarchy3(),
+//				vObject.getAccountOfficer(), vObject.getCreditClassificationAt(), vObject.getCreditClassification(),
+//				vObject.getExternalRiskRatingAt(), vObject.getExternalRiskRating(), vObject.getObligorRiskRatingAt(),
+//				vObject.getObligorRiskRating(), vObject.getRelatedPartyAt(), vObject.getRelatedParty(),
+//				vObject.getCustomerTieringAt(), vObject.getCustomerTiering(), vObject.getSalesAcquisitionChannelAt(),
+//				vObject.getSalesAcquisitionChannel(), vObject.getMarketingCampaign(), vObject.getCrosssaleReferId(),
+//				vObject.getCustomerIndicator(), vObject.getNumOfAccounts(), vObject.getCustomerAttribute1(),
+//				vObject.getCustomerAttribute2(), vObject.getCustomerAttribute3(), vObject.getCustomerSexAT(),
+//				vObject.getCustomerSex(), vObject.getCommAddress1(), vObject.getCommAddress2(), vObject.getCommCityAt(),
+//				vObject.getCommCity(), vObject.getCommStateAt(), vObject.getCommState(), vObject.getCommPinCode(),
+//				vObject.getPhoneNumber(), vObject.getCustomerStatusNt(), vObject.getCustomerStatus(),
+//				vObject.getRecordIndicatorNt(), vObject.getRecordIndicator(), vObject.getMaker(), vObject.getVerifier(),
+//				vObject.getInternalStatus(), vObject.getCrsFlag(), vObject.getFatcaFlag(), vObject.getFatcaOverRide(),
+//				vObject.getCrsOverRide(), vObject.getCountry(), vObject.getLeBook(), vObject.getCustomerId() };
+//		return getJdbcTemplate().update(query, args);
+//	}
 	@Override
 	protected int doUpdateAppr(CustomersVb vObject) {
-		String query = "Update " + Customers + " set CUSTOMER_OPEN_DATE = " + dateConvert
-				+ ", CUSTOMER_NAME = ?, CUSTOMER_ACRONYM = ?, "
-				+ "VISION_OUC = ?, VISION_SBU_AT = ?, VISION_SBU = ?, GLOBAL_CUSTOMER_ID = ?, NAICS_CODE = ?, CB_ORG_CODE_AT = ?,"
-				+ "CB_ORG_CODE = ?, CB_ECONOMIC_ACT_CODE_AT = ?, CB_ECONOMIC_ACT_CODE = ?, CB_DOMICILE = ?, CB_NATIONALITY = ?,"
-				+ "CB_RESIDENCE = ?, CB_MAJOR_PARTY_INDICATOR = ?, CUSTOMER_ID_TYPE_AT = ?, CUSTOMER_ID_TYPE = ?, ID_DETAILS = ?,"
-				+ "PRIMARY_CID = ?, PARENT_CID = ?, ULTIMATE_PARENT = ?, CUSTOMER_HIERARCHY_1 = ?, CUSTOMER_HIERARCHY_2 = ?,"
-				+ "CUSTOMER_HIERARCHY_3 = ?, ACCOUNT_OFFICER = ?, CREDIT_CLASSIFICATION_AT = ?, CREDIT_CLASSIFICATION = ?,"
-				+ "EXTERNAL_RISK_RATING_AT = ?, EXTERNAL_RISK_RATING = ?, OBLIGOR_RISK_RATING_AT = ?, OBLIGOR_RISK_RATING = ?,"
-				+ "RELATED_PARTY_AT = ?, RELATED_PARTY = ?, CUSTOMER_TIERING_AT = ?, CUSTOMER_TIERING = ?, SALES_ACQUISITION_CHANNEL_AT = ?,"
-				+ "SALES_ACQUISITION_CHANNEL = ?, MARKETING_CAMPAIGN = ?, CROSSSALE_REFER_ID = ?, CUSTOMER_INDICATOR = ?,"
-				+ "NUM_OF_ACCOUNTS = ?, CUSTOMER_ATTRIBUTE_1 = ?, CUSTOMER_ATTRIBUTE_2 = ?, CUSTOMER_ATTRIBUTE_3 = ?, CUSTOMER_SEX_AT = ?, CUSTOMER_SEX = ?,"
-				+ "COMM_ADDRESS_1 = ?, COMM_ADDRESS_2 = ?, COMM_CITY_AT = ?, COMM_CITY = ?, COMM_STATE_AT = ?, COMM_STATE = ?, COMM_PIN_CODE = ?, PHONE_NUMBER = ?,"
-				+ "CUSTOMER_STATUS_NT = ?, CUSTOMER_STATUS = ?, RECORD_INDICATOR_NT = ?, RECORD_INDICATOR = ?, MAKER = ?,"
-				+ "VERIFIER = ?, INTERNAL_STATUS = ?, CRS_FLAG = ? ,FATCA_FLAG = ? ,FATCA_OVERRIDE = ?,CRS_OVERRIDE = ? "
-				+ " ,DATE_LAST_MODIFIED =  " + systemDate + " Where COUNTRY = ? AND LE_BOOK = ? AND CUSTOMER_ID = ? ";
-		Object[] args = { vObject.getCustomerOpenDate(), vObject.getCustomerName(), vObject.getCustomerAcronym(),
-				vObject.getVisionOuc(), vObject.getVisionSbuAt(), vObject.getVisionSbu(), vObject.getGlobalCustomerId(),
-				vObject.getNaicsCode(), vObject.getCbOrgCodeAt(), vObject.getCbOrgCode(),
-				vObject.getCbEconomicActCodeAt(), vObject.getCbEconomicActCode(), vObject.getCbDomicile(),
-				vObject.getCbNationality(), vObject.getCbResidence(), vObject.getCbMajorPartyIndicator(),
-				vObject.getCustomerIdTypeAt(), vObject.getCustomerIdType(), vObject.getIdDetails(),
-				vObject.getPrimaryCid(), vObject.getParentCid(), vObject.getUltimateParent(),
-				vObject.getCustomerHierarchy1(), vObject.getCustomerHierarchy2(), vObject.getCustomerHierarchy3(),
-				vObject.getAccountOfficer(), vObject.getCreditClassificationAt(), vObject.getCreditClassification(),
-				vObject.getExternalRiskRatingAt(), vObject.getExternalRiskRating(), vObject.getObligorRiskRatingAt(),
-				vObject.getObligorRiskRating(), vObject.getRelatedPartyAt(), vObject.getRelatedParty(),
-				vObject.getCustomerTieringAt(), vObject.getCustomerTiering(), vObject.getSalesAcquisitionChannelAt(),
-				vObject.getSalesAcquisitionChannel(), vObject.getMarketingCampaign(), vObject.getCrosssaleReferId(),
-				vObject.getCustomerIndicator(), vObject.getNumOfAccounts(), vObject.getCustomerAttribute1(),
-				vObject.getCustomerAttribute2(), vObject.getCustomerAttribute3(), vObject.getCustomerSexAT(),
-				vObject.getCustomerSex(), vObject.getCommAddress1(), vObject.getCommAddress2(), vObject.getCommCityAt(),
-				vObject.getCommCity(), vObject.getCommStateAt(), vObject.getCommState(), vObject.getCommPinCode(),
-				vObject.getPhoneNumber(), vObject.getCustomerStatusNt(), vObject.getCustomerStatus(),
-				vObject.getRecordIndicatorNt(), vObject.getRecordIndicator(), vObject.getMaker(), vObject.getVerifier(),
-				vObject.getInternalStatus(), vObject.getCrsFlag(), vObject.getFatcaFlag(), vObject.getFatcaOverRide(),
-				vObject.getCrsOverRide(), vObject.getCountry(), vObject.getLeBook(), vObject.getCustomerId() };
+		String query = "Update " + Customers
+				+ " set  CUSTOMER_STATUS = ?, RECORD_INDICATOR_NT = ?, RECORD_INDICATOR = ?, MAKER = ?,"
+				+ "VERIFIER = ?, INTERNAL_STATUS = ?" + " ,DATE_LAST_MODIFIED =  " + systemDate
+				+ " Where COUNTRY = ? AND LE_BOOK = ? AND CUSTOMER_ID = ? ";
+		Object[] args = { vObject.getCustomerStatus(), vObject.getRecordIndicatorNt(), vObject.getRecordIndicator(),
+				vObject.getMaker(), vObject.getVerifier(), vObject.getInternalStatus(), vObject.getCountry(),
+				vObject.getLeBook(), vObject.getCustomerId() };
 		return getJdbcTemplate().update(query, args);
 	}
 
 	@Override
 	protected int doUpdatePend(CustomersVb vObject) {
-		String query = "Update " + Customers + "_PEND set CUSTOMER_OPEN_DATE = " + dateConvert
-				+ ", CUSTOMER_NAME = ?, CUSTOMER_ACRONYM = ?, "
-				+ "VISION_OUC = ?, VISION_SBU_AT = ?, VISION_SBU = ?, GLOBAL_CUSTOMER_ID = ?, NAICS_CODE = ?, CB_ORG_CODE_AT = ?,"
-				+ "CB_ORG_CODE = ?, CB_ECONOMIC_ACT_CODE_AT = ?, CB_ECONOMIC_ACT_CODE = ?, CB_DOMICILE = ?, CB_NATIONALITY = ?,"
-				+ "CB_RESIDENCE = ?, CB_MAJOR_PARTY_INDICATOR = ?, CUSTOMER_ID_TYPE_AT = ?, CUSTOMER_ID_TYPE = ?, ID_DETAILS = ?,"
-				+ "PRIMARY_CID = ?, PARENT_CID = ?, ULTIMATE_PARENT = ?, CUSTOMER_HIERARCHY_1 = ?, CUSTOMER_HIERARCHY_2 = ?,"
-				+ "CUSTOMER_HIERARCHY_3 = ?, ACCOUNT_OFFICER = ?, CREDIT_CLASSIFICATION_AT = ?, CREDIT_CLASSIFICATION = ?,"
-				+ "EXTERNAL_RISK_RATING_AT = ?, EXTERNAL_RISK_RATING = ?, OBLIGOR_RISK_RATING_AT = ?, OBLIGOR_RISK_RATING = ?,"
-				+ "RELATED_PARTY_AT = ?, RELATED_PARTY = ?, CUSTOMER_TIERING_AT = ?, CUSTOMER_TIERING = ?, SALES_ACQUISITION_CHANNEL_AT = ?,"
-				+ "SALES_ACQUISITION_CHANNEL = ?, MARKETING_CAMPAIGN = ?, CROSSSALE_REFER_ID = ?, CUSTOMER_INDICATOR = ?,"
-				+ "NUM_OF_ACCOUNTS = ?, CUSTOMER_ATTRIBUTE_1 = ?, CUSTOMER_ATTRIBUTE_2 = ?, CUSTOMER_ATTRIBUTE_3 = ?, CUSTOMER_SEX_AT = ?, CUSTOMER_SEX = ?,"
-				+ "COMM_ADDRESS_1 = ?, COMM_ADDRESS_2 = ?, COMM_CITY_AT = ?, COMM_CITY = ?, COMM_STATE_AT = ?, COMM_STATE = ?, COMM_PIN_CODE = ?, PHONE_NUMBER = ?,"
-				+ "CUSTOMER_STATUS_NT = ?, CUSTOMER_STATUS = ?, RECORD_INDICATOR_NT = ?, RECORD_INDICATOR = ?, MAKER = ?,"
-				+ "VERIFIER = ?, INTERNAL_STATUS = ?, CRS_FLAG = ? ,FATCA_FLAG = ?  ,FATCA_OVERRIDE = ?,CRS_OVERRIDE = ? ,DATE_LAST_MODIFIED =  "
-				+ systemDate + " Where COUNTRY = ? AND LE_BOOK = ? AND CUSTOMER_ID = ? ";
-		Object[] args = { vObject.getCustomerOpenDate(), vObject.getCustomerName(), vObject.getCustomerAcronym(),
-				vObject.getVisionOuc(), vObject.getVisionSbuAt(), vObject.getVisionSbu(), vObject.getGlobalCustomerId(),
-				vObject.getNaicsCode(), vObject.getCbOrgCodeAt(), vObject.getCbOrgCode(),
-				vObject.getCbEconomicActCodeAt(), vObject.getCbEconomicActCode(), vObject.getCbDomicile(),
-				vObject.getCbNationality(), vObject.getCbResidence(), vObject.getCbMajorPartyIndicator(),
-				vObject.getCustomerIdTypeAt(), vObject.getCustomerIdType(), vObject.getIdDetails(),
-				vObject.getPrimaryCid(), vObject.getParentCid(), vObject.getUltimateParent(),
-				vObject.getCustomerHierarchy1(), vObject.getCustomerHierarchy2(), vObject.getCustomerHierarchy3(),
-				vObject.getAccountOfficer(), vObject.getCreditClassificationAt(), vObject.getCreditClassification(),
-				vObject.getExternalRiskRatingAt(), vObject.getExternalRiskRating(), vObject.getObligorRiskRatingAt(),
-				vObject.getObligorRiskRating(), vObject.getRelatedPartyAt(), vObject.getRelatedParty(),
-				vObject.getCustomerTieringAt(), vObject.getCustomerTiering(), vObject.getSalesAcquisitionChannelAt(),
-				vObject.getSalesAcquisitionChannel(), vObject.getMarketingCampaign(), vObject.getCrosssaleReferId(),
-				vObject.getCustomerIndicator(), vObject.getNumOfAccounts(), vObject.getCustomerAttribute1(),
-				vObject.getCustomerAttribute2(), vObject.getCustomerAttribute3(), vObject.getCustomerSexAT(),
-				vObject.getCustomerSex(), vObject.getCommAddress1(), vObject.getCommAddress2(), vObject.getCommCityAt(),
-				vObject.getCommCity(), vObject.getCommStateAt(), vObject.getCommState(), vObject.getCommPinCode(),
-				vObject.getPhoneNumber(), vObject.getCustomerStatusNt(), vObject.getCustomerStatus(),
-				vObject.getRecordIndicatorNt(), vObject.getRecordIndicator(), vObject.getMaker(), vObject.getVerifier(),
-				vObject.getInternalStatus(), vObject.getCrsFlag(), vObject.getFatcaFlag(), vObject.getFatcaOverRide(),
-				vObject.getCrsOverRide(), vObject.getCountry(), vObject.getLeBook(), vObject.getCustomerId() };
+		String query = "Update " + Customers + "_PEND"
+				+ " set  CUSTOMER_STATUS = ?, RECORD_INDICATOR_NT = ?, RECORD_INDICATOR = ?, MAKER = ?,"
+				+ "VERIFIER = ?, INTERNAL_STATUS = ?" + " ,DATE_LAST_MODIFIED =  " + systemDate
+				+ " Where COUNTRY = ? AND LE_BOOK = ? AND CUSTOMER_ID = ? ";
+		Object[] args = { vObject.getCustomerStatus(), vObject.getRecordIndicatorNt(), vObject.getRecordIndicator(),
+				vObject.getMaker(), vObject.getVerifier(), vObject.getInternalStatus(), vObject.getCountry(),
+				vObject.getLeBook(), vObject.getCustomerId() };
 		return getJdbcTemplate().update(query, args);
 	}
+
+//	@Override
+//	protected int doUpdatePend(CustomersVb vObject) {
+//		String query = "Update " + Customers + "_PEND set CUSTOMER_OPEN_DATE = " + dateConvert
+//				+ ", CUSTOMER_NAME = ?, CUSTOMER_ACRONYM = ?, "
+//				+ "VISION_OUC = ?, VISION_SBU_AT = ?, VISION_SBU = ?, GLOBAL_CUSTOMER_ID = ?, NAICS_CODE = ?, CB_ORG_CODE_AT = ?,"
+//				+ "CB_ORG_CODE = ?, CB_ECONOMIC_ACT_CODE_AT = ?, CB_ECONOMIC_ACT_CODE = ?, CB_DOMICILE = ?, CB_NATIONALITY = ?,"
+//				+ "CB_RESIDENCE = ?, CB_MAJOR_PARTY_INDICATOR = ?, CUSTOMER_ID_TYPE_AT = ?, CUSTOMER_ID_TYPE = ?, ID_DETAILS = ?,"
+//				+ "PRIMARY_CID = ?, PARENT_CID = ?, ULTIMATE_PARENT = ?, CUSTOMER_HIERARCHY_1 = ?, CUSTOMER_HIERARCHY_2 = ?,"
+//				+ "CUSTOMER_HIERARCHY_3 = ?, ACCOUNT_OFFICER = ?, CREDIT_CLASSIFICATION_AT = ?, CREDIT_CLASSIFICATION = ?,"
+//				+ "EXTERNAL_RISK_RATING_AT = ?, EXTERNAL_RISK_RATING = ?, OBLIGOR_RISK_RATING_AT = ?, OBLIGOR_RISK_RATING = ?,"
+//				+ "RELATED_PARTY_AT = ?, RELATED_PARTY = ?, CUSTOMER_TIERING_AT = ?, CUSTOMER_TIERING = ?, SALES_ACQUISITION_CHANNEL_AT = ?,"
+//				+ "SALES_ACQUISITION_CHANNEL = ?, MARKETING_CAMPAIGN = ?, CROSSSALE_REFER_ID = ?, CUSTOMER_INDICATOR = ?,"
+//				+ "NUM_OF_ACCOUNTS = ?, CUSTOMER_ATTRIBUTE_1 = ?, CUSTOMER_ATTRIBUTE_2 = ?, CUSTOMER_ATTRIBUTE_3 = ?, CUSTOMER_SEX_AT = ?, CUSTOMER_SEX = ?,"
+//				+ "COMM_ADDRESS_1 = ?, COMM_ADDRESS_2 = ?, COMM_CITY_AT = ?, COMM_CITY = ?, COMM_STATE_AT = ?, COMM_STATE = ?, COMM_PIN_CODE = ?, PHONE_NUMBER = ?,"
+//				+ "CUSTOMER_STATUS_NT = ?, CUSTOMER_STATUS = ?, RECORD_INDICATOR_NT = ?, RECORD_INDICATOR = ?, MAKER = ?,"
+//				+ "VERIFIER = ?, INTERNAL_STATUS = ?, CRS_FLAG = ? ,FATCA_FLAG = ?  ,FATCA_OVERRIDE = ?,CRS_OVERRIDE = ? ,DATE_LAST_MODIFIED =  "
+//				+ systemDate + " Where COUNTRY = ? AND LE_BOOK = ? AND CUSTOMER_ID = ? ";
+//		Object[] args = { vObject.getCustomerOpenDate(), vObject.getCustomerName(), vObject.getCustomerAcronym(),
+//				vObject.getVisionOuc(), vObject.getVisionSbuAt(), vObject.getVisionSbu(), vObject.getGlobalCustomerId(),
+//				vObject.getNaicsCode(), vObject.getCbOrgCodeAt(), vObject.getCbOrgCode(),
+//				vObject.getCbEconomicActCodeAt(), vObject.getCbEconomicActCode(), vObject.getCbDomicile(),
+//				vObject.getCbNationality(), vObject.getCbResidence(), vObject.getCbMajorPartyIndicator(),
+//				vObject.getCustomerIdTypeAt(), vObject.getCustomerIdType(), vObject.getIdDetails(),
+//				vObject.getPrimaryCid(), vObject.getParentCid(), vObject.getUltimateParent(),
+//				vObject.getCustomerHierarchy1(), vObject.getCustomerHierarchy2(), vObject.getCustomerHierarchy3(),
+//				vObject.getAccountOfficer(), vObject.getCreditClassificationAt(), vObject.getCreditClassification(),
+//				vObject.getExternalRiskRatingAt(), vObject.getExternalRiskRating(), vObject.getObligorRiskRatingAt(),
+//				vObject.getObligorRiskRating(), vObject.getRelatedPartyAt(), vObject.getRelatedParty(),
+//				vObject.getCustomerTieringAt(), vObject.getCustomerTiering(), vObject.getSalesAcquisitionChannelAt(),
+//				vObject.getSalesAcquisitionChannel(), vObject.getMarketingCampaign(), vObject.getCrosssaleReferId(),
+//				vObject.getCustomerIndicator(), vObject.getNumOfAccounts(), vObject.getCustomerAttribute1(),
+//				vObject.getCustomerAttribute2(), vObject.getCustomerAttribute3(), vObject.getCustomerSexAT(),
+//				vObject.getCustomerSex(), vObject.getCommAddress1(), vObject.getCommAddress2(), vObject.getCommCityAt(),
+//				vObject.getCommCity(), vObject.getCommStateAt(), vObject.getCommState(), vObject.getCommPinCode(),
+//				vObject.getPhoneNumber(), vObject.getCustomerStatusNt(), vObject.getCustomerStatus(),
+//				vObject.getRecordIndicatorNt(), vObject.getRecordIndicator(), vObject.getMaker(), vObject.getVerifier(),
+//				vObject.getInternalStatus(), vObject.getCrsFlag(), vObject.getFatcaFlag(), vObject.getFatcaOverRide(),
+//				vObject.getCrsOverRide(), vObject.getCountry(), vObject.getLeBook(), vObject.getCustomerId() };
+//		return getJdbcTemplate().update(query, args);
+//	}
 
 	@Override
 	protected int doDeleteAppr(CustomersVb vObject) {
@@ -1938,6 +1968,13 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 			exceptionCode = getResultObject(retVal);
 			throw buildRuntimeCustomException(exceptionCode);
 		} else {
+			if (vObject.getManualList() != null && !vObject.getManualList().isEmpty()) {
+				vObject.getManualList().forEach(n -> {
+					n.setRecordIndicator(vObject.getRecordIndicator());
+					customerManualDao.doInsertCustomerManual(n, true);
+				});
+
+			}
 			exceptionCode = getResultObject(Constants.SUCCESSFUL_OPERATION);
 		}
 		String systemDate = getSystemDate();
@@ -1978,6 +2015,7 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 		vObject.setVerifier(getIntCurrentUserId());
 		vObject.setDateCreation(vObjectlocal.getDateCreation());
 		retVal = doUpdateAppr(vObject);
+
 		vObject.setCusExtrasStatus(vObject.getCustomerStatus());
 		vObject.setCusExtrasStatusNt(vObject.getCustomerStatusNt());
 		if (retVal != Constants.SUCCESSFUL_OPERATION) {
@@ -1986,10 +2024,16 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 		} else {
 			retVal = doUpdateApprForCustExtras(vObject);
 		}
+
 		if (retVal != Constants.SUCCESSFUL_OPERATION) {
 			exceptionCode = getResultObject(retVal);
 			throw buildRuntimeCustomException(exceptionCode);
 		} else {
+			if (vObject.getManualList() != null && !vObject.getManualList().isEmpty()) {
+				vObject.getManualList().forEach(n -> {
+					retVal = customerManualDao.deleteAndInsertCustomerManualAppr(n);
+				});
+			}
 			exceptionCode = getResultObject(Constants.SUCCESSFUL_OPERATION);
 		}
 		String systemDate = getSystemDate();
@@ -2061,6 +2105,13 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				exceptionCode = getResultObject(retVal);
 				throw buildRuntimeCustomException(exceptionCode);
 			}
+			if (vObject.getManualList() != null && !vObject.getManualList().isEmpty()) {
+				vObject.getManualList().forEach(n -> {
+					n.setRecordIndicator(vObject.getRecordIndicator());
+					customerManualDao.doInsertCustomerManual(n, false);
+				});
+
+			}
 			exceptionCode = getResultObject(retVal);
 			return exceptionCode;
 		}
@@ -2112,6 +2163,12 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				exceptionCode = getResultObject(retVal);
 				throw buildRuntimeCustomException(exceptionCode);
 			}
+			if (vObject.getManualList() != null && !vObject.getManualList().isEmpty()) {
+				vObject.getManualList().forEach(n -> {
+					n.setRecordIndicator(vObject.getRecordIndicator());
+					retVal = customerManualDao.deleteAndInsertCustomerManualPend(n);
+				});
+			}
 			return getResultObject(Constants.SUCCESSFUL_OPERATION);
 		} else {
 			collTemp = null;
@@ -2133,7 +2190,9 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 			vObject.setRecordIndicator(Constants.STATUS_UPDATE);
 			vObject.setCusExtrasStatus(vObject.getCustomerStatus());
 			vObject.setCusExtrasStatusNt(vObject.getCustomerStatusNt());
-			retVal = doInsertionPendWithDc(vObject);
+			//
+			vObjectlocal.setRecordIndicator(Constants.STATUS_UPDATE);
+			retVal = doInsertionPendWithDc(vObjectlocal);
 			if (retVal != Constants.SUCCESSFUL_OPERATION) {
 				exceptionCode = getResultObject(retVal);
 				throw buildRuntimeCustomException(exceptionCode);
@@ -2142,6 +2201,12 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 			if (retVal != Constants.SUCCESSFUL_OPERATION) {
 				exceptionCode = getResultObject(retVal);
 				throw buildRuntimeCustomException(exceptionCode);
+			}
+			if (vObject.getManualList() != null && !vObject.getManualList().isEmpty()) {
+				vObject.getManualList().forEach(n -> {
+					n.setRecordIndicator(vObject.getRecordIndicator());
+					retVal = customerManualDao.deleteAndInsertCustomerManualPend(n);
+				});
 			}
 			return getResultObject(Constants.SUCCESSFUL_OPERATION);
 		}
@@ -2194,6 +2259,12 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				throw buildRuntimeCustomException(exceptionCode);
 			}
 			retVal = doUpdateApprForCustExtras(vObjectlocal);
+			if (vObjectlocal.getManualList() != null && !vObjectlocal.getManualList().isEmpty()) {
+				vObjectlocal.getManualList().forEach(n -> {
+					retVal = customerManualDao.deleteAndInsertCustomerManualAppr(n);
+				});
+			}
+
 		} else {
 			retVal = doDeleteAppr(vObject);
 			if (retVal != Constants.SUCCESSFUL_OPERATION) {
@@ -2201,6 +2272,11 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				throw buildRuntimeCustomException(exceptionCode);
 			}
 			retVal = doDeleteApprForCustExtras(vObject);
+			if (vObjectlocal.getManualList() != null && !vObjectlocal.getManualList().isEmpty()) {
+				vObjectlocal.getManualList().forEach(n -> {
+					retVal = customerManualDao.doDeleteCustomerManual(n, true);
+				});
+			}
 		}
 		String systemDate = getSystemDate();
 		vObject.setDateLastModified(systemDate);
@@ -2223,6 +2299,68 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 		return exceptionCode;
 	}
 
+//	protected ExceptionCode doDeleteRecordForNonTrans(CustomersVb vObject) throws RuntimeCustomException {
+//		CustomersVb vObjectlocal = null;
+//		List<CustomersVb> collTemp = null;
+//		ExceptionCode exceptionCode = null;
+//		strApproveOperation = Constants.DELETE;
+//		strErrorDesc = "";
+//		strCurrentOperation = Constants.DELETE;
+//		setServiceDefaults();
+//		collTemp = selectApprovedRecord(vObject);
+//		if (collTemp == null) {
+//			logger.error("Collection is null");
+//			exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
+//			throw buildRuntimeCustomException(exceptionCode);
+//		}
+//		if (collTemp.size() > 0) {
+//			vObjectlocal = ((ArrayList<CustomersVb>) collTemp).get(0);
+//			int intStaticDeletionFlag = getStatus(vObjectlocal);
+//			if (intStaticDeletionFlag == Constants.PASSIVATE) {
+//				exceptionCode = getResultObject(Constants.CANNOT_DELETE_AN_INACTIVE_RECORD);
+//				throw buildRuntimeCustomException(exceptionCode);
+//			}
+//		} else {
+//			exceptionCode = getResultObject(Constants.ATTEMPT_TO_DELETE_UNEXISTING_RECORD);
+//			throw buildRuntimeCustomException(exceptionCode);
+//		}
+//		collTemp = doSelectPendingRecord(vObject);
+//		if (collTemp == null) {
+//			exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
+//			throw buildRuntimeCustomException(exceptionCode);
+//		}
+//		if (collTemp.size() > 0) {
+//			exceptionCode = getResultObject(Constants.TRYING_TO_DELETE_APPROVAL_PENDING_RECORD);
+//			throw buildRuntimeCustomException(exceptionCode);
+//		}
+//		if (vObjectlocal == null) {
+//			exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
+//			throw buildRuntimeCustomException(exceptionCode);
+//		}
+//		if (collTemp.size() > 0) {
+//			vObjectlocal = ((ArrayList<CustomersVb>) collTemp).get(0);
+//			vObjectlocal.setDateCreation(vObject.getDateCreation());
+//		}
+//		vObjectlocal.setMaker(getIntCurrentUserId());
+//		vObjectlocal.setRecordIndicator(Constants.STATUS_DELETE);
+//		vObjectlocal.setVerifier(0);
+//		vObjectlocal.setCusExtrasStatus(vObjectlocal.getCustomerStatus());
+//		vObjectlocal.setCusExtrasStatusNt(vObjectlocal.getCustomerStatusNt());
+//		retVal = doInsertionPendWithDc(vObjectlocal);
+//		if (retVal != Constants.SUCCESSFUL_OPERATION) {
+//			exceptionCode = getResultObject(retVal);
+//			throw buildRuntimeCustomException(exceptionCode);
+//		}
+//		retVal = doInsertionPendWithDcForCustExtras(vObjectlocal);
+//		if (retVal != Constants.SUCCESSFUL_OPERATION) {
+//			exceptionCode = getResultObject(retVal);
+//			throw buildRuntimeCustomException(exceptionCode);
+//		}
+//		vObject.setRecordIndicator(Constants.STATUS_DELETE);
+//		vObject.setVerifier(0);
+//		return getResultObject(Constants.SUCCESSFUL_OPERATION);
+//	}
+
 	protected ExceptionCode doDeleteRecordForNonTrans(CustomersVb vObject) throws RuntimeCustomException {
 		CustomersVb vObjectlocal = null;
 		List<CustomersVb> collTemp = null;
@@ -2231,6 +2369,7 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 		strErrorDesc = "";
 		strCurrentOperation = Constants.DELETE;
 		setServiceDefaults();
+
 		collTemp = selectApprovedRecord(vObject);
 		if (collTemp == null) {
 			logger.error("Collection is null");
@@ -2248,6 +2387,7 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 			exceptionCode = getResultObject(Constants.ATTEMPT_TO_DELETE_UNEXISTING_RECORD);
 			throw buildRuntimeCustomException(exceptionCode);
 		}
+
 		collTemp = doSelectPendingRecord(vObject);
 		if (collTemp == null) {
 			exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
@@ -2265,28 +2405,42 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 			vObjectlocal = ((ArrayList<CustomersVb>) collTemp).get(0);
 			vObjectlocal.setDateCreation(vObject.getDateCreation());
 		}
+
 		vObjectlocal.setMaker(getIntCurrentUserId());
 		vObjectlocal.setRecordIndicator(Constants.STATUS_DELETE);
 		vObjectlocal.setVerifier(0);
 		vObjectlocal.setCusExtrasStatus(vObjectlocal.getCustomerStatus());
 		vObjectlocal.setCusExtrasStatusNt(vObjectlocal.getCustomerStatusNt());
+
+		// 1) Insert delete request into CUSTOMER_PEND
 		retVal = doInsertionPendWithDc(vObjectlocal);
 		if (retVal != Constants.SUCCESSFUL_OPERATION) {
 			exceptionCode = getResultObject(retVal);
 			throw buildRuntimeCustomException(exceptionCode);
 		}
+
+		// 2) Insert delete request into CUSTOMER_EXTRAS_PEND (your existing flow)
 		retVal = doInsertionPendWithDcForCustExtras(vObjectlocal);
 		if (retVal != Constants.SUCCESSFUL_OPERATION) {
 			exceptionCode = getResultObject(retVal);
 			throw buildRuntimeCustomException(exceptionCode);
 		}
+
+		// 3) *** NEW *** Stage CUSTOMER_MANUAL rows: MAIN -> PEND as STATUS_DELETE
+		int cm = stageCustomerManualDeleteToPend(vObjectlocal);
+		if (cm != Constants.SUCCESSFUL_OPERATION) {
+			exceptionCode = getResultObject(cm);
+			throw buildRuntimeCustomException(exceptionCode);
+		}
+
 		vObject.setRecordIndicator(Constants.STATUS_DELETE);
 		vObject.setVerifier(0);
 		return getResultObject(Constants.SUCCESSFUL_OPERATION);
 	}
 
 	protected int doInsertionApprForCustExtras(CustomersVb vObject) {
-		String query = "INSERT INTO "+CustomersExtras+" (COUNTRY, LE_BOOK, CUSTOMER_ID, CUS_EXTRAS_STATUS_NT, CUS_EXTRAS_STATUS, "
+		String query = "INSERT INTO " + CustomersExtras
+				+ " (COUNTRY, LE_BOOK, CUSTOMER_ID, CUS_EXTRAS_STATUS_NT, CUS_EXTRAS_STATUS, "
 				+ "RECORD_INDICATOR_NT, RECORD_INDICATOR, MAKER, VERIFIER, INTERNAL_STATUS, "
 				+ "DATE_CREATION, DATE_LAST_MODIFIED, DUAL_NATIONALITY_1, DUAL_NATIONALITY_2, DUAL_NATIONALITY_3) "
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " + systemDate + ", " + systemDate + ", ?, ?, ?)";
@@ -2299,7 +2453,7 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 	}
 
 	protected int doInsertionPendForCustExtras(CustomersVb vObject) {
-		String query = "INSERT INTO "+CustomersExtras+"_PEND (COUNTRY, LE_BOOK, CUSTOMER_ID, CUS_EXTRAS_STATUS_NT, "
+		String query = "INSERT INTO " + CustomersExtras + "_PEND (COUNTRY, LE_BOOK, CUSTOMER_ID, CUS_EXTRAS_STATUS_NT, "
 				+ "CUS_EXTRAS_STATUS, RECORD_INDICATOR_NT, RECORD_INDICATOR, MAKER, VERIFIER, INTERNAL_STATUS, "
 				+ "DATE_CREATION, DATE_LAST_MODIFIED, DUAL_NATIONALITY_1, DUAL_NATIONALITY_2, DUAL_NATIONALITY_3) "
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " + systemDate + ", " + systemDate + ", ?, ?, ?)";
@@ -2311,7 +2465,7 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 	}
 
 	protected int doInsertionPendWithDcForCustExtras(CustomersVb vObject) {
-		String query = "INSERT INTO "+CustomersExtras+"_PEND (COUNTRY, LE_BOOK, CUSTOMER_ID, CUS_EXTRAS_STATUS_NT, "
+		String query = "INSERT INTO " + CustomersExtras + "_PEND (COUNTRY, LE_BOOK, CUSTOMER_ID, CUS_EXTRAS_STATUS_NT, "
 				+ "CUS_EXTRAS_STATUS, RECORD_INDICATOR_NT, RECORD_INDICATOR, MAKER, VERIFIER, INTERNAL_STATUS, "
 				+ "DATE_CREATION, DATE_LAST_MODIFIED, DUAL_NATIONALITY_1, DUAL_NATIONALITY_2, DUAL_NATIONALITY_3) "
 				+ "Values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " + systemDate + ", " + dateTimeConvert + ", ?, ?, ?)";
@@ -2324,7 +2478,7 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 	}
 
 	protected int doUpdateApprForCustExtras(CustomersVb vObject) {
-		String query = "UPDATE "+CustomersExtras+" SET "
+		String query = "UPDATE " + CustomersExtras + " SET "
 				+ " DUAL_NATIONALITY_1 = ?, DUAL_NATIONALITY_2 = ?, DUAL_NATIONALITY_3 = ?, "
 				+ " RECORD_INDICATOR = ?, CUS_EXTRAS_STATUS = ?, DATE_LAST_MODIFIED =  " + systemDate
 				+ " WHERE COUNTRY = ? AND LE_BOOK = ? AND CUSTOMER_ID = ?";
@@ -2335,7 +2489,7 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 	}
 
 	protected int doUpdatePendForCustExtras(CustomersVb vObject) {
-		String query = "UPDATE "+CustomersExtras+"_PEND SET "
+		String query = "UPDATE " + CustomersExtras + "_PEND SET "
 				+ " DUAL_NATIONALITY_1 = ?, DUAL_NATIONALITY_2 = ?, DUAL_NATIONALITY_3 = ?, "
 				+ " RECORD_INDICATOR = ?, CUS_EXTRAS_STATUS = ?, DATE_LAST_MODIFIED =  " + systemDate
 				+ " WHERE COUNTRY = ? AND LE_BOOK = ? AND CUSTOMER_ID = ?";
@@ -2346,17 +2500,200 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 	}
 
 	protected int doDeleteApprForCustExtras(CustomersVb vObject) {
-		String query = "Delete From "+CustomersExtras+" Where COUNTRY = ? AND LE_BOOK = ? AND CUSTOMER_ID = ? ";
+		String query = "Delete From " + CustomersExtras + " Where COUNTRY = ? AND LE_BOOK = ? AND CUSTOMER_ID = ? ";
 		Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getCustomerId() };
 		return getJdbcTemplate().update(query, args);
 	}
 
 	protected int doDeletePendForCustExtras(CustomersVb vObject) {
-		String query = " Delete From "+CustomersExtras+"_PEND Where COUNTRY = ? AND LE_BOOK = ? AND CUSTOMER_ID = ? ";
+		String query = " Delete From " + CustomersExtras
+				+ "_PEND Where COUNTRY = ? AND LE_BOOK = ? AND CUSTOMER_ID = ? ";
 		Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getCustomerId() };
 		return getJdbcTemplate().update(query, args);
 	}
 
+//	public ExceptionCode doApproveRecord(CustomersVb vObject, boolean staticDelete) throws RuntimeCustomException {
+//		CustomersVb oldContents = null;
+//		CustomersVb vObjectlocal = null;
+//		List<CustomersVb> collTemp = null;
+//		ExceptionCode exceptionCode = null;
+//		strCurrentOperation = Constants.APPROVE;
+//		setServiceDefaults();
+//		try {
+//			if ("RUNNING".equalsIgnoreCase(getBuildStatus(vObject))) {
+//				exceptionCode = getResultObject(Constants.BUILD_IS_RUNNING_APPROVE);
+//				throw buildRuntimeCustomException(exceptionCode);
+//			}
+//			// See if such a pending request exists in the pending table
+//			vObject.setVerifier(getIntCurrentUserId());
+//			vObject.setRecordIndicator(Constants.STATUS_ZERO);
+//			collTemp = doSelectPendingRecord(vObject);
+//			if (collTemp == null) {
+//				exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
+//				throw buildRuntimeCustomException(exceptionCode);
+//			}
+//
+//			if (collTemp.size() == 0) {
+//				exceptionCode = getResultObject(Constants.NO_SUCH_PENDING_RECORD);
+//				throw buildRuntimeCustomException(exceptionCode);
+//			}
+//
+//			vObjectlocal = ((ArrayList<CustomersVb>) collTemp).get(0);
+//
+//			if (vObjectlocal.getMaker() == getIntCurrentUserId()) {
+//				exceptionCode = getResultObject(Constants.MAKER_CANNOT_APPROVE);
+//				throw buildRuntimeCustomException(exceptionCode);
+//			}
+//
+//			// If it's NOT addition, collect the existing record contents from the
+//			// Approved table and keep it aside, for writing audit information later.
+//			if (vObjectlocal.getRecordIndicator() != Constants.STATUS_INSERT) {
+//				collTemp = selectApprovedRecord(vObject);
+//				if (collTemp == null || collTemp.isEmpty()) {
+//					exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
+//					throw buildRuntimeCustomException(exceptionCode);
+//				}
+//				oldContents = ((ArrayList<CustomersVb>) collTemp).get(0);
+//			}
+//
+//			if (vObjectlocal.getRecordIndicator() == Constants.STATUS_INSERT) { // Add authorization
+//				// Write the contents of the Pending table record to the Approved table
+//				vObjectlocal.setRecordIndicator(Constants.STATUS_ZERO);
+//				vObjectlocal.setVerifier(getIntCurrentUserId());
+//				retVal = doInsertionAppr(vObjectlocal);
+//				if (retVal != Constants.SUCCESSFUL_OPERATION) {
+//					exceptionCode = getResultObject(retVal);
+//					throw buildRuntimeCustomException(exceptionCode);
+//				} else {
+//					retVal = doInsertionApprForCustExtras(vObjectlocal);
+//				}
+//				if (retVal != Constants.SUCCESSFUL_OPERATION) {
+//					exceptionCode = getResultObject(retVal);
+//					throw buildRuntimeCustomException(exceptionCode);
+//				} else {
+//					exceptionCode = getResultObject(Constants.SUCCESSFUL_OPERATION);
+//				}
+//
+//				String systemDate = getSystemDate();
+//				vObject.setDateLastModified(systemDate);
+//				vObject.setDateCreation(systemDate);
+//				strApproveOperation = Constants.ADD;
+//			} else if (vObjectlocal.getRecordIndicator() == Constants.STATUS_UPDATE) { // Modify authorization
+//
+//				collTemp = selectApprovedRecord(vObject);
+//				if (collTemp == null || collTemp.isEmpty()) {
+//					exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
+//					throw buildRuntimeCustomException(exceptionCode);
+//				}
+//
+//				// If record already exists in the approved table, reject the addition
+//				if (collTemp.size() > 0) {
+//					// retVal = doUpdateAppr(vObjectlocal, MISConstants.ACTIVATE);
+//					vObjectlocal.setVerifier(getIntCurrentUserId());
+//					vObjectlocal.setRecordIndicator(Constants.STATUS_ZERO);
+//					retVal = doUpdateAppr(vObjectlocal);
+//				}
+//				// Modify the existing contents of the record in Approved table
+//				if (retVal != Constants.SUCCESSFUL_OPERATION) {
+//					exceptionCode = getResultObject(retVal);
+//					throw buildRuntimeCustomException(exceptionCode);
+//				} else {
+//					retVal = doUpdateApprForCustExtras(vObjectlocal);
+////					retVal = customerManualDao.deleteAndInsertCustomerManualAppr(null)
+//				}
+//				if (retVal != Constants.SUCCESSFUL_OPERATION) {
+//					exceptionCode = getResultObject(retVal);
+//					throw buildRuntimeCustomException(exceptionCode);
+//				} else {
+//					exceptionCode = getResultObject(Constants.SUCCESSFUL_OPERATION);
+//				}
+//				String systemDate = getSystemDate();
+//				vObject.setDateLastModified(systemDate);
+//				// Set the current operation to write to audit log
+//				strApproveOperation = Constants.MODIFY;
+//			} else if (vObjectlocal.getRecordIndicator() == Constants.STATUS_DELETE) { // Delete authorization
+//				if (staticDelete) {
+//					// Update the existing record status in the Approved table to delete
+//					setStatus(vObjectlocal, Constants.PASSIVATE);
+//					vObjectlocal.setRecordIndicator(Constants.STATUS_ZERO);
+//					vObjectlocal.setVerifier(getIntCurrentUserId());
+//					retVal = doUpdateAppr(vObjectlocal);
+//					if (retVal != Constants.SUCCESSFUL_OPERATION) {
+//						exceptionCode = getResultObject(retVal);
+//						throw buildRuntimeCustomException(exceptionCode);
+//					} else {
+//						retVal = doUpdateApprForCustExtras(vObjectlocal);
+//					}
+//					if (retVal != Constants.SUCCESSFUL_OPERATION) {
+//						exceptionCode = getResultObject(retVal);
+//						throw buildRuntimeCustomException(exceptionCode);
+//					} else {
+//						exceptionCode = getResultObject(Constants.SUCCESSFUL_OPERATION);
+//					}
+//					setStatus(vObject, Constants.PASSIVATE);
+//					String systemDate = getSystemDate();
+//					vObject.setDateLastModified(systemDate);
+//
+//				} else {
+//					// Delete the existing record from the Approved table
+//					retVal = doDeleteAppr(vObjectlocal);
+//					if (retVal != Constants.SUCCESSFUL_OPERATION) {
+//						exceptionCode = getResultObject(retVal);
+//						throw buildRuntimeCustomException(exceptionCode);
+//					}
+//					retVal = doDeleteApprForCustExtras(vObjectlocal);
+//					if (retVal != Constants.SUCCESSFUL_OPERATION) {
+//						exceptionCode = getResultObject(retVal);
+//						throw buildRuntimeCustomException(exceptionCode);
+//					}
+//					String systemDate = getSystemDate();
+//					vObject.setDateLastModified(systemDate);
+//				}
+//				// Set the current operation to write to audit log
+//				strApproveOperation = Constants.DELETE;
+//			} else {
+//				exceptionCode = getResultObject(Constants.INVALID_STATUS_FLAG_IN_DATABASE);
+//				throw buildRuntimeCustomException(exceptionCode);
+//			}
+//
+//			// Delete the record from the Pending table
+//			retVal = deletePendingRecord(vObjectlocal);
+//
+//			if (retVal != Constants.SUCCESSFUL_OPERATION) {
+//				exceptionCode = getResultObject(retVal);
+//				throw buildRuntimeCustomException(exceptionCode);
+//			}
+//			retVal = doDeletePendForCustExtras(vObject);
+//			if (retVal != Constants.SUCCESSFUL_OPERATION) {
+//				exceptionCode = getResultObject(retVal);
+//				throw buildRuntimeCustomException(exceptionCode);
+//			}
+//			// Set the internal status to Approved
+//			vObject.setInternalStatus(0);
+//			vObject.setRecordIndicator(Constants.STATUS_ZERO);
+//			if (vObjectlocal.getRecordIndicator() == Constants.STATUS_DELETE && !staticDelete) {
+//				exceptionCode = writeAuditLog(null, oldContents);
+//				vObject.setRecordIndicator(-1);
+//			} else
+//				exceptionCode = writeAuditLog(vObjectlocal, oldContents);
+//
+//			if (exceptionCode.getErrorCode() != Constants.SUCCESSFUL_OPERATION) {
+//				exceptionCode = getResultObject(Constants.AUDIT_TRAIL_ERROR);
+//				throw buildRuntimeCustomException(exceptionCode);
+//			}
+//			return getResultObject(Constants.SUCCESSFUL_OPERATION);
+//		} catch (UncategorizedSQLException uSQLEcxception) {
+//			strErrorDesc = parseErrorMsg(uSQLEcxception);
+//			exceptionCode = getResultObject(Constants.WE_HAVE_ERROR_DESCRIPTION);
+//			throw buildRuntimeCustomException(exceptionCode);
+//		} catch (Exception ex) {
+//			logger.error("Error in Approve.", ex);
+//			logger.error(((vObject == null) ? "vObject is Null" : vObject.toString()));
+//			strErrorDesc = ex.getMessage();
+//			exceptionCode = getResultObject(Constants.WE_HAVE_ERROR_DESCRIPTION);
+//			throw buildRuntimeCustomException(exceptionCode);
+//		}
+//	}
 	public ExceptionCode doApproveRecord(CustomersVb vObject, boolean staticDelete) throws RuntimeCustomException {
 		CustomersVb oldContents = null;
 		CustomersVb vObjectlocal = null;
@@ -2390,8 +2727,8 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				throw buildRuntimeCustomException(exceptionCode);
 			}
 
-			// If it's NOT addition, collect the existing record contents from the
-			// Approved table and keep it aside, for writing audit information later.
+			// If it's NOT addition, collect the existing record contents from the Approved
+			// table
 			if (vObjectlocal.getRecordIndicator() != Constants.STATUS_INSERT) {
 				collTemp = selectApprovedRecord(vObject);
 				if (collTemp == null || collTemp.isEmpty()) {
@@ -2402,7 +2739,6 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 			}
 
 			if (vObjectlocal.getRecordIndicator() == Constants.STATUS_INSERT) { // Add authorization
-				// Write the contents of the Pending table record to the Approved table
 				vObjectlocal.setRecordIndicator(Constants.STATUS_ZERO);
 				vObjectlocal.setVerifier(getIntCurrentUserId());
 				retVal = doInsertionAppr(vObjectlocal);
@@ -2415,14 +2751,21 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				if (retVal != Constants.SUCCESSFUL_OPERATION) {
 					exceptionCode = getResultObject(retVal);
 					throw buildRuntimeCustomException(exceptionCode);
-				} else {
-					exceptionCode = getResultObject(Constants.SUCCESSFUL_OPERATION);
 				}
 
+				// ---- CUSTOMER MANUAL: INSERT branch
+				int cm = syncCustomerManualForApproval(vObjectlocal, Constants.STATUS_INSERT, false);
+				if (cm != Constants.SUCCESSFUL_OPERATION) {
+					exceptionCode = getResultObject(cm);
+					throw buildRuntimeCustomException(exceptionCode);
+				}
+
+				exceptionCode = getResultObject(Constants.SUCCESSFUL_OPERATION);
 				String systemDate = getSystemDate();
 				vObject.setDateLastModified(systemDate);
 				vObject.setDateCreation(systemDate);
 				strApproveOperation = Constants.ADD;
+
 			} else if (vObjectlocal.getRecordIndicator() == Constants.STATUS_UPDATE) { // Modify authorization
 
 				collTemp = selectApprovedRecord(vObject);
@@ -2431,14 +2774,11 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 					throw buildRuntimeCustomException(exceptionCode);
 				}
 
-				// If record already exists in the approved table, reject the addition
 				if (collTemp.size() > 0) {
-					// retVal = doUpdateAppr(vObjectlocal, MISConstants.ACTIVATE);
 					vObjectlocal.setVerifier(getIntCurrentUserId());
 					vObjectlocal.setRecordIndicator(Constants.STATUS_ZERO);
 					retVal = doUpdateAppr(vObjectlocal);
 				}
-				// Modify the existing contents of the record in Approved table
 				if (retVal != Constants.SUCCESSFUL_OPERATION) {
 					exceptionCode = getResultObject(retVal);
 					throw buildRuntimeCustomException(exceptionCode);
@@ -2448,16 +2788,23 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				if (retVal != Constants.SUCCESSFUL_OPERATION) {
 					exceptionCode = getResultObject(retVal);
 					throw buildRuntimeCustomException(exceptionCode);
-				} else {
-					exceptionCode = getResultObject(Constants.SUCCESSFUL_OPERATION);
 				}
+
+				// ---- CUSTOMER MANUAL: UPDATE branch
+				int cm = syncCustomerManualForApproval(vObjectlocal, Constants.STATUS_UPDATE, false);
+				if (cm != Constants.SUCCESSFUL_OPERATION) {
+					exceptionCode = getResultObject(cm);
+					throw buildRuntimeCustomException(exceptionCode);
+				}
+
+				exceptionCode = getResultObject(Constants.SUCCESSFUL_OPERATION);
 				String systemDate = getSystemDate();
 				vObject.setDateLastModified(systemDate);
-				// Set the current operation to write to audit log
 				strApproveOperation = Constants.MODIFY;
+
 			} else if (vObjectlocal.getRecordIndicator() == Constants.STATUS_DELETE) { // Delete authorization
 				if (staticDelete) {
-					// Update the existing record status in the Approved table to delete
+					// Soft delete
 					setStatus(vObjectlocal, Constants.PASSIVATE);
 					vObjectlocal.setRecordIndicator(Constants.STATUS_ZERO);
 					vObjectlocal.setVerifier(getIntCurrentUserId());
@@ -2471,15 +2818,22 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 					if (retVal != Constants.SUCCESSFUL_OPERATION) {
 						exceptionCode = getResultObject(retVal);
 						throw buildRuntimeCustomException(exceptionCode);
-					} else {
-						exceptionCode = getResultObject(Constants.SUCCESSFUL_OPERATION);
 					}
+
+					// ---- CUSTOMER MANUAL: DELETE (soft)
+					int cm = syncCustomerManualForApproval(vObjectlocal, Constants.STATUS_DELETE, true);
+					if (cm != Constants.SUCCESSFUL_OPERATION) {
+						exceptionCode = getResultObject(cm);
+						throw buildRuntimeCustomException(exceptionCode);
+					}
+
+					exceptionCode = getResultObject(Constants.SUCCESSFUL_OPERATION);
 					setStatus(vObject, Constants.PASSIVATE);
 					String systemDate = getSystemDate();
 					vObject.setDateLastModified(systemDate);
 
 				} else {
-					// Delete the existing record from the Approved table
+					// Hard delete
 					retVal = doDeleteAppr(vObjectlocal);
 					if (retVal != Constants.SUCCESSFUL_OPERATION) {
 						exceptionCode = getResultObject(retVal);
@@ -2490,11 +2844,19 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 						exceptionCode = getResultObject(retVal);
 						throw buildRuntimeCustomException(exceptionCode);
 					}
+
+					// ---- CUSTOMER MANUAL: DELETE (hard)
+					int cm = syncCustomerManualForApproval(vObjectlocal, Constants.STATUS_DELETE, false);
+					if (cm != Constants.SUCCESSFUL_OPERATION) {
+						exceptionCode = getResultObject(cm);
+						throw buildRuntimeCustomException(exceptionCode);
+					}
+
 					String systemDate = getSystemDate();
 					vObject.setDateLastModified(systemDate);
 				}
-				// Set the current operation to write to audit log
 				strApproveOperation = Constants.DELETE;
+
 			} else {
 				exceptionCode = getResultObject(Constants.INVALID_STATUS_FLAG_IN_DATABASE);
 				throw buildRuntimeCustomException(exceptionCode);
@@ -2502,7 +2864,6 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 
 			// Delete the record from the Pending table
 			retVal = deletePendingRecord(vObjectlocal);
-
 			if (retVal != Constants.SUCCESSFUL_OPERATION) {
 				exceptionCode = getResultObject(retVal);
 				throw buildRuntimeCustomException(exceptionCode);
@@ -2512,6 +2873,7 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				exceptionCode = getResultObject(retVal);
 				throw buildRuntimeCustomException(exceptionCode);
 			}
+
 			// Set the internal status to Approved
 			vObject.setInternalStatus(0);
 			vObject.setRecordIndicator(Constants.STATUS_ZERO);
@@ -2569,6 +2931,7 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				throw buildRuntimeCustomException(exceptionCode);
 			} else {
 				retVal = doDeletePendForCustExtras(vObjectlocal);
+				retVal = customerManualDao.doDeleteCustomerManual(vObjectlocal, false);
 			}
 			return getResultObject(Constants.SUCCESSFUL_OPERATION);
 		} catch (UncategorizedSQLException uSQLEcxception) {
@@ -2583,4 +2946,147 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 			throw buildRuntimeCustomException(exceptionCode);
 		}
 	}
+
+	private CustomerManualColVb buildManualKeyFromCustomer(CustomersVb cust) {
+		CustomerManualColVb cm = new CustomerManualColVb();
+		cm.setCountry(cust.getCountry());
+		cm.setLeBook(cust.getLeBook());
+		cm.setCustomerId(cust.getCustomerId());
+		// Map more keys if your schema uses them:
+		// cm.setOuCode(cust.getOuCode());
+		// cm.setBranchCode(cust.getBranchCode());
+		return cm;
+	}
+
+	/**
+	 * Sync Customer Manual (PEND → APPR, APPR → HIS) during Customers approval.
+	 * 
+	 * INSERT/UPDATE: 1) Read MANUAL_PEND 2) If MANUAL (approved) has rows → write
+	 * them to MANUAL_HIS 3) Delete MANUAL (approved) 4) Insert MANUAL_PEND rows
+	 * into MANUAL (approved) 5) Clear MANUAL_PEND
+	 *
+	 * DELETE (hard): 1) If MANUAL (approved) has rows → write them to MANUAL_HIS 2)
+	 * Delete MANUAL (approved) 3) Clear MANUAL_PEND
+	 *
+	 * DELETE (soft): 1) If MANUAL (approved) has rows → write them to MANUAL_HIS
+	 * (as delete) 2) Passivate MANUAL (approved) (or delete if passivation not
+	 * supported) 3) Clear MANUAL_PEND
+	 */
+	/**
+	 * Sync Customer Manual data during Customers approval. INSERT/UPDATE: PEND ->
+	 * (HIS current APPR) -> APPR; then clear PEND DELETE hard : (HIS current APPR)
+	 * -> delete APPR; then clear PEND DELETE soft : (HIS current APPR) ->
+	 * passivate/delete APPR (we delete here); then clear PEND
+	 */
+	private int syncCustomerManualForApproval(CustomersVb custKey, int op, boolean staticDelete) {
+		CustomerManualColVb key = buildManualKeyFromCustomer(custKey);
+
+		// fetch current states
+		List<CustomerManualColVb> pendRows = customerManualDao.selectPendByKey(key);
+		List<CustomerManualColVb> apprRows = customerManualDao.selectApprByKey(key);
+
+		int rc;
+
+		if (op == Constants.STATUS_INSERT || op == Constants.STATUS_UPDATE) {
+			// Move existing approved rows to history
+			if (apprRows != null && !apprRows.isEmpty()) {
+				for (CustomerManualColVb row : apprRows) {
+					row.setRecordIndicator(Constants.STATUS_UPDATE);
+					row.setVerifier(getIntCurrentUserId());
+				}
+				rc = customerManualDao.insertHistory(apprRows, "BEFORE");
+				if (rc == Constants.ERRONEOUS_OPERATION)
+					return rc;
+
+				rc = customerManualDao.deleteApprovedByKey(key);
+				if (rc == Constants.ERRONEOUS_OPERATION)
+					return rc;
+			}
+
+			// Insert pend -> approved
+			if (pendRows != null && !pendRows.isEmpty()) {
+				for (CustomerManualColVb row : pendRows) {
+					row.setRecordIndicator(Constants.STATUS_ZERO);
+					row.setVerifier(getIntCurrentUserId());
+				}
+				rc = customerManualDao.insertApproved(pendRows);
+				if (rc == Constants.ERRONEOUS_OPERATION)
+					return rc;
+			}
+
+		} else if (op == Constants.STATUS_DELETE) {
+			// Write current approved to history
+			if (apprRows != null && !apprRows.isEmpty()) {
+				for (CustomerManualColVb row : apprRows) {
+					row.setRecordIndicator(Constants.STATUS_DELETE);
+					row.setVerifier(getIntCurrentUserId());
+				}
+				rc = customerManualDao.insertHistory(apprRows, "DELETE");
+				if (rc == Constants.ERRONEOUS_OPERATION)
+					return rc;
+			}
+
+			// Soft delete = passivate (if supported) OR delete; here we delete
+			rc = customerManualDao.deleteApprovedByKey(key);
+			if (rc == Constants.ERRONEOUS_OPERATION)
+				return rc;
+			if (staticDelete) {
+				// 3) STATIC DELETE: if PENDING exists, promote -> APPROVED, then clear PENDING
+				if (pendRows != null && !pendRows.isEmpty()) {
+					for (CustomerManualColVb row : pendRows) {
+						row.setRecordIndicator(Constants.STATUS_ZERO);
+						row.setColumnStatus(Constants.PASSIVATE);
+						row.setVerifier(getIntCurrentUserId());
+					}
+					rc = customerManualDao.insertApproved(pendRows);
+					if (rc == Constants.ERRONEOUS_OPERATION)
+						return rc;
+
+					
+				}
+				// If no PENDING, nothing else to do.
+			}
+		}
+
+		// Always clear pend after finishing
+		rc = customerManualDao.deletePendByKey(key);
+		if (rc == Constants.ERRONEOUS_OPERATION)
+			return rc;
+
+		return Constants.SUCCESSFUL_OPERATION;
+	}
+
+	private int stageCustomerManualDeleteToPend(CustomersVb cust) {
+		// Build CustomerManual key
+		setServiceDefaults();
+		CustomerManualColVb key = new CustomerManualColVb();
+		key.setCountry(cust.getCountry());
+		key.setLeBook(cust.getLeBook());
+		key.setCustomerId(cust.getCustomerId());
+
+		// Fetch all approved manual rows for this customer
+		List<CustomerManualColVb> apprRows = customerManualDao.selectApprByKey(key);
+
+		if (apprRows == null || apprRows.isEmpty()) {
+			return Constants.SUCCESSFUL_OPERATION; // nothing to stage
+		}
+
+		int totalOps = 0;
+
+		for (CustomerManualColVb row : apprRows) {
+			// prepare a pending "delete" image
+			row.setMaker(intCurrentUserId);
+			row.setVerifier(0);
+			row.setRecordIndicator(Constants.STATUS_DELETE);
+			// keep other values as-is (COLUMN_VALUE etc.)
+
+			// Upsert into PEND (this method: backup existing PEND to HIS, delete it, then
+			// insert)
+			totalOps += customerManualDao.deleteAndInsertCustomerManualPend(row);
+		}
+
+		// If we processed rows without exception, consider it success
+		return Constants.SUCCESSFUL_OPERATION;
+	}
+
 }

@@ -14,17 +14,17 @@ public class MssqlToOracleDynamic {
 
 	public static void main(String[] args) {
 		// MSSQL connection details
-		String mssqlUrl = "jdbc:sqlserver://10.16.1.38;instance=VISIONBISQL2019;port=52866;DatabaseName=VISION_RA;encrypt=false;trustServerCertificate=false";
+		String mssqlUrl = "jdbc:sqlserver://10.16.1.38;instance=VISIONBISQL2019;port=52866;DatabaseName=VISION_fatca;encrypt=false;trustServerCertificate=false";
 		String mssqlUser = "Vision";
 		String mssqlPass = "Vision_RA";
 
 		// Oracle connection details
 		String oracleUrl = "jdbc:oracle:thin:@202.83.25.244:1521:visdb";
-		String oracleUser = "VISION_RA_DCB";
+		String oracleUser = "visiongdi";
 		String oraclePass = "vision123";
 
-		String tableName = "PRD_VISION_MENU";
-		String whereCondition = "ALPHA_TAB = 7080"; // dynamic filter
+		String tableName = "CUSTOMER_MANUAL_COL_LIST";
+		String whereCondition = "1=1"; // dynamic filter
 
 		try (Connection mssqlConn = DriverManager.getConnection(mssqlUrl, mssqlUser, mssqlPass);
 				Connection oracleConn = DriverManager.getConnection(oracleUrl, oracleUser, oraclePass);

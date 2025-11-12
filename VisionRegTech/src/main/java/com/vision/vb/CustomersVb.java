@@ -3,6 +3,11 @@
  */
 package com.vision.vb;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import com.vision.dao.CustomerManualColVb;
+
 public class CustomersVb extends CommonVb {
 	private String customerOpenDate = "";
 	private String customerId = "";
@@ -98,31 +103,11 @@ public class CustomersVb extends CommonVb {
 	private String dualNationality1Desc = "";
 	private String dualNationality2Desc = "";
 	private String dualNationality3Desc = "";
-	public String getDualNationality1Desc() {
-		return dualNationality1Desc;
-	}
-
-	public void setDualNationality1Desc(String dualNationality1Desc) {
-		this.dualNationality1Desc = dualNationality1Desc;
-	}
-
-	public String getDualNationality2Desc() {
-		return dualNationality2Desc;
-	}
-
-	public void setDualNationality2Desc(String dualNationality2Desc) {
-		this.dualNationality2Desc = dualNationality2Desc;
-	}
-
-	public String getDualNationality3Desc() {
-		return dualNationality3Desc;
-	}
-
-	public void setDualNationality3Desc(String dualNationality3Desc) {
-		this.dualNationality3Desc = dualNationality3Desc;
-	}
-
-	private int cusExtrasStatus = -1;
+	
+	List<CustomerManualColVb> manualList = new ArrayList<CustomerManualColVb>();
+	
+	
+		private int cusExtrasStatus = -1;
 	private int cusExtrasStatusNt = -1;
 
 	public String getCrsOverRideDesc() {
@@ -820,5 +805,37 @@ public class CustomersVb extends CommonVb {
 	public void setCusExtrasStatusNt(int cusExtrasStatusNt) {
 		this.cusExtrasStatusNt = cusExtrasStatusNt;
 	}
+
+	public List<CustomerManualColVb> getManualList() {
+		return manualList;
+	}
+
+	public void setManualList(List<CustomerManualColVb> manualList) {
+		this.manualList = manualList;
+	}
+	public String getDualNationality1Desc() {
+		return dualNationality1Desc;
+	}
+
+	public void setDualNationality1Desc(String dualNationality1Desc) {
+		this.dualNationality1Desc = dualNationality1Desc;
+	}
+
+	public String getDualNationality2Desc() {
+		return dualNationality2Desc;
+	}
+
+	public void setDualNationality2Desc(String dualNationality2Desc) {
+		this.dualNationality2Desc = dualNationality2Desc;
+	}
+
+	public String getDualNationality3Desc() {
+		return dualNationality3Desc;
+	}
+
+	public void setDualNationality3Desc(String dualNationality3Desc) {
+		this.dualNationality3Desc = dualNationality3Desc;
+	}
+
 	
 }

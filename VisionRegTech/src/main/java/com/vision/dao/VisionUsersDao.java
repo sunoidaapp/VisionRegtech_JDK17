@@ -14,27 +14,17 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.Vector;
-
-import jakarta.mail.Authenticator;
-import jakarta.mail.Message;
-import jakarta.mail.Multipart;
-import jakarta.mail.PasswordAuthentication;
-import jakarta.mail.Session;
-import jakarta.mail.Transport;
-import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeBodyPart;
-import jakarta.mail.internet.MimeMessage;
-import jakarta.mail.internet.MimeMultipart;
-import jakarta.servlet.ServletContext;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.BeansException;
@@ -65,6 +55,17 @@ import com.vision.vb.UserRestrictionVb;
 import com.vision.vb.VisionUsersVb;
 
 import freemarker.template.Configuration;
+import jakarta.mail.Authenticator;
+import jakarta.mail.Message;
+import jakarta.mail.Multipart;
+import jakarta.mail.PasswordAuthentication;
+import jakarta.mail.Session;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeBodyPart;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
+import jakarta.servlet.ServletContext;
 /**
  * @author kiran-kumar.karra
  *
@@ -279,6 +280,8 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 				}else {
 					visionUsersVb.setLanguage("EN");
 				}
+				if(ValidationUtil.isValid(rs.getString("APPLICATION_ACCESS")))
+					visionUsersVb.setApplicationAccess(rs.getString("APPLICATION_ACCESS"));
 				return visionUsersVb;
 			}
 
@@ -589,76 +592,138 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 
 	}
 
-	/* Convert to SQL Query */
+
 	public List<VisionUsersVb> getActiveUserByUserLoginId(VisionUsersVb dObj) {
-		StringBuffer strQueryAppr = null;
-		Object objParams[] = new Object[4];
-		if ("ORACLE".equalsIgnoreCase(databaseType)) {
-			strQueryAppr = new StringBuffer("Select TAppr.VISION_ID,"
-					+ " TAppr.USER_NAME, TAppr.USER_LOGIN_ID, TAppr.USER_EMAIL_ID,"
-					+ " To_Char(TAppr.LAST_ACTIVITY_DATE, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') LAST_ACTIVITY_DATE, TAppr.USER_GROUP_AT,"
-					+ " TAppr.USER_GROUP, TAppr.USER_PROFILE_AT, TAppr.USER_PROFILE,"
-					+ " TAppr.UPDATE_RESTRICTION, TAppr.LEGAL_VEHICLE,"
-					+ " TAppr.COUNTRY, TAppr.LE_BOOK,"
-					+ " TAppr.REGION_PROVINCE, TAppr.BUSINESS_GROUP, TAppr.PRODUCT_SUPER_GROUP,"
-					+ " TAppr.OUC_ATTRIBUTE, TAppr.SBU_CODE,"
-//					+ " TAppr.SBU_CODE_AT, "
-					+ "TAppr.PRODUCT_ATTRIBUTE,"
-					+ " TAppr.ACCOUNT_OFFICER, TAppr.GCID_ACCESS, TAppr.USER_STATUS_NT, TAppr.USER_STATUS,"
-					+ " To_Char(TAppr.USER_STATUS_DATE, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') USER_STATUS_DATE, TAppr.MAKER,"
-					+ " TAppr.VERIFIER, TAppr.INTERNAL_STATUS, TAppr.RECORD_INDICATOR_NT,"
-					+ " TAppr.RECORD_INDICATOR, To_Char(TAppr.DATE_LAST_MODIFIED, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') DATE_LAST_MODIFIED,"
-					+ " To_Char(TAppr.DATE_CREATION, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') DATE_CREATION,"
-					+ " To_Char(TAppr.LAST_UNSUCCESSFUL_LOGIN_DATE, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') LAST_UNSUCCESSFUL_LOGIN_DATE, TAppr.UNSUCCESSFUL_LOGIN_ATTEMPTS, TAppr.FILE_NAME, TAppr.USER_PHOTO, "
-					+ " TAppr.ENABLE_WIDGETS, (SELECT App_Theme FROM PRD_APP_THEME S1 WHERE S1.VISION_ID=TAppr.VISION_ID AND APPLICATION_ID= ?) APP_THEME,  "
-					+ " (SELECT Report_Slide_Theme FROM PRD_APP_THEME S1 WHERE S1.VISION_ID=TAppr.VISION_ID AND APPLICATION_ID = ?) Report_Slide_Theme, "
-					+ " (SELECT Language FROM PRD_APP_THEME S1 WHERE S1.VISION_ID=TAppr.VISION_ID AND APPLICATION_ID = ?) Language "
-					+ " From VISION_USERS_VW TAppr WHERE USER_STATUS = 0 AND RECORD_INDICATOR = 0 AND UPPER(USER_LOGIN_ID) =UPPER(?) AND (UNSUCCESSFUL_LOGIN_ATTEMPTS is NULL OR UNSUCCESSFUL_LOGIN_ATTEMPTS <= 3)");
-		} else if ("MSSQL".equalsIgnoreCase(databaseType)) {
-			strQueryAppr = new StringBuffer("SELECT TAppr.VISION_ID,TAppr.USER_NAME,"
-					+ " TAppr.USER_LOGIN_ID,  TAppr.USER_EMAIL_ID,"
-					+ " FORMAT(LAST_ACTIVITY_DATE,'"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') LAST_ACTIVITY_DATE,"
-					+ " TAppr.USER_GROUP_AT,  TAppr.USER_GROUP,  TAppr.USER_PROFILE_AT,"
-					+ " TAppr.USER_PROFILE,  TAppr.UPDATE_RESTRICTION,  TAppr.LEGAL_VEHICLE,"
-					+ " TAppr.COUNTRY,  TAppr.LE_BOOK,  TAppr.REGION_PROVINCE,"
-					+ " TAppr.BUSINESS_GROUP,  TAppr.PRODUCT_SUPER_GROUP,"
-					+ " TAppr.OUC_ATTRIBUTE,  TAppr.SBU_CODE,  TAppr.SBU_CODE_AT,"
-					+ " TAppr.PRODUCT_ATTRIBUTE,  TAppr.ACCOUNT_OFFICER,  TAppr.GCID_ACCESS,"
-					+ " TAppr.USER_STATUS_NT,  TAppr.USER_STATUS,"
-					+ " FORMAT(TAppr.USER_STATUS_DATE,'"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') USER_STATUS_DATE,"
-					+ " TAppr.MAKER,  TAppr.VERIFIER,  TAppr.INTERNAL_STATUS,"
-					+ " TAppr.RECORD_INDICATOR_NT,  TAppr.RECORD_INDICATOR,"
-					+ " FORMAT(TAppr.DATE_LAST_MODIFIED,'dd-MM-yyyy HH:mm:ss') DATE_LAST_MODIFIED,"
-					+ " FORMAT(TAppr.DATE_CREATION,'"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') DATE_CREATION,"
-					+ " FORMAT(TAppr.LAST_UNSUCCESSFUL_LOGIN_DATE,'dd-MM-yyyy HH:mm:ss') LAST_UNSUCCESSFUL_LOGIN_DATE,"
-					+ " TAppr.UNSUCCESSFUL_LOGIN_ATTEMPTS,  TAppr.FILE_NAME,"
-					+ " TAppr.USER_PHOTO,  TAppr.ENABLE_WIDGETS,(SELECT App_Theme FROM PRD_APP_THEME S1 WHERE S1.VISION_ID=TAppr.VISION_ID AND APPLICATION_ID= ?) APP_THEME,  "
-					+ " (SELECT Report_Slide_Theme FROM PRD_APP_THEME S1 WHERE S1.VISION_ID=TAppr.VISION_ID AND APPLICATION_ID = ?) Report_Slide_Theme, "
-					+ " (SELECT Language FROM PRD_APP_THEME S1 WHERE S1.VISION_ID=TAppr.VISION_ID AND APPLICATION_ID = ?) Language "
-					+ " FROM VISION_USERS TAppr"
-					+ " WHERE USER_STATUS = 0  AND RECORD_INDICATOR = 0"
-					+ " AND UPPER (USER_LOGIN_ID) = UPPER (?)"
-					+ " AND ( UNSUCCESSFUL_LOGIN_ATTEMPTS IS NULL OR UNSUCCESSFUL_LOGIN_ATTEMPTS <= 3)");
-		}
-		try {
+	    if (dObj == null || dObj.getUserLoginId() == null || dObj.getUserLoginId().isBlank()) {
+	        logger.warn("getActiveUserByUserLoginId called with null/blank userLoginId");
+	        return Collections.emptyList();
+	    }
 
-			
-			objParams[0] = productName;
-			objParams[1] = productName;
-			objParams[2] = productName;	
-			objParams[3] = dObj.getUserLoginId();
-			return getJdbcTemplate().query(strQueryAppr.toString(), objParams, getMapper1());
+	    final String df = getDbFunction("DATEFORMAT");
+	    final String tm = getDbFunction("TIME");
+	    final String db = databaseType == null ? "" : databaseType.toUpperCase(Locale.ROOT);
 
-		} catch (Exception ex) {
-			ex.printStackTrace();
-			logger.error("Error: getQueryResults Exception :   ");
-			/*if (objParams != null)
-				for (int i = 0; i < objParams.length; i++)
-					//logger.error("objParams[" + i + "]" + objParams[i].toString());
-*/			return null;
+	    final String sql = switch (db) {
+	        case "ORACLE" -> """
+	            SELECT
+	                TAppr.VISION_ID,
+	                TAppr.USER_NAME,
+	                TAppr.USER_LOGIN_ID,
+	                TAppr.USER_EMAIL_ID,
+	                TO_CHAR(TAppr.LAST_ACTIVITY_DATE, '%s %s') AS LAST_ACTIVITY_DATE,
+	                TAppr.USER_GROUP_AT,
+	                TAppr.USER_GROUP,
+	                TAppr.USER_PROFILE_AT,
+	                TAppr.USER_PROFILE,
+	                TAppr.UPDATE_RESTRICTION,
+	                TAppr.LEGAL_VEHICLE,
+	                TAppr.COUNTRY,
+	                TAppr.LE_BOOK,
+	                TAppr.REGION_PROVINCE,
+	                TAppr.BUSINESS_GROUP,
+	                TAppr.PRODUCT_SUPER_GROUP,
+	                TAppr.OUC_ATTRIBUTE,
+	                TAppr.SBU_CODE,
+	                TAppr.PRODUCT_ATTRIBUTE,
+	                TAppr.ACCOUNT_OFFICER,
+	                TAppr.GCID_ACCESS,
+	                TAppr.USER_STATUS_NT,
+	                TAppr.USER_STATUS,
+	                TO_CHAR(TAppr.USER_STATUS_DATE, '%s %s') AS USER_STATUS_DATE,
+	                TAppr.MAKER,
+	                TAppr.VERIFIER,
+	                TAppr.INTERNAL_STATUS,
+	                TAppr.RECORD_INDICATOR_NT,
+	                TAppr.RECORD_INDICATOR,
+	                TO_CHAR(TAppr.DATE_LAST_MODIFIED, '%s %s') AS DATE_LAST_MODIFIED,
+	                TO_CHAR(TAppr.DATE_CREATION, '%s %s') AS DATE_CREATION,
+	                TO_CHAR(TAppr.LAST_UNSUCCESSFUL_LOGIN_DATE, '%s %s') AS LAST_UNSUCCESSFUL_LOGIN_DATE,
+	                TAppr.UNSUCCESSFUL_LOGIN_ATTEMPTS,
+	                TAppr.FILE_NAME,
+	                TAppr.USER_PHOTO,
+	                TAppr.ENABLE_WIDGETS,
+	                (SELECT App_Theme FROM PRD_APP_THEME S1 WHERE S1.VISION_ID = TAppr.VISION_ID AND APPLICATION_ID = ?) AS APP_THEME,
+	                (SELECT Report_Slide_Theme FROM PRD_APP_THEME S1 WHERE S1.VISION_ID = TAppr.VISION_ID AND APPLICATION_ID = ?) AS Report_Slide_Theme,
+	                (SELECT Language FROM PRD_APP_THEME S1 WHERE S1.VISION_ID = TAppr.VISION_ID AND APPLICATION_ID = ?) AS Language,TAppr.APPLICATION_ACCESS
+	            FROM VISION_USERS_VW TAppr
+	            WHERE USER_STATUS = 0
+	              AND RECORD_INDICATOR = 0
+	              AND UPPER(USER_LOGIN_ID) = UPPER(?)
+	              AND (UNSUCCESSFUL_LOGIN_ATTEMPTS IS NULL OR UNSUCCESSFUL_LOGIN_ATTEMPTS <= 3)
+	            """.formatted(df, tm, df, tm, df, tm, df, tm, df, tm);
 
-		}
+	        case "MSSQL" -> """
+	            SELECT
+	                TAppr.VISION_ID,
+	                TAppr.USER_NAME,
+	                TAppr.USER_LOGIN_ID,
+	                TAppr.USER_EMAIL_ID,
+	                FORMAT(TAppr.LAST_ACTIVITY_DATE, '%s %s') AS LAST_ACTIVITY_DATE,
+	                TAppr.USER_GROUP_AT,
+	                TAppr.USER_GROUP,
+	                TAppr.USER_PROFILE_AT,
+	                TAppr.USER_PROFILE,
+	                TAppr.UPDATE_RESTRICTION,
+	                TAppr.LEGAL_VEHICLE,
+	                TAppr.COUNTRY,
+	                TAppr.LE_BOOK,
+	                TAppr.REGION_PROVINCE,
+	                TAppr.BUSINESS_GROUP,
+	                TAppr.PRODUCT_SUPER_GROUP,
+	                TAppr.OUC_ATTRIBUTE,
+	                TAppr.SBU_CODE,
+	                TAppr.SBU_CODE_AT,
+	                TAppr.PRODUCT_ATTRIBUTE,
+	                TAppr.ACCOUNT_OFFICER,
+	                TAppr.GCID_ACCESS,
+	                TAppr.USER_STATUS_NT,
+	                TAppr.USER_STATUS,
+	                FORMAT(TAppr.USER_STATUS_DATE, '%s %s') AS USER_STATUS_DATE,
+	                TAppr.MAKER,
+	                TAppr.VERIFIER,
+	                TAppr.INTERNAL_STATUS,
+	                TAppr.RECORD_INDICATOR_NT,
+	                TAppr.RECORD_INDICATOR,
+	                FORMAT(TAppr.DATE_LAST_MODIFIED, 'dd-MM-yyyy HH:mm:ss') AS DATE_LAST_MODIFIED,
+	                FORMAT(TAppr.DATE_CREATION, '%s %s') AS DATE_CREATION,
+	                FORMAT(TAppr.LAST_UNSUCCESSFUL_LOGIN_DATE, 'dd-MM-yyyy HH:mm:ss') AS LAST_UNSUCCESSFUL_LOGIN_DATE,
+	                TAppr.UNSUCCESSFUL_LOGIN_ATTEMPTS,
+	                TAppr.FILE_NAME,
+	                TAppr.USER_PHOTO,
+	                TAppr.ENABLE_WIDGETS,
+	                (SELECT App_Theme FROM PRD_APP_THEME S1 WHERE S1.VISION_ID = TAppr.VISION_ID AND APPLICATION_ID = ?) AS APP_THEME,
+	                (SELECT Report_Slide_Theme FROM PRD_APP_THEME S1 WHERE S1.VISION_ID = TAppr.VISION_ID AND APPLICATION_ID = ?) AS Report_Slide_Theme,
+	                (SELECT Language FROM PRD_APP_THEME S1 WHERE S1.VISION_ID = TAppr.VISION_ID AND APPLICATION_ID = ?) AS Language,TAppr.APPLICATION_ACCESS
+	            FROM VISION_USERS TAppr
+	            WHERE USER_STATUS = 0
+	              AND RECORD_INDICATOR = 0
+	              AND UPPER(USER_LOGIN_ID) = UPPER(?)
+	              AND (UNSUCCESSFUL_LOGIN_ATTEMPTS IS NULL OR UNSUCCESSFUL_LOGIN_ATTEMPTS <= 3)
+	            """.formatted(df, tm, df, tm, df, tm);
+
+	        default -> {
+	            logger.error("Unsupported databaseType: {}", databaseType);
+	            yield null;
+	        }
+	    };
+
+	    if (sql == null) return Collections.emptyList();
+
+	    final Object[] params = {
+	        productName,           // APP_THEME
+	        productName,           // Report_Slide_Theme
+	        productName,           // Language
+	        dObj.getUserLoginId()  // predicate
+	    };
+
+	    try {
+	        return getJdbcTemplate().query(sql, params, getMapper1());
+	    } catch (Exception ex) {
+	        logger.error("getActiveUserByUserLoginId failed for loginId={}", dObj.getUserLoginId(), ex);
+	        return Collections.emptyList();
+	    }
 	}
+
 
 	@Override
 	public List<VisionUsersVb> getQueryResults(VisionUsersVb dObj, int intStatus) {

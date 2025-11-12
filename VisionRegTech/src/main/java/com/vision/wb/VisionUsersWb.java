@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.vision.dao.AbstractDao;
+import com.vision.dao.AlphaSubTabDao;
 import com.vision.dao.CommonDao;
 import com.vision.dao.NumSubTabDao;
 import com.vision.dao.VisionUsersDao;
@@ -34,7 +35,8 @@ public class VisionUsersWb extends AbstractDynaWorkerBean<VisionUsersVb>{
 	private NumSubTabDao numSubTabDao;
 	@Autowired
 	private CommonDao commonDao;
-	
+	@Autowired
+	private AlphaSubTabDao alphaSubTabDao;	
 //	@Value("${vision.inbound.private.key}")
 //	private String visionInboundAuthPrivateKey;
 	
@@ -64,6 +66,9 @@ public class VisionUsersWb extends AbstractDynaWorkerBean<VisionUsersVb>{
 			arrListLocal.add(collTemp);
 			String visionAuthAdServers = visionAdServers;
 			arrListLocal.add(visionAuthAdServers);
+			collTemp = alphaSubTabDao.findActiveAlphaSubTabsByAlphaTab(Constants.APPLICATION_ACCESS);// Application Access
+			arrListLocal.add(collTemp);
+		
 			return arrListLocal;
 		}catch(Exception ex){
 			ex.printStackTrace();

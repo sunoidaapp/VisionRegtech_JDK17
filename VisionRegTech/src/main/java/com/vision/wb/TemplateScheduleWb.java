@@ -690,7 +690,7 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 		}
 		if (exceptionCode.getErrorCode() != Constants.SUCCESSFUL_OPERATION) {
 			exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
-			exceptionCode.setErrorMsg("");
+//			exceptionCode.setErrorMsg("");
 		}
 		return exceptionCode;
 	}

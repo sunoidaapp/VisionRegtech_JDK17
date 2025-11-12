@@ -52,6 +52,37 @@ public class RgCrsRuleDetailsVb extends CommonVb {
 	List<SmartSearchVb> smartSearchOpt = null;
 	
 	private Map<String, Object> dynamicFields = new HashMap<>();
+	///
+		///// --- Additional customer/master columns returned by SELECT ---
+		private String cbNationality = "";
+		private String cbResidence = "";
+		private String commAddress1 = "";
+		private String commAddress2 = "";
+		private String commAddress3 = "";
+		private String standingOrder = "";
+		private String phoneNumber = "";
+		private String phoneNumber02 = "";
+		private String phoneNumber03 = "";
+		private String phoneNumber04 = "";
+		private String phoneNumber05 = "";
+		private String phoneNumber06 = "";
+		private String phoneNumber07 = "";
+		private String ssn = "";
+		private String idIssuingJurisdiction = "";
+		private String powerOfAttorney = "";
+		private String countryOfIncorporation = "";
+		private String gbCountry = "";
+		private String customerTin = "";
+		private String accountOfficer = "";
+		private String customerStatus = "";
+		private String visionOuc = "";
+		private String customerOpenDate = ""; // formatted as per SELECT
+		private String subSegment = "";
+		private String complianceStatus = "";
+		private String jointAccount = "";
+		private String placeOfBirth = "";
+		private int versionNo = 0; // from SELECT alias "VERSION_NO"
+
 
 	public Map<String, Object> getDynamicFields() {
 	    return dynamicFields;
@@ -376,6 +407,189 @@ public class RgCrsRuleDetailsVb extends CommonVb {
 	}
 	public void setCount(boolean count) {
 		this.count = count;
+	}
+	public String getFatcaFlag() {
+		return fatcaFlag;
+	}
+	public void setFatcaFlag(String fatcaFlag) {
+		this.fatcaFlag = fatcaFlag;
+	}
+	public String getFatcaOverrideFlag() {
+		return fatcaOverrideFlag;
+	}
+	public void setFatcaOverrideFlag(String fatcaOverrideFlag) {
+		this.fatcaOverrideFlag = fatcaOverrideFlag;
+	}
+	public String getCbNationality() {
+		return cbNationality;
+	}
+	public void setCbNationality(String cbNationality) {
+		this.cbNationality = cbNationality;
+	}
+	public String getCbResidence() {
+		return cbResidence;
+	}
+	public void setCbResidence(String cbResidence) {
+		this.cbResidence = cbResidence;
+	}
+	public String getCommAddress1() {
+		return commAddress1;
+	}
+	public void setCommAddress1(String commAddress1) {
+		this.commAddress1 = commAddress1;
+	}
+	public String getCommAddress2() {
+		return commAddress2;
+	}
+	public void setCommAddress2(String commAddress2) {
+		this.commAddress2 = commAddress2;
+	}
+	public String getCommAddress3() {
+		return commAddress3;
+	}
+	public void setCommAddress3(String commAddress3) {
+		this.commAddress3 = commAddress3;
+	}
+	public String getStandingOrder() {
+		return standingOrder;
+	}
+	public void setStandingOrder(String standingOrder) {
+		this.standingOrder = standingOrder;
+	}
+	public String getPhoneNumber() {
+		return phoneNumber;
+	}
+	public void setPhoneNumber(String phoneNumber) {
+		this.phoneNumber = phoneNumber;
+	}
+	public String getPhoneNumber02() {
+		return phoneNumber02;
+	}
+	public void setPhoneNumber02(String phoneNumber02) {
+		this.phoneNumber02 = phoneNumber02;
+	}
+	public String getPhoneNumber03() {
+		return phoneNumber03;
+	}
+	public void setPhoneNumber03(String phoneNumber03) {
+		this.phoneNumber03 = phoneNumber03;
+	}
+	public String getPhoneNumber04() {
+		return phoneNumber04;
+	}
+	public void setPhoneNumber04(String phoneNumber04) {
+		this.phoneNumber04 = phoneNumber04;
+	}
+	public String getPhoneNumber05() {
+		return phoneNumber05;
+	}
+	public void setPhoneNumber05(String phoneNumber05) {
+		this.phoneNumber05 = phoneNumber05;
+	}
+	public String getPhoneNumber06() {
+		return phoneNumber06;
+	}
+	public void setPhoneNumber06(String phoneNumber06) {
+		this.phoneNumber06 = phoneNumber06;
+	}
+	public String getPhoneNumber07() {
+		return phoneNumber07;
+	}
+	public void setPhoneNumber07(String phoneNumber07) {
+		this.phoneNumber07 = phoneNumber07;
+	}
+	public String getSsn() {
+		return ssn;
+	}
+	public void setSsn(String ssn) {
+		this.ssn = ssn;
+	}
+	public String getIdIssuingJurisdiction() {
+		return idIssuingJurisdiction;
+	}
+	public void setIdIssuingJurisdiction(String idIssuingJurisdiction) {
+		this.idIssuingJurisdiction = idIssuingJurisdiction;
+	}
+	public String getPowerOfAttorney() {
+		return powerOfAttorney;
+	}
+	public void setPowerOfAttorney(String powerOfAttorney) {
+		this.powerOfAttorney = powerOfAttorney;
+	}
+	public String getCountryOfIncorporation() {
+		return countryOfIncorporation;
+	}
+	public void setCountryOfIncorporation(String countryOfIncorporation) {
+		this.countryOfIncorporation = countryOfIncorporation;
+	}
+	public String getGbCountry() {
+		return gbCountry;
+	}
+	public void setGbCountry(String gbCountry) {
+		this.gbCountry = gbCountry;
+	}
+	public String getCustomerTin() {
+		return customerTin;
+	}
+	public void setCustomerTin(String customerTin) {
+		this.customerTin = customerTin;
+	}
+	public String getAccountOfficer() {
+		return accountOfficer;
+	}
+	public void setAccountOfficer(String accountOfficer) {
+		this.accountOfficer = accountOfficer;
+	}
+	public String getCustomerStatus() {
+		return customerStatus;
+	}
+	public void setCustomerStatus(String customerStatus) {
+		this.customerStatus = customerStatus;
+	}
+	public String getVisionOuc() {
+		return visionOuc;
+	}
+	public void setVisionOuc(String visionOuc) {
+		this.visionOuc = visionOuc;
+	}
+	public String getCustomerOpenDate() {
+		return customerOpenDate;
+	}
+	public void setCustomerOpenDate(String customerOpenDate) {
+		this.customerOpenDate = customerOpenDate;
+	}
+	public String getSubSegment() {
+		return subSegment;
+	}
+	public void setSubSegment(String subSegment) {
+		this.subSegment = subSegment;
+	}
+	public String getComplianceStatus() {
+		return complianceStatus;
+	}
+	public void setComplianceStatus(String complianceStatus) {
+		this.complianceStatus = complianceStatus;
+	}
+	public String getJointAccount() {
+		return jointAccount;
+	}
+	public void setJointAccount(String jointAccount) {
+		this.jointAccount = jointAccount;
+	}
+	public String getPlaceOfBirth() {
+		return placeOfBirth;
+	}
+	public void setPlaceOfBirth(String placeOfBirth) {
+		this.placeOfBirth = placeOfBirth;
+	}
+	public int getVersionNo() {
+		return versionNo;
+	}
+	public void setVersionNo(int versionNo) {
+		this.versionNo = versionNo;
+	}
+	public void setDynamicFields(Map<String, Object> dynamicFields) {
+		this.dynamicFields = dynamicFields;
 	}
 
 }

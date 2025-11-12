@@ -1926,251 +1926,565 @@ public class RgCrsRuleDetailsDao extends AbstractDao<RgCrsRuleDetailsVb> {
 	}
 
 	public List<RgCrsRuleDetailsVb> getQueryResultsToDisplay(RgCrsRuleDetailsVb dObj) {
-		dObj.setVerificationRequired(false);
+	    dObj.setVerificationRequired(false);
 
-		try {
-			// --- Prepare magnifier ---
-			MagnifierResultVb magnifierResultVb = new MagnifierResultVb();
-			magnifierResultVb.setPromptValue1("'CUSTOMERS'");
-			magnifierResultVb.setQuery("CUSTCOLUMN");
-			magnifierResultVb.setMaxRecords(100);
+	    try {
+	        final String country = esc(dObj.getCountry());
+	        final String leBook = esc(dObj.getLeBook());
+	        final String visionSbu = esc(dObj.getVisionSbu());
 
-			Set<String> standardColumns = new HashSet<>(Arrays.asList("COUNTRY", "LE_BOOK", "CUSTOMER_ID", "CUSTOMER_NAME", "VISION_SBU_AT",
-					"VISION_SBU", "RULE_ID", "RULE_DESCRIPTION", "RUN_DATE", "VERSION_NO", "PRIORITY", "CRS_FLAG",
-					"CRS_OVERRIDE", "FINAL_CRS_FLAG"));
+	        // --- Fixed "framework" columns always returned up-front ---
+	        final List<String> fixedHeadCols = List.of("COUNTRY", "LE_BOOK", "CUSTOMER_ID", "VISION_SBU_AT");
 
-			// --- Fetch magnifier columns ---
-			List<MagnifierResultVb> collTmp = magnifierDao.getQueryPopupResults(magnifierResultVb);
-			Set<String> magnifierColumnsSet = new LinkedHashSet<>(); // SQL expressions for query
-			Set<String> magnifierColumnNames = new HashSet<>(); // Alias names for RowMapper
+	        // --- Your domain standard columns (coalesce candidates) ---
+	        final List<String> standardColumns = List.of(
+	                "CUSTOMER_NAME", "CB_NATIONALITY", "CB_RESIDENCE",
+	                "COMM_ADDRESS_1", "COMM_ADDRESS_2", "COMM_ADDRESS_3", "STANDING_ORDER", "PHONE_NUMBER",
+	                "PHONE_NUMBER_02", "PHONE_NUMBER_03", "PHONE_NUMBER_04", "PHONE_NUMBER_05", "PHONE_NUMBER_06",
+	                "PHONE_NUMBER_07", "SSN", "ID_ISSUING_JURISDICTION", "CUSTOMER_ID", "POWER_OF_ATTORNEY",
+	                "COUNTRY_OF_INCORPORATION", "GB_COUNTRY", "CUSTOMER_TIN", "ACCOUNT_OFFICER", "CUSTOMER_STATUS",
+	                "VISION_OUC", "CUSTOMER_OPEN_DATE", "VISION_SBU", "SUB_SEGMENT", "COMPLIANCE_STATUS", "JOINT_ACCOUNT",
+	                "PLACE_OF_BIRTH"
+	        );
 
-			if (collTmp != null && !collTmp.isEmpty()) {
-				for (MagnifierResultVb n : collTmp) {
-					String columnName = n.getColumnNine();
-					String aliasName = n.getColumnTen().trim().replaceAll(" ", "_");
+	        // --- Manual list + physical columns (UPPER + sanitized) ---
+	        final Set<String> manualColsRaw = getManualColumns(country, leBook).stream()
+	                .map(this::sanitizeIdentifierUpper).collect(java.util.stream.Collectors.toSet());
+	        final Set<String> t1Cols = getTableColumns("CUSTOMERS").stream()
+	                .map(this::sanitizeIdentifierUpper).collect(java.util.stream.Collectors.toSet());
 
-					if (ValidationUtil.isValid(columnName)
-							&& !standardColumns.contains(columnName.trim().toUpperCase())) {
+	        // Manual columns we can actually override (intersection of manual list, standard list, and CUSTOMERS)
+	        final LinkedHashSet<String> overridableStandardCols = new LinkedHashSet<>();
+	        for (String sc : standardColumns) {
+	            String col = sanitizeIdentifierUpper(sc);
+	            if (manualColsRaw.contains(col) && t1Cols.contains(col)) {
+	                overridableStandardCols.add(col);
+	            }
+	        }
 
-						// Preserve alias exactly as in DB
-						String sqlExpr = "T1." + columnName.trim() + " AS \"" + aliasName + "\"";
-						magnifierColumnsSet.add(sqlExpr);
-						magnifierColumnNames.add(aliasName.trim());
-					}
-				}
-			}
+	        // --- Build SELECT list ---
+	        StringBuilder selectList = new StringBuilder();
 
-			// --- Convert magnifierColumns set to SQL string ---
-			String magColumnsStr = magnifierColumnsSet.isEmpty() ? "" : ", " + String.join(", ", magnifierColumnsSet);
+	        // 1) Always include fixed head cols as plain T1.*
+	        boolean first = true;
+	        for (String c : fixedHeadCols) {
+	            String col = sanitizeIdentifierUpper(c);
+	            if (!first) selectList.append(",\n            ");
+	            selectList.append(String.format("T1.%s AS \"%s\"", col, col));
+	            first = false;
+	        }
 
-			// --- Run date expression ---
-			String runDateExpr = (databaseType.equalsIgnoreCase("MSSQL") || databaseType.equalsIgnoreCase("SQLSERVER"))
-					? "CONVERT(VARCHAR(11), T2.RUN_DATE, 106)" // SQL Server
-					: "TO_CHAR(T2.RUN_DATE, 'DD-Mon-YYYY')"; // Oracle
+	        // 2) Add standard columns (with COALESCE if overridable)
+	        for (String sc : standardColumns) {
+	            String col = sanitizeIdentifierUpper(sc);
+	            // avoid duplicate emission for those already in fixed head list
+	            if (fixedHeadCols.stream().map(this::sanitizeIdentifierUpper).anyMatch(col::equals)) continue;
 
-			// --- Build main query ---
-			StringBuffer strBufApprove = new StringBuffer("SELECT * FROM (SELECT "
-					+ "T1.COUNTRY, T1.LE_BOOK, T1.CUSTOMER_ID, T1.CUSTOMER_NAME, " + "T1.VISION_SBU_AT, T1.VISION_SBU, "
-					+ "T2.RULE_ID, T2.RULE_DESCRIPTION, " + runDateExpr + " AS RUN_DATE, "
-					+ "T2.VERSION_NO, T2.PRIORITY, " + "COALESCE(T2.CRS_FLAG, T1.CRS_FLAG) AS CRS_FLAG, "
-					+ "T1.CRS_OVERRIDE, T1.CRS_FLAG AS FINAL_CRS_FLAG" + magColumnsStr + " FROM CUSTOMERS T1 "
-					+ "LEFT JOIN RG_CRS_RULE_AUDIT T2 ON T1.COUNTRY = T2.COUNTRY AND T1.LE_BOOK = T2.LE_BOOK AND T1.CUSTOMER_ID = T2.CUSTOMER_ID "
-					+ "LEFT JOIN (SELECT T2.Country, T2.LE_Book, T2.Customer_id, MAX(T2.RUN_DATE) AS Run_Date "
-					+ "FROM RG_CRS_RULE_AUDIT T2 WHERE T2.COUNTRY = ? AND T2.LE_BOOK = ? AND T2.VISION_SBU = ? "
-					+ "GROUP BY T2.Country, T2.LE_Book, T2.Customer_id) T3 "
-					+ "ON T2.COUNTRY = T3.COUNTRY AND T2.LE_BOOK = T3.LE_BOOK AND T2.CUSTOMER_ID = T3.CUSTOMER_ID AND T2.RUN_DATE = T3.RUN_DATE "
-					+ "WHERE T1.COUNTRY = ? AND T1.LE_BOOK = ? AND T1.VISION_SBU = ? "
-					+ "AND COALESCE(T2.VERSION_NO,0) = COALESCE((SELECT MAX(T21.VERSION_NO) FROM RG_CRS_RULE_AUDIT T21 "
-					+ "WHERE T21.COUNTRY = T3.COUNTRY AND T21.LE_BOOK = T3.LE_BOOK AND T21.CUSTOMER_ID = T3.CUSTOMER_ID AND T21.RUN_DATE = T3.RUN_DATE),0) "
-					+ "AND (COALESCE(T2.CRS_FLAG, T1.CRS_FLAG) = 'Y' OR T1.CRS_FLAG = 'Y')) TAPPR");
+	            selectList.append(",\n            ");
+	            if (overridableStandardCols.contains(col)) {
+	                selectList.append(String.format("COALESCE(T5.%s, T1.%s) AS \"%s\"", col, col, col));
+	            } else {
+	                selectList.append(String.format("T1.%s AS \"%s\"", col, col));
+	            }
+	        }
 
-			String orderBy = "ORDER BY PRIORITY";
+	        // 3) Append run_date + rule/audit fields
+	        final String runDateExpr = databaseType != null && (databaseType.equalsIgnoreCase("MSSQL")
+	                || databaseType.equalsIgnoreCase("SQLSERVER"))
+	                ? "CONVERT(VARCHAR(11), T2.RUN_DATE, 106) AS RUN_DATE"
+	                : "TO_CHAR(T2.RUN_DATE, 'DD-Mon-YYYY') AS RUN_DATE";
 
-			// --- Query parameters ---
-			Vector<Object> params = new Vector<>();
-			params.add(dObj.getCountry());
-			params.add(dObj.getLeBook());
-			params.add(dObj.getVisionSbu());
-			params.add(dObj.getCountry());
-			params.add(dObj.getLeBook());
-			params.add(dObj.getVisionSbu());
+	        selectList.append(",\n            ").append(runDateExpr);
+	        selectList.append(",\n            T2.RULE_ID AS \"RULE_ID\"");
+	        selectList.append(",\n            T2.RULE_DESCRIPTION AS \"RULE_DESCRIPTION\"");
+	        selectList.append(",\n            T2.VERSION_NO AS \"VERSION_NO\"");
+	        selectList.append(",\n            T2.PRIORITY AS \"PRIORITY\"");
+	        selectList.append(",\n            COALESCE(T2.CRS_FLAG, T1.CRS_FLAG) AS \"CRS_FLAG\"");
+	        selectList.append(",\n            T1.CRS_OVERRIDE AS \"CRS_OVERRIDE\"");
+	        selectList.append(",\n            T1.CRS_FLAG AS \"FINAL_CRS_FLAG\"");
 
-			// --- Add smart search filters ---
-			if (dObj.getSmartSearchOpt() != null && !dObj.getSmartSearchOpt().isEmpty()) {
-				int count = 1;
-				for (SmartSearchVb data : dObj.getSmartSearchOpt()) {
-					if (count == dObj.getSmartSearchOpt().size()) {
-						data.setJoinType("");
-					} else {
-						if (!ValidationUtil.isValid(data.getJoinType()) || (!"AND".equalsIgnoreCase(data.getJoinType())
-								&& !"OR".equalsIgnoreCase(data.getJoinType()))) {
-							data.setJoinType("AND");
-						}
-					}
-					String val = CommonUtils.criteriaBasedVal(data.getCriteria(), data.getValue());
-					switch (data.getObject()) {
-					case "customerId":
-						CommonUtils.addToQuerySearch(" upper(TAPPR.CUSTOMER_ID) " + val, strBufApprove,
-								data.getJoinType());
-						break;
-					case "customerName":
-						CommonUtils.addToQuerySearch(" upper(TAPPR.CUSTOMER_NAME) " + val, strBufApprove,
-								data.getJoinType());
-						break;
-					case "ruleId":
-						CommonUtils.addToQuerySearch(" upper(TAPPR.RULE_ID) " + val, strBufApprove, data.getJoinType());
-						break;
-					case "ruleDescription":
-						CommonUtils.addToQuerySearch(" upper(TAPPR.RULE_DESCRIPTION) " + val, strBufApprove,
-								data.getJoinType());
-						break;
-					case "priority":
-						CommonUtils.addToQuerySearch(" upper(TAPPR.PRIORITY) " + val, strBufApprove,
-								data.getJoinType());
-						break;
-					case "crsFlag":
-						CommonUtils.addToQuerySearch(" upper(TAPPR.CRS_FLAG) " + val, strBufApprove,
-								data.getJoinType());
-						break;
-					case "crsOverrideFlag":
-						CommonUtils.addToQuerySearch(" upper(TAPPR.CRS_OVERRIDE) " + val, strBufApprove,
-								data.getJoinType());
-						break;
-					case "finalFlag":
-						CommonUtils.addToQuerySearch(" upper(TAPPR.FINAL_CRS_FLAG) " + val, strBufApprove,
-								data.getJoinType());
-						break;
-					case "dateCreation":
-						CommonUtils.addToQuerySearch(" upper(TAPPR.RUN_DATE) " + val, strBufApprove,
-								data.getJoinType());
-						break;
-					}
-					count++;
-				}
-			}
+	        // --- Build T5 pivot (only if we have overridable columns) ---
+	        String t5Join = "";
+	        if (!overridableStandardCols.isEmpty()) {
+	            StringBuilder piv = new StringBuilder();
+	            boolean pf = true;
+	            for (String col : overridableStandardCols) {
+	                if (!pf) piv.append(",\n                           ");
+	                piv.append(String.format("MAX(CASE WHEN COLUMN_NAME='%s' THEN COLUMN_VALUE END) AS %s", col, col));
+	                pf = false;
+	            }
 
-			// --- RowMapper ---
-			RowMapper<RgCrsRuleDetailsVb> mapper = (rs, rowNum) -> {
-				RgCrsRuleDetailsVb vObject = new RgCrsRuleDetailsVb();
+	            t5Join = String.format("""
+	                    LEFT JOIN (
+	                        SELECT COUNTRY, LE_BOOK, CUSTOMER_ID,
+	                               %s
+	                          FROM CUSTOMER_MANUAL
+	                         WHERE NVL(CUST_MOD_STATUS,1)=1
+	                           AND NVL(RECORD_INDICATOR,7)=7
+	                           AND COUNTRY='%s'
+	                           AND LE_BOOK='%s'
+	                         GROUP BY COUNTRY, LE_BOOK, CUSTOMER_ID
+	                    ) T5
+	                       ON T1.COUNTRY=T5.COUNTRY
+	                      AND T1.LE_BOOK=T5.LE_BOOK
+	                      AND T1.CUSTOMER_ID=T5.CUSTOMER_ID
+	                    """, piv.toString(), country, leBook);
+	        }
 
-				// --- Standard fields ---
-				vObject.setCountry(rs.getString("COUNTRY") != null ? rs.getString("COUNTRY") : "");
-				vObject.setLeBook(rs.getString("LE_BOOK") != null ? rs.getString("LE_BOOK") : "");
-				vObject.setVisionSbuAt(rs.getInt("VISION_SBU_AT"));
-				vObject.setVisionSbu(rs.getString("VISION_SBU") != null ? rs.getString("VISION_SBU") : "");
-				vObject.setRuleId(rs.getString("RULE_ID") != null ? rs.getString("RULE_ID") : "");
-				vObject.setCustomerId(rs.getString("CUSTOMER_ID") != null ? rs.getString("CUSTOMER_ID") : "");
-				vObject.setCustomerName(rs.getString("CUSTOMER_NAME") != null ? rs.getString("CUSTOMER_NAME") : "");
-				vObject.setRuleDescription(
-						rs.getString("RULE_DESCRIPTION") != null ? rs.getString("RULE_DESCRIPTION") : "");
-				vObject.setDateCreation(rs.getString("RUN_DATE"));
-				vObject.setPriority(rs.getInt("PRIORITY"));
-				vObject.setCrsFlag(rs.getString("CRS_FLAG"));
-				vObject.setCrsOverrideFlag(rs.getString("CRS_OVERRIDE"));
-				vObject.setFinalFlag(rs.getString("FINAL_CRS_FLAG"));
+	        // --- Build T3 subselect (max run_date per customer) ---
+	        String t3Sub = String.format("""
+	                LEFT JOIN (
+	                      SELECT T2.COUNTRY, T2.LE_BOOK, T2.CUSTOMER_ID, MAX(T2.RUN_DATE) AS RUN_DATE
+	                        FROM RG_CRS_RULE_AUDIT T2
+	                       WHERE T2.COUNTRY = '%s'
+	                         AND T2.LE_BOOK = '%s'
+	                         AND T2.VISION_SBU = '%s'
+	                     GROUP BY T2.COUNTRY, T2.LE_BOOK, T2.CUSTOMER_ID
+	                ) T3
+	                  ON T2.COUNTRY     = T3.COUNTRY
+	                 AND T2.LE_BOOK     = T3.LE_BOOK
+	                 AND T2.CUSTOMER_ID = T3.CUSTOMER_ID
+	                 AND T2.RUN_DATE    = T3.RUN_DATE
+	                """, country, leBook, visionSbu);
 
-				// --- Dynamic magnifier fields ---
-				ResultSetMetaData meta = rs.getMetaData();
-				int colCount = meta.getColumnCount();
-				SimpleDateFormat sdf = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss");
+	        // --- Main SQL (inline arguments per your requirement) ---
+	        String mainSql = String.format("""
+	                SELECT * FROM (
+	                  SELECT
+	                    %s
+	                  FROM CUSTOMERS T1
+	                  %s
+	                  LEFT JOIN RG_CRS_RULE_AUDIT T2
+	                         ON T1.COUNTRY     = T2.COUNTRY
+	                        AND T1.LE_BOOK     = T2.LE_BOOK
+	                        AND T1.CUSTOMER_ID = T2.CUSTOMER_ID
+	                  %s
+	                  WHERE T1.COUNTRY    = '%s'
+	                    AND T1.LE_BOOK    = '%s'
+	                    AND T1.VISION_SBU = '%s'
+	                    AND COALESCE(T2.VERSION_NO,0) = COALESCE((
+	                          SELECT MAX(T21.VERSION_NO)
+	                            FROM RG_CRS_RULE_AUDIT T21
+	                           WHERE T21.COUNTRY     = T3.COUNTRY
+	                             AND T21.LE_BOOK     = T3.LE_BOOK
+	                             AND T21.CUSTOMER_ID = T3.CUSTOMER_ID
+	                             AND T21.RUN_DATE    = T3.RUN_DATE
+	                    ),0)
+	                    AND (COALESCE(T2.CRS_FLAG, T1.CRS_FLAG) = 'Y' OR T1.CRS_FLAG = 'Y')
+	                ) TAPPR
+	                """, selectList.toString(), t5Join, t3Sub, country, leBook, visionSbu);
 
-				for (int i = 1; i <= colCount; i++) {
-				    String colLabel = meta.getColumnLabel(i); // alias from SQL
-				    if (magnifierColumnNames.contains(colLabel)) {
-				        Object value = rs.getObject(i);
+	        String orderBy = " ORDER BY PRIORITY";
 
-				        // Check if column is DATE/TIMESTAMP type
-				        int colType = meta.getColumnType(i);
-				        if (value != null && 
-				            (colType == Types.DATE || colType == Types.TIMESTAMP || colType == Types.TIME)) {
-				            
-				            Timestamp dateValue = rs.getTimestamp(i); // works for DATE/TIMESTAMP
-				            value = sdf.format(dateValue);
-				        }
+	        StringBuffer strBufApprove = new StringBuffer(mainSql);
 
-				        String fieldName = CommonUtils.toPascalCaseKeepUnderscore(colLabel);
-				        vObject.setDynamicField(fieldName, value);
-				    }
-				}
+	        // --- Add smart search filters ---
+	        if (dObj.getSmartSearchOpt() != null && !dObj.getSmartSearchOpt().isEmpty()) {
+	            int count = 1;
+	            for (SmartSearchVb data : dObj.getSmartSearchOpt()) {
+	                if (count == dObj.getSmartSearchOpt().size()) {
+	                    data.setJoinType("");
+	                } else {
+	                    if (!ValidationUtil.isValid(data.getJoinType()) || (!"AND".equalsIgnoreCase(data.getJoinType())
+	                            && !"OR".equalsIgnoreCase(data.getJoinType()))) {
+	                        data.setJoinType("AND");
+	                    }
+	                }
+	                String val = CommonUtils.criteriaBasedVal(data.getCriteria(), data.getValue());
+	                switch (data.getObject()) {
+	                    case "country":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.COUNTRY) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "leBook":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.LE_BOOK) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "visionSbuAt":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.VISION_SBU_AT) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "customerId":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.CUSTOMER_ID) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "customerName":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.CUSTOMER_NAME) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "ruleId":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.RULE_ID) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "ruleDescription":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.RULE_DESCRIPTION) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "versionNo":
+	                        CommonUtils.addToQuerySearch(" upper(COALESCE(TAPPR.VERSION_NO, '')) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "priority":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.PRIORITY) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "runDate":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.RUN_DATE) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "crsFlag":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.CRS_FLAG) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "crsOverride":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.CRS_OVERRIDE) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "finalCrsFlag":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.FINAL_CRS_FLAG) " + val, strBufApprove, data.getJoinType());
+	                        break;
 
+	                    // --- Standard / customer columns ---
+	                    case "cbNationality":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.CB_NATIONALITY) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "cbResidence":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.CB_RESIDENCE) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "commAddress1":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.COMM_ADDRESS_1) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "commAddress2":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.COMM_ADDRESS_2) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "commAddress3":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.COMM_ADDRESS_3) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "standingOrder":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.STANDING_ORDER) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "phoneNumber":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.PHONE_NUMBER) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "phoneNumber02":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.PHONE_NUMBER_02) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "phoneNumber03":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.PHONE_NUMBER_03) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "phoneNumber04":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.PHONE_NUMBER_04) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "phoneNumber05":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.PHONE_NUMBER_05) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "phoneNumber06":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.PHONE_NUMBER_06) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "phoneNumber07":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.PHONE_NUMBER_07) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "ssn":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.SSN) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "idIssuingJurisdiction":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.ID_ISSUING_JURISDICTION) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "powerOfAttorney":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.POWER_OF_ATTORNEY) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "countryOfIncorporation":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.COUNTRY_OF_INCORPORATION) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "gbCountry":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.GB_COUNTRY) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "customerTin":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.CUSTOMER_TIN) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "accountOfficer":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.ACCOUNT_OFFICER) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "customerStatus":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.CUSTOMER_STATUS) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "visionOuc":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.VISION_OUC) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "customerOpenDate":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.CUSTOMER_OPEN_DATE) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "visionSbu":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.VISION_SBU) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "subSegment":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.SUB_SEGMENT) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "complianceStatus":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.COMPLIANCE_STATUS) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "jointAccount":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.JOINT_ACCOUNT) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                    case "placeOfBirth":
+	                        CommonUtils.addToQuerySearch(" upper(TAPPR.PLACE_OF_BIRTH) " + val, strBufApprove, data.getJoinType());
+	                        break;
+	                }
+	                count++;
+	            }
+	        }
 
-				return vObject;
-			};
+	        System.out.println(strBufApprove.toString());
 
-			// ...
-			if(dObj.isCount()) {
-				String countSql = "SELECT COUNT(1) FROM (" + strBufApprove + ") Q";
-			    int total = jdbcTemplate.queryForObject(countSql, params.toArray(), Integer.class);
-			    dObj.setTotalRows(total);
-			    return java.util.Collections.emptyList(); 
-			}
+	        // --- RowMapper ---
+	        RowMapper<RgCrsRuleDetailsVb> mapper = (rs, rowNum) -> {
+	            RgCrsRuleDetailsVb v = new RgCrsRuleDetailsVb();
 
-			// --- Execute query ---
-			return getQueryPopupResults(dObj, new StringBuffer(), strBufApprove, "", orderBy, params, mapper);
+	            // --- Fixed head / identity ---
+	            v.setCountry(nz(rs.getString("COUNTRY")));
+	            v.setLeBook(nz(rs.getString("LE_BOOK")));
+	            v.setVisionSbuAt(rs.getInt("VISION_SBU_AT"));
+	            v.setVisionSbu(nz(rs.getString("VISION_SBU")));
+	            v.setCustomerId(nz(rs.getString("CUSTOMER_ID")));
+	            v.setCustomerName(nz(rs.getString("CUSTOMER_NAME")));
 
-		} catch (Exception ex) {
-			ex.printStackTrace();
-			logger.error("Error: getQueryResults Exception", ex);
-			return null;
-		}
+	            // --- Rule / audit details ---
+	            v.setRuleId(nz(rs.getString("RULE_ID")));
+	            v.setRuleDescription(nz(rs.getString("RULE_DESCRIPTION")));
+	            v.setDateCreation(nz(rs.getString("RUN_DATE")));
+	            v.setVersionNo(rs.getObject("VERSION_NO") == null ? 0 : rs.getInt("VERSION_NO"));
+	            v.setPriority(rs.getInt("PRIORITY"));
+	            v.setCrsFlag(nz(rs.getString("CRS_FLAG")));
+	            v.setCrsOverrideFlag(nz(rs.getString("CRS_OVERRIDE")));
+	            v.setFinalFlag(nz(rs.getString("FINAL_CRS_FLAG")));
+
+	            // --- Remaining standard columns (COALESCE outputs map to same aliases) ---
+	            v.setCbNationality(nz(rs.getString("CB_NATIONALITY")));
+	            v.setCbResidence(nz(rs.getString("CB_RESIDENCE")));
+
+	            v.setCommAddress1(nz(rs.getString("COMM_ADDRESS_1")));
+	            v.setCommAddress2(nz(rs.getString("COMM_ADDRESS_2")));
+	            v.setCommAddress3(nz(rs.getString("COMM_ADDRESS_3")));
+
+	            v.setStandingOrder(nz(rs.getString("STANDING_ORDER")));
+
+	            v.setPhoneNumber(nz(rs.getString("PHONE_NUMBER")));
+	            v.setPhoneNumber02(nz(rs.getString("PHONE_NUMBER_02")));
+	            v.setPhoneNumber03(nz(rs.getString("PHONE_NUMBER_03")));
+	            v.setPhoneNumber04(nz(rs.getString("PHONE_NUMBER_04")));
+	            v.setPhoneNumber05(nz(rs.getString("PHONE_NUMBER_05")));
+	            v.setPhoneNumber06(nz(rs.getString("PHONE_NUMBER_06")));
+	            v.setPhoneNumber07(nz(rs.getString("PHONE_NUMBER_07")));
+
+	            v.setSsn(nz(rs.getString("SSN")));
+	            v.setIdIssuingJurisdiction(nz(rs.getString("ID_ISSUING_JURISDICTION")));
+	            v.setPowerOfAttorney(nz(rs.getString("POWER_OF_ATTORNEY")));
+	            v.setCountryOfIncorporation(nz(rs.getString("COUNTRY_OF_INCORPORATION")));
+	            v.setGbCountry(nz(rs.getString("GB_COUNTRY")));
+	            v.setCustomerTin(nz(rs.getString("CUSTOMER_TIN")));
+	            v.setAccountOfficer(nz(rs.getString("ACCOUNT_OFFICER")));
+	            v.setCustomerStatus(nz(rs.getString("CUSTOMER_STATUS")));
+	            v.setVisionOuc(nz(rs.getString("VISION_OUC")));
+	            v.setCustomerOpenDate(nz(rs.getString("CUSTOMER_OPEN_DATE")));
+	            v.setSubSegment(nz(rs.getString("SUB_SEGMENT")));
+	            v.setComplianceStatus(nz(rs.getString("COMPLIANCE_STATUS")));
+	            v.setJointAccount(nz(rs.getString("JOINT_ACCOUNT")));
+	            v.setPlaceOfBirth(nz(rs.getString("PLACE_OF_BIRTH")));
+
+	            return v;
+	        };
+
+	        // Count path (no params since we inlined)
+	        if (dObj.isCount()) {
+	            String countSql = "SELECT COUNT(1) FROM (" + strBufApprove + ") Q";
+	            int total = jdbcTemplate.queryForObject(countSql, Integer.class);
+	            dObj.setTotalRows(total);
+	            return java.util.Collections.emptyList();
+	        }
+
+	        // Execute; no params vector needed now
+	        return getQueryPopupResults(dObj, new StringBuffer(), strBufApprove, "", orderBy, new Vector<>(), mapper);
+
+	    } catch (Exception ex) {
+	        ex.printStackTrace();
+	        logger.error("Error: getQueryResults Exception", ex);
+	        return null;
+	    }
 	}
 
 	public StringBuffer getDisplayQueryWithAllColumns(RgCrsRuleDetailsVb dObj) {
-		String country = dObj.getCountry();
-		String leBook = dObj.getLeBook();
-		String visionSbu = dObj.getVisionSbu();
 
-		// --- Prepare magnifier columns ---
-		MagnifierResultVb magnifierResultVb = new MagnifierResultVb();
-		magnifierResultVb.setPromptValue1("'CUSTOMERS'");
-		magnifierResultVb.setQuery("CUSTCOLUMN");
-		magnifierResultVb.setMaxRecords(100);
-		String runDateExpr = (databaseType.equalsIgnoreCase("MSSQL") || databaseType.equalsIgnoreCase("SQLSERVER"))
-				? "CONVERT(VARCHAR(11), T2.RUN_DATE, 106)" // SQL Server
-				: "TO_CHAR(T2.RUN_DATE, 'DD-Mon-YYYY')"; // Oracle
+	    final String country = dObj.getCountry();
+	    final String leBook = dObj.getLeBook();
+	    final String visionSbu = dObj.getVisionSbu();
 
-		Set<String> standardColumns = new HashSet<>(Arrays.asList("COUNTRY", "LE_BOOK", "CUSTOMER_ID", "CUSTOMER_NAME", "VISION_SBU_AT",
-				"VISION_SBU", "RULE_ID", "RULE_DESCRIPTION", "RUN_DATE", "VERSION_NO", "PRIORITY", "CRS_FLAG",
-				"CRS_OVERRIDE", "FINAL_CRS_FLAG"));
+	    // --- Fixed "framework" columns always returned up-front ---
+	    final List<String> fixedHeadCols = List.of("COUNTRY", "LE_BOOK", "CUSTOMER_ID", "VISION_SBU_AT");
 
-		List<MagnifierResultVb> collTmp = magnifierDao.getQueryPopupResults(magnifierResultVb);
-		Set<String> magnifierColumnsSet = new LinkedHashSet<>();
+	    // --- Your domain standard columns (coalesce candidates) ---
+	    final List<String> standardColumns = List.of(
+	            "CUSTOMER_NAME", "CB_NATIONALITY", "CB_RESIDENCE",
+	            "COMM_ADDRESS_1", "COMM_ADDRESS_2", "COMM_ADDRESS_3", "STANDING_ORDER", "PHONE_NUMBER",
+	            "PHONE_NUMBER_02", "PHONE_NUMBER_03", "PHONE_NUMBER_04", "PHONE_NUMBER_05", "PHONE_NUMBER_06",
+	            "PHONE_NUMBER_07", "SSN", "ID_ISSUING_JURISDICTION", "CUSTOMER_ID", "POWER_OF_ATTORNEY",
+	            "COUNTRY_OF_INCORPORATION", "GB_COUNTRY", "CUSTOMER_TIN", "ACCOUNT_OFFICER", "CUSTOMER_STATUS",
+	            "VISION_OUC", "CUSTOMER_OPEN_DATE", "VISION_SBU", "SUB_SEGMENT", "COMPLIANCE_STATUS", "JOINT_ACCOUNT",
+	            "PLACE_OF_BIRTH"
+	    );
 
-		if (collTmp != null && !collTmp.isEmpty()) {
-			for (MagnifierResultVb n : collTmp) {
-				String columnName = n.getColumnNine();
-				String aliasName = n.getColumnTen().trim().replaceAll(" ", "_").toUpperCase();
+	    // --- Manual list + physical columns (UPPER + sanitized) ---
+	    final Set<String> manualColsRaw = getManualColumns(country, leBook).stream()
+	            .map(this::sanitizeIdentifierUpper).collect(java.util.stream.Collectors.toSet());
+	    final Set<String> t1Cols = getTableColumns("CUSTOMERS").stream()
+	            .map(this::sanitizeIdentifierUpper).collect(java.util.stream.Collectors.toSet());
 
-				if (ValidationUtil.isValid(columnName) && !standardColumns.contains(columnName.trim().toUpperCase())) {
+	    // Manual columns we can actually override (intersection of manual list, standard list, and CUSTOMERS)
+	    final LinkedHashSet<String> overridableStandardCols = new LinkedHashSet<>();
+	    for (String sc : standardColumns) {
+	        String col = sanitizeIdentifierUpper(sc);
+	        if (manualColsRaw.contains(col) && t1Cols.contains(col)) {
+	            overridableStandardCols.add(col);
+	        }
+	    }
 
-					magnifierColumnsSet.add("T1." + columnName.trim() + " AS \"" + aliasName + "\"");
-				}
-			}
-		}
+	    // --- Build SELECT list ---
+	    StringBuilder selectList = new StringBuilder();
 
-		String magColumnsStr = magnifierColumnsSet.isEmpty() ? "" : ", " + String.join(", ", magnifierColumnsSet);
+	    boolean first = true;
+	    for (String c : fixedHeadCols) {
+	        String col = sanitizeIdentifierUpper(c);
+	        if (!first) selectList.append(",\n            ");
+	        selectList.append(String.format("T1.%s AS \"%s\"", col, col));
+	        first = false;
+	    }
 
-		// --- COALESCE-based query (works for all platforms) ---
-		String sql = "SELECT * FROM (SELECT " + "T1.COUNTRY, T1.LE_BOOK, T1.CUSTOMER_ID, T1.CUSTOMER_NAME, "
-				+ "T1.VISION_SBU_AT, T1.VISION_SBU, " + "T2.RULE_ID, T2.RULE_DESCRIPTION, "+
-//	            + "COALESCE(TO_CHAR(T2.RUN_DATE,'DD-Mon-YYYY'), TO_CHAR(T1.RUN_DATE,'DD-Mon-YYYY')) AS RUN_DATE, "
-runDateExpr+ " RUN_DATE,"
+	    for (String sc : standardColumns) {
+	        String col = sanitizeIdentifierUpper(sc);
+	        if (fixedHeadCols.stream().map(this::sanitizeIdentifierUpper).anyMatch(col::equals)) continue;
 
-				+ "T2.VERSION_NO, T2.PRIORITY, " + "COALESCE(T2.CRS_FLAG, T1.CRS_FLAG) AS CRS_FLAG, "
-				+ "T1.CRS_OVERRIDE, T1.CRS_FLAG AS FINAL_CRS_FLAG" + magColumnsStr + " FROM CUSTOMERS T1 "
-				+ "LEFT JOIN RG_CRS_RULE_AUDIT T2 ON T1.COUNTRY = T2.COUNTRY AND T1.LE_BOOK = T2.LE_BOOK AND T1.CUSTOMER_ID = T2.CUSTOMER_ID "
-				+ "LEFT JOIN (SELECT T2.COUNTRY, T2.LE_BOOK, T2.CUSTOMER_ID, MAX(T2.RUN_DATE) AS RUN_DATE "
-				+ "FROM RG_CRS_RULE_AUDIT T2 WHERE T2.COUNTRY = '" + country + "' AND T2.LE_BOOK = '" + leBook
-				+ "' AND T2.VISION_SBU = '" + visionSbu + "' " + "GROUP BY T2.COUNTRY, T2.LE_BOOK, T2.CUSTOMER_ID) T3 "
-				+ "ON T2.COUNTRY = T3.COUNTRY AND T2.LE_BOOK = T3.LE_BOOK AND T2.CUSTOMER_ID = T3.CUSTOMER_ID AND T2.RUN_DATE = T3.RUN_DATE "
-				+ "WHERE T1.COUNTRY = '" + country + "' AND T1.LE_BOOK = '" + leBook + "' AND T1.VISION_SBU = '"
-				+ visionSbu + "' "
-				+ "AND COALESCE(T2.VERSION_NO,0) = COALESCE((SELECT MAX(T21.VERSION_NO) FROM RG_CRS_RULE_AUDIT T21 "
-				+ "WHERE T21.COUNTRY = T3.COUNTRY AND T21.LE_BOOK = T3.LE_BOOK AND T21.CUSTOMER_ID = T3.CUSTOMER_ID AND T21.RUN_DATE = T3.RUN_DATE),0) "
-				+ "AND (COALESCE(T2.CRS_FLAG, T1.CRS_FLAG) = 'Y' OR T1.CRS_FLAG = 'Y')) TAPPR ";
-//				+ "ORDER BY PRIORITY";
+	        selectList.append(",\n            ");
+	        if (overridableStandardCols.contains(col)) {
+	            selectList.append(String.format("COALESCE(T5.%s, T1.%s) AS \"%s\"", col, col, col));
+	        } else {
+	            selectList.append(String.format("T1.%s AS \"%s\"", col, col));
+	        }
+	    }
 
-		return new StringBuffer(sql);
+	    final String runDateExpr = databaseType != null && (databaseType.equalsIgnoreCase("MSSQL")
+	            || databaseType.equalsIgnoreCase("SQLSERVER"))
+	            ? "CONVERT(VARCHAR(11), T2.RUN_DATE, 106) AS RUN_DATE"
+	            : "TO_CHAR(T2.RUN_DATE, 'DD-Mon-YYYY') AS RUN_DATE";
+
+	    selectList.append(",\n            ").append(runDateExpr);
+	    selectList.append(",\n            T2.RULE_ID AS \"RULE_ID\"");
+	    selectList.append(",\n            T2.RULE_DESCRIPTION AS \"RULE_DESCRIPTION\"");
+	    selectList.append(",\n            T2.VERSION_NO AS \"VERSION_NO\"");
+	    selectList.append(",\n            T2.PRIORITY AS \"PRIORITY\"");
+	    selectList.append(",\n            COALESCE(T2.CRS_FLAG, T1.CRS_FLAG) AS \"CRS_FLAG\"");
+	    selectList.append(",\n            T1.CRS_OVERRIDE AS \"CRS_OVERRIDE\"");
+	    selectList.append(",\n            T1.CRS_FLAG AS \"FINAL_CRS_FLAG\"");
+
+	    String t5Join = "";
+	    if (!overridableStandardCols.isEmpty()) {
+	        StringBuilder piv = new StringBuilder();
+	        boolean pf = true;
+	        for (String col : overridableStandardCols) {
+	            if (!pf) piv.append(",\n                           ");
+	            piv.append(String.format("MAX(CASE WHEN COLUMN_NAME='%s' THEN COLUMN_VALUE END) AS %s", col, col));
+	            pf = false;
+	        }
+
+	        t5Join = String.format("""
+	                LEFT JOIN (
+	                    SELECT COUNTRY, LE_BOOK, CUSTOMER_ID,
+	                           %s
+	                      FROM CUSTOMER_MANUAL
+	                     WHERE NVL(CUST_MOD_STATUS,1)=1
+	                       AND NVL(RECORD_INDICATOR,7)=7
+	                       AND COUNTRY='%s'
+	                       AND LE_BOOK='%s'
+	                     GROUP BY COUNTRY, LE_BOOK, CUSTOMER_ID
+	                ) T5
+	                   ON T1.COUNTRY=T5.COUNTRY
+	                  AND T1.LE_BOOK=T5.LE_BOOK
+	                  AND T1.CUSTOMER_ID=T5.CUSTOMER_ID
+	                """, piv.toString(), country, leBook);
+	    }
+
+	    String sql = String.format("""
+	            SELECT * FROM (
+	              SELECT
+	                %s
+	              FROM CUSTOMERS T1
+	              %s
+	              LEFT JOIN RG_CRS_RULE_AUDIT T2
+	                     ON T1.COUNTRY     = T2.COUNTRY
+	                    AND T1.LE_BOOK     = T2.LE_BOOK
+	                    AND T1.CUSTOMER_ID = T2.CUSTOMER_ID
+	              LEFT JOIN (
+	                    SELECT T2.COUNTRY, T2.LE_BOOK, T2.CUSTOMER_ID, MAX(T2.RUN_DATE) AS RUN_DATE
+	                      FROM RG_CRS_RULE_AUDIT T2
+	                     WHERE T2.COUNTRY    = '%s'
+	                       AND T2.LE_BOOK    = '%s'
+	                       AND T2.VISION_SBU = '%s'
+	                     GROUP BY T2.COUNTRY, T2.LE_BOOK, T2.CUSTOMER_ID
+	              ) T3
+	                     ON T2.COUNTRY     = T3.COUNTRY
+	                    AND T2.LE_BOOK     = T3.LE_BOOK
+	                    AND T2.CUSTOMER_ID = T3.CUSTOMER_ID
+	                    AND T2.RUN_DATE    = T3.RUN_DATE
+	              WHERE T1.COUNTRY    = '%s'
+	                AND T1.LE_BOOK    = '%s'
+	                AND T1.VISION_SBU = '%s'
+	                AND COALESCE(T2.VERSION_NO,0) = COALESCE((
+	                      SELECT MAX(T21.VERSION_NO)
+	                        FROM RG_CRS_RULE_AUDIT T21
+	                       WHERE T21.COUNTRY     = T3.COUNTRY
+	                         AND T21.LE_BOOK     = T3.LE_BOOK
+	                         AND T21.CUSTOMER_ID = T3.CUSTOMER_ID
+	                         AND T21.RUN_DATE    = T3.RUN_DATE
+	                ),0)
+	                AND (COALESCE(T2.CRS_FLAG, T1.CRS_FLAG) = 'Y' OR T1.CRS_FLAG = 'Y')
+	            ) TAPPR
+	            """, selectList.toString(), t5Join, // T2/T3
+	            country, leBook, visionSbu, // T3 filter
+	            country, leBook, visionSbu // outer WHERE
+	    );
+
+	    return new StringBuffer(sql);
+	}
+	private Set<String> getManualColumns(String country, String leBook) {
+		final String sql = """
+				SELECT UPPER(COLUMN_NAME)
+				  FROM CUSTOMER_MANUAL_COL_LIST
+				 WHERE UPPER(COUNTRY) = ?
+				   AND UPPER(LE_BOOK) = ?
+				   AND NVL(COLUMN_STATUS, 0) = 0
+				 ORDER BY DATE_CREATION
+				""";
+
+		final var cols = getJdbcTemplate().query(sql, ps -> {
+			ps.setString(1, country == null ? null : country.toUpperCase());
+			ps.setString(2, leBook == null ? null : leBook.toUpperCase());
+		}, (rs, i) -> rs.getString(1));
+		return new LinkedHashSet<>(cols);
+	}
+
+	/** Works for Oracle & SQL Server. */
+	private Set<String> getTableColumns(String tableName) {
+		final boolean isSqlServer = databaseType.equalsIgnoreCase("MSSQL")
+				|| databaseType.equalsIgnoreCase("SQLSERVER");
+		final String sql = isSqlServer
+				? "SELECT UPPER(COLUMN_NAME) FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_NAME) = ?"
+				: "SELECT UPPER(COLUMN_NAME) FROM ALL_TAB_COLUMNS WHERE UPPER(TABLE_NAME) = ?";
+
+		final var cols = getJdbcTemplate().query(sql, ps -> ps.setString(1, tableName.toUpperCase()),
+				(rs, i) -> rs.getString(1));
+		return new LinkedHashSet<>(cols);
+	}
+	private String sanitizeIdentifierUpper(String raw) {
+		if (raw == null)
+			return "";
+		return raw.trim().toUpperCase().replaceAll("[^A-Z0-9_]", "");
+	}
+	/* ---------- helpers ---------- */
+
+	// escape single quotes for safe inlining into SQL string literals
+	private static String esc(String s) {
+		return s == null ? "" : s.replace("'", "''");
+	}
+
+	// Null-as-empty
+	private static String nz(String s) {
+		return s == null ? "" : s;
 	}
 
 }

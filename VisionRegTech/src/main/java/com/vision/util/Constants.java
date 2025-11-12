@@ -46,4 +46,9 @@ public class Constants {
 	public static final int DB_CONNECTION_ERROR = 50;
 	public static final String EMPTY = "";	
 	public static final String userRestrictionMsg = "Operation is restricted to your user profile.";
+	public static final String COMMA = ",";
+	public static final int APPLICATION_ACCESS = 8000;
+	public static final String ORACLE = "ORACLE";
+	public static final String MSSQL = "MSSQL";
+	public static final String POSTGRES = "POSTGRES";
 }

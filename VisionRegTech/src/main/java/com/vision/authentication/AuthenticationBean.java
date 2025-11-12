@@ -40,13 +40,16 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+
 @Component
 public class AuthenticationBean {
 	@Value("${app.client}")
 	private String client;
 	@Value("${app.clientName}")
 	private String clientName;
-	
+	@Value("${app.productName}")
+	private String productName;
+
 	public static Logger logger = LoggerFactory.getLogger(AuthenticationBean.class);
 	@Autowired
 	private VisionUsersDao visionUsersDao;
@@ -68,42 +71,57 @@ public class AuthenticationBean {
 		VisionUsersVb lUser = new VisionUsersVb();
 		try {
 			if (ValidationUtil.isValid(userId)) {
-				String strUserName = userId.indexOf("\\") >= 0? userId.substring(userId.indexOf("\\"), userId.length() - 1): userId;VisionUsersVb visionUsersVb = new VisionUsersVb();
+				String strUserName = userId.indexOf("\\") >= 0
+						? userId.substring(userId.indexOf("\\"), userId.length() - 1)
+						: userId;
+				VisionUsersVb visionUsersVb = new VisionUsersVb();
 				visionUsersVb.setUserLoginId(strUserName.toUpperCase());
 				visionUsersVb.setRecordIndicator(0);
 				visionUsersVb.setUserStatus(0);
 				List<VisionUsersVb> lUsers = new ArrayList<VisionUsersVb>();
-					lUsers = visionUsersDao.getActiveUserByUserLoginId(visionUsersVb);
-					if (lUsers == null || lUsers.isEmpty() || lUsers.size() > 1) {
-						request.setAttribute("status", "LoginError");
-						logger.error("User does not exists or more than one user exists with same login id[" + strUserName
-								+ "]");
-						return false;
-					}
-					lUser = ((ArrayList<VisionUsersVb>) lUsers).get(0);
-					lUser.setUserGrpProfile(lUser.getUserGroup()+"-"+lUser.getUserProfile());
-					System.out.println("Getting default Country .. " +new Date());
-						String countryLeBook = getVisionUsersDao().getDefaultCountryLeBook();
-						String country = countryLeBook.split("-")[0];
-						String leBook = countryLeBook.split("-")[1];
-						leBook = "'"+leBook+"'";
-						String legalVehicle = getVisionUsersDao().getDefaultLegalVehicle(countryLeBook);
-						String countryDesc = getVisionUsersDao().getCountryDesc(country);
-						String lebookDesc = getVisionUsersDao().getLebookDesc(countryLeBook);
-						lUser.setDefaultCountry(country);
-						lUser.setDefaultCountryDesc(countryDesc);
-						lUser.setDefaultLeBook(leBook);
-						lUser.setDefaultLebookDesc(lebookDesc);
+				lUsers = visionUsersDao.getActiveUserByUserLoginId(visionUsersVb);
+				if (lUsers == null || lUsers.isEmpty() || lUsers.size() > 1) {
+					request.setAttribute("status", "LoginError");
+					logger.error("User does not exists or more than one user exists with same login id[" + strUserName
+							+ "]");
+					return false;
+				}
+				lUser = ((ArrayList<VisionUsersVb>) lUsers).get(0);
+				lUser.setUserGrpProfile(lUser.getUserGroup() + "-" + lUser.getUserProfile());
+
+				// ---- App access check (Old flow) ----
+//				if (!hasAppAccess(lUser)) {
+//					String msg = "You are not authorized to access the application: " + productName;
+//					httpses.setAttribute("loginStatus", msg);
+//					request.setAttribute("status", "LoginError");
+//					getVisionUsersDao().doInsertUserLoginAudit(
+//							lUser, request.getRemoteAddr(), 1, "Unauthorized application access: " + productName);
+//					return false;
+//				}
+				// ---- end app access check ----
+
+				System.out.println("Getting default Country .. " + new Date());
+				String countryLeBook = getVisionUsersDao().getDefaultCountryLeBook();
+				String country = countryLeBook.split("-")[0];
+				String leBook = countryLeBook.split("-")[1];
+				leBook = "'" + leBook + "'";
+				String legalVehicle = getVisionUsersDao().getDefaultLegalVehicle(countryLeBook);
+				String countryDesc = getVisionUsersDao().getCountryDesc(country);
+				String lebookDesc = getVisionUsersDao().getLebookDesc(countryLeBook);
+				lUser.setDefaultCountry(country);
+				lUser.setDefaultCountryDesc(countryDesc);
+				lUser.setDefaultLeBook(leBook);
+				lUser.setDefaultLebookDesc(lebookDesc);
 
 				lUser.setClientName(clientName);
 				lUser.setLastSuccessfulLoginDate(lUser.getLastActivityDate());
-				//visionUsersDao.updateActivityDateByUserLoginId(lUser);
-				
-				System.out.println("Getting Menu Details .. " +new Date());
+				// visionUsersDao.updateActivityDateByUserLoginId(lUser);
+
+				System.out.println("Getting Menu Details .. " + new Date());
 				ArrayList<Object> result = getMenuForUser(lUser);
 				httpses.setAttribute("userDetails", lUser);
 				httpses.setAttribute("menuDetails", result);
-				lUser=findSystemInfo(request, lUser);
+				lUser = findSystemInfo(request, lUser);
 			} else {
 				logger.error("Unusual case for login context");
 				return false;
@@ -113,10 +131,12 @@ public class AuthenticationBean {
 			request.setAttribute("status", "LoginError");
 			return false;
 		}
-		
-		 try { writeUserLoginAudit(request, userId , "SUCCF", "Login Success",
-		  lUser.getVisionId()); } catch (UnknownHostException e) { e.printStackTrace();
-		  }
+
+		try {
+			writeUserLoginAudit(request, userId, "SUCCF", "Login Success", lUser.getVisionId());
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		}
 		return true;
 	}
 
@@ -126,7 +146,6 @@ public class AuthenticationBean {
 	 * @return ArrayList<Object>. Index 0 contains list of profiles of the top level
 	 *         menus and index 1 contains list of MenuVb.
 	 */
-	
 	public ArrayList<Object> getMenuForUser(VisionUsersVb lCurrentUser) {
 		if (lCurrentUser == null) {
 			throw new RuntimeCustomException("Invalida session. Please reload the application.");
@@ -152,13 +171,14 @@ public class AuthenticationBean {
 					lMenuVb.setProfileUpload(profileData.getProfileUpload());
 					lMenuVb.setProfileDownload(profileData.getProfileDownload());
 					lMenuVb.setProfileSubmit(profileData.getProfileSubmit());
-//					lMenuVb.setRecordIndicator(0);
 					lMenuVb.setMenuStatus(0);
-					ArrayList<MenuVb> subMenuGroup = commonDao.getSubMenuItemsForMenuGroup(profileData.getMenuGroup(),lCurrentUser);
-					if(subMenuGroup != null && !subMenuGroup.isEmpty()) {
-						for(MenuVb menuVb : subMenuGroup) {
-							ArrayList<MenuVb> subMenus = commonDao.getSubMenuItemsForSubMenuGroup(profileData.getMenuGroup(),menuVb.getParentSequence(),lCurrentUser);
-							if(subMenus != null && subMenus.size() > 0) {
+					ArrayList<MenuVb> subMenuGroup = commonDao.getSubMenuItemsForMenuGroup(profileData.getMenuGroup(),
+							lCurrentUser);
+					if (subMenuGroup != null && !subMenuGroup.isEmpty()) {
+						for (MenuVb menuVb : subMenuGroup) {
+							ArrayList<MenuVb> subMenus = commonDao.getSubMenuItemsForSubMenuGroup(
+									profileData.getMenuGroup(), menuVb.getParentSequence(), lCurrentUser);
+							if (subMenus != null && subMenus.size() > 0) {
 								menuVb.setChildren(subMenus);
 							}
 							menuVb.setProfileAdd(profileData.getProfileAdd());
@@ -169,14 +189,12 @@ public class AuthenticationBean {
 							menuVb.setProfileUpload(profileData.getProfileUpload());
 							menuVb.setProfileDownload(profileData.getProfileDownload());
 							resultChilds.add(menuVb);
-						}	
+						}
 					}
-					
-					/*if(resultChilds != null && resultChilds.size() > 0) {*/
-						lMenuVb.setChildren(resultChilds);
-						finalMenuGrouplst.add(profileData);
-						resultMenu.add(lMenuVb);	
-					/*}*/
+
+					lMenuVb.setChildren(resultChilds);
+					finalMenuGrouplst.add(profileData);
+					resultMenu.add(lMenuVb);
 				}
 			}
 			result.add(finalMenuGrouplst);
@@ -281,6 +299,7 @@ public class AuthenticationBean {
 			return null;
 		}
 	}
+
 	@SuppressWarnings("null")
 	public ExceptionCode callProcToPopulateForgotPasswordEmail(VisionUsersVb vObject, String resultForgotBy) {
 		ExceptionCode exceptionCode = new ExceptionCode();
@@ -329,28 +348,6 @@ public class AuthenticationBean {
 		helper.setText("Greetings :)");
 		helper.setSubject("Mail From Spring Boot");
 		return message;
-
-		/*
-		 * MimeMessagePreparator msg = new MimeMessagePreparator(){
-		 * 
-		 * @Override public void prepare(MimeMessage mimeMessage) throws Exception {
-		 * Map<String , Object> map = new HashMap<String, Object>(); String msgBody =
-		 * ""; MimeMessageHelper message = new MimeMessageHelper(mimeMessage, true,
-		 * "UTF-8"); message.setFrom("ddmoorthy94@gmail.com"); message.
-		 * if(ValidationUtil.isValid(vObject.getUserEmailId())){
-		 * message.setTo(vObject.getUserEmailId()); } map.put("subject",
-		 * "Trouble Signing In"); map.put("emailScheduler", vObject);
-		 * if("Username".equalsIgnoreCase(resultForgotBy)){ msgBody =
-		 * VelocityEngineUtils.mergeTemplateIntoString(getVelocityEngine(),
-		 * "com/vision/wb/SR_EMAIL_FORGOT_USERNAME.vm", map); }else
-		 * if("Password".equalsIgnoreCase(resultForgotBy)){ msgBody =
-		 * VelocityEngineUtils.mergeTemplateIntoString(getVelocityEngine(),
-		 * "com/vision/wb/SR_EMAIL_FORGOT_PASSWORD.vm", map); }
-		 * message.setText(msgBody,true); message.setSentDate(new Date());
-		 * message.setSubject("Trouble Signing In"); }
-		 * 
-		 * }; return msg;
-		 */
 	}
 
 	public int doPasswordResetInsertion(VisionUsersVb vObj) {
@@ -389,110 +386,119 @@ public class AuthenticationBean {
 	public void setMailSender(JavaMailSender mailSender) {
 		this.mailSender = mailSender;
 	}
-	public void writeUserLoginAudit(HttpServletRequest request,String userLoginId,String status,String comments,int visionId) throws UnknownHostException{
+
+	public void writeUserLoginAudit(HttpServletRequest request, String userLoginId, String status, String comments,
+			int visionId) throws UnknownHostException {
 		try {
 			VisionUsersVb vObject = new VisionUsersVb();
 			vObject.setUserLoginId(userLoginId);
 			vObject.setLoginStatus(status);
 			vObject.setComments(comments);
 			vObject.setVisionId(visionId);
-			vObject = findSystemInfo(request,vObject);
+			vObject = findSystemInfo(request, vObject);
 			visionUsersDao.insertUserLoginAudit(vObject);
-		}catch(Exception e){
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
-	public VisionUsersVb findSystemInfo(HttpServletRequest request,VisionUsersVb vObject) {
+
+	public VisionUsersVb findSystemInfo(HttpServletRequest request, VisionUsersVb vObject) {
 		try {
 			String ipAddress = request.getRemoteAddr();
-			if("0:0:0:0:0:0:0:1".equalsIgnoreCase(ipAddress)){
-				ipAddress = InetAddress.getLocalHost().getHostAddress() ;
+			if ("0:0:0:0:0:0:0:1".equalsIgnoreCase(ipAddress)) {
+				ipAddress = InetAddress.getLocalHost().getHostAddress();
 			}
 			InetAddress inetAddress = InetAddress.getByName(ipAddress);
 			vObject.setIpAddress(ipAddress);
 			vObject.setRemoteHostName(inetAddress.getHostName());
 			vObject.setMacAddress(getCommonDao().getMacAddress(ipAddress));
-		}catch(Exception e){
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return vObject;
 	}
 
-	public ExceptionCode findActiveDirectory(HttpServletRequest request,String username) {
+	public ExceptionCode findActiveDirectory(HttpServletRequest request, String username) {
 		String userId = username;
 		ExceptionCode exceptionCode = new ExceptionCode();
 		String userIpAddress = request.getRemoteAddr();
-		try{
-			if(ValidationUtil.isValid(userId)){
+		try {
+			if (ValidationUtil.isValid(userId)) {
 				String strUserName = userId;
 				VisionUsersVb visionUsersVb = new VisionUsersVb();
 				visionUsersVb.setUserLoginId(strUserName.toLowerCase());
 				visionUsersVb.setRecordIndicator(0);
 				visionUsersVb.setUserStatus(0);
 				List<VisionUsersVb> lUsers = visionUsersDao.getActiveUserByUserLoginId(visionUsersVb);
-				if(lUsers == null || lUsers.isEmpty() || lUsers.size() > 1){
+				if (lUsers == null || lUsers.isEmpty() || lUsers.size() > 1) {
 					exceptionCode.setErrorCode(0);
-					exceptionCode.setErrorMsg("User does not exists or more than one user exists with same login id ["+strUserName+"]");
+					exceptionCode.setErrorMsg("User does not exists or more than one user exists with same login id ["
+							+ strUserName + "]");
 					return exceptionCode;
 				}
-				if(lUsers.size() == 1){
-					/*if(lUsers.get(0).getLoggedinflag()=="Y" || "Y".equalsIgnoreCase(lUsers.get(0).getLoggedinflag()) ){
-						exceptionCode.setErrorCode(0);
-						exceptionCode.setErrorMsg("User already logged in with same login id ["+strUserName+"]");
-						return exceptionCode;
-					}*/
+				if (lUsers.size() == 1) {
+					/*
+					 * if(lUsers.get(0).getLoggedinflag()=="Y" ||
+					 * "Y".equalsIgnoreCase(lUsers.get(0).getLoggedinflag()) ){
+					 * exceptionCode.setErrorCode(0);
+					 * exceptionCode.setErrorMsg("User already logged in with same login id ["
+					 * +strUserName+"]"); return exceptionCode; }
+					 */
 				}
-				VisionUsersVb lUser = ((ArrayList<VisionUsersVb> )lUsers).get(0);
+				VisionUsersVb lUser = ((ArrayList<VisionUsersVb>) lUsers).get(0);
 				lUser.setRemoteAddress(userIpAddress);
 				lUser.getActiveDirectoryFlag();
 				exceptionCode.setRequest(lUser);
 				return exceptionCode;
 			}
-		 }catch(Exception e){
-				exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
-				exceptionCode.setErrorMsg("LoginError");
-				e.printStackTrace();
-				logger.info("Error : findActiveDirectory : "+e.getMessage());
-				return exceptionCode;
-		 }
+		} catch (Exception e) {
+			exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
+			exceptionCode.setErrorMsg("LoginError");
+			e.printStackTrace();
+			logger.info("Error : findActiveDirectory : " + e.getMessage());
+			return exceptionCode;
+		}
 		return exceptionCode;
 	}
 
-	public boolean processLogin(HttpServletRequest request, HttpServletResponse response){
+	public boolean processLogin(HttpServletRequest request, HttpServletResponse response) {
 		System.out.println("***processLogin***");
 		HttpSession httpses = request.getSession();
-		String activeDirectoryFlag =(String)request.getAttribute("activeDirectoryFlag");
-		String userId = (String)httpses.getAttribute("ntLoginDetails");
+		String activeDirectoryFlag = (String) request.getAttribute("activeDirectoryFlag");
+		String userId = (String) httpses.getAttribute("ntLoginDetails");
 		String userIpAddress = request.getRemoteAddr();
 		VisionUsersVb lUser = null;
 		List<VisionUsersVb> lUsers = null;
-		
-		if(!ValidationUtil.isValid(activeDirectoryFlag)){
-			VisionUsersVb vObj=new VisionUsersVb();
-			ExceptionCode exceptCode = findActiveDirectory(request,userId);
-			 if(exceptCode!=null){
-					if(exceptCode.getRequest()!=null){
-						vObj = (VisionUsersVb)exceptCode.getRequest();
-						activeDirectoryFlag=vObj.getActiveDirectoryFlag();
-					}else{
-						request.setAttribute("status", "LoginError");
-						logger.error("Invalid user Login Id in Vision User Table ");
-						return false;
-					}
- 			  }		
+
+		if (!ValidationUtil.isValid(activeDirectoryFlag)) {
+			VisionUsersVb vObj = new VisionUsersVb();
+			ExceptionCode exceptCode = findActiveDirectory(request, userId);
+			if (exceptCode != null) {
+				if (exceptCode.getRequest() != null) {
+					vObj = (VisionUsersVb) exceptCode.getRequest();
+					activeDirectoryFlag = vObj.getActiveDirectoryFlag();
+				} else {
+					request.setAttribute("status", "LoginError");
+					logger.error("Invalid user Login Id in Vision User Table ");
+					return false;
+				}
+			}
 		}
-		if("Y".equalsIgnoreCase(activeDirectoryFlag) && (httpses == null || httpses.getAttribute("ntLoginDetails") == null)){
+		if ("Y".equalsIgnoreCase(activeDirectoryFlag)
+				&& (httpses == null || httpses.getAttribute("ntLoginDetails") == null)) {
 			request.setAttribute("status", "LoginError");
 			logger.error("Invalid user Login Id - ntLoginDetails or Active Directory flag ");
 			return false;
 		}
-		try{
-			String strUserName = userId.indexOf("\\") >= 0? userId.substring(userId.indexOf("\\"), userId.length() - 1): userId;VisionUsersVb visionUsersVb = new VisionUsersVb();
+		try {
+			String strUserName = userId.indexOf("\\") >= 0 ? userId.substring(userId.indexOf("\\"), userId.length() - 1)
+					: userId;
+			VisionUsersVb visionUsersVb = new VisionUsersVb();
 			visionUsersVb.setUserLoginId(strUserName.toUpperCase());
 			visionUsersVb.setRecordIndicator(0);
 			visionUsersVb.setUserStatus(0);
-			
-			if("Y".equalsIgnoreCase(activeDirectoryFlag)){
+
+			if ("Y".equalsIgnoreCase(activeDirectoryFlag)) {
 				lUsers = visionUsersDao.getActiveUserByUserLoginId(visionUsersVb);
 				if (lUsers == null || lUsers.isEmpty() || lUsers.size() > 1) {
 					request.setAttribute("status", "LoginError");
@@ -500,60 +506,66 @@ public class AuthenticationBean {
 							+ "]");
 					return false;
 				}
-				
+
 				lUser = ((ArrayList<VisionUsersVb>) lUsers).get(0);
-				
-				if(lUser.getUserStatus()!=0){
-					httpses.setAttribute("loginStatus", "The User Is Inactive/Deleted/Old for login id ["+strUserName+"]");
-					getVisionUsersDao().doInsertUserLoginAudit(lUser, request.getRemoteAddr(), 1, "The User Is Inactive/Deleted/Old for login id");
+
+				if (lUser.getUserStatus() != 0) {
+					httpses.setAttribute("loginStatus",
+							"The User Is Inactive/Deleted/Old for login id [" + strUserName + "]");
+					getVisionUsersDao().doInsertUserLoginAudit(lUser, request.getRemoteAddr(), 1,
+							"The User Is Inactive/Deleted/Old for login id");
 					return false;
 				}
 				String maxLoginAttempts = getMaxLoginAttempts();
-				if(ValidationUtil.isValid(lUser.getLastUnsuccessfulLoginAttempts())  && ValidationUtil.isValid(maxLoginAttempts)){
-					if(Integer.parseInt(lUser.getLastUnsuccessfulLoginAttempts()) >= Integer.parseInt(getMaxLoginAttempts())){
-						httpses.setAttribute("loginStatus", "User account has been locked. Please Contact System Admin");
-					   getVisionUsersDao().doInsertUserLoginAudit(lUser, request.getRemoteAddr(), 1, "User account has been locked in Vision level");
-					   return false;
-		    		}
+				if (ValidationUtil.isValid(lUser.getLastUnsuccessfulLoginAttempts())
+						&& ValidationUtil.isValid(maxLoginAttempts)) {
+					if (Integer.parseInt(lUser.getLastUnsuccessfulLoginAttempts()) >= Integer
+							.parseInt(getMaxLoginAttempts())) {
+						httpses.setAttribute("loginStatus",
+								"User account has been locked. Please Contact System Admin");
+						getVisionUsersDao().doInsertUserLoginAudit(lUser, request.getRemoteAddr(), 1,
+								"User account has been locked in Vision level");
+						return false;
+					}
 				}
-				lUser.setUserGrpProfile(lUser.getUserGroup()+"-"+lUser.getUserProfile());
-				if("Y".equalsIgnoreCase(lUser.getUpdateRestriction())){
-					//List<AlphaSubTabVb> listOfLeBook = getVisionUsersDao().getLeBookList(lUser);
+
+				// ---- App access check (AD) ----
+				if (!hasAppAccess(lUser)) {
+					httpses.setAttribute("loginStatusWithSPE",
+						    "You are not authorized to access the application: " + productName);
+						request.setAttribute("status", "LoginError");
+
+					request.setAttribute("status", "LoginError");
+					getVisionUsersDao().doInsertUserLoginAudit(
+							lUser, request.getRemoteAddr(), 1, "Unauthorized application access: " + productName);
+					return false;
+				}
+				// ---- end app access check ----
+
+				lUser.setUserGrpProfile(lUser.getUserGroup() + "-" + lUser.getUserProfile());
+				if ("Y".equalsIgnoreCase(lUser.getUpdateRestriction())) {
 					String listOfLeBook = getVisionUsersDao().getLeBookList(lUser);
 					httpses.setAttribute("LEBOOK_LIST", listOfLeBook);
 					String leBook = listOfLeBook;
 					lUser.setUpdateRestrictionLeBook(listOfLeBook);
 					lUser.setUpdateRestrictionLegalVehicle(lUser.getLegalVehicle());
-					if(ValidationUtil.isValid(listOfLeBook)) {
-						/*listOfLeBook = listOfLeBook.replaceAll("'", "");
-						String country = listOfLeBook.split("-")[0];
-						String leBook1 = listOfLeBook.split("-")[1];
+					if (ValidationUtil.isValid(listOfLeBook)) {
+						listOfLeBook = listOfLeBook.replaceAll("'", "");
+						String[] listCountryLeBook = listOfLeBook.split(",");
+						String country = listCountryLeBook[0].split("-")[0];
+						String leBook1 = listCountryLeBook[0].split("-")[1];
 						String countryDesc = getVisionUsersDao().getCountryDesc(country);
-						String lebookDesc = getVisionUsersDao().getLebookDesc(listOfLeBook);
+						String lebookDesc = getVisionUsersDao().getLebookDesc(listCountryLeBook[0]);
 						lUser.setDefaultLebookDesc(lebookDesc);
 						lUser.setDefaultCountryDesc(countryDesc);
 						lUser.setDefaultLeBook(leBook1);
-						lUser.setDefaultCountry(country);*/
-						
-						listOfLeBook = listOfLeBook.replaceAll("'", "");
-						String[] listCountryLeBook = listOfLeBook.split(",");
-						/*if (listCountryLeBook.length > 1) {
-						} else {*/
-							String country = listCountryLeBook[0].split("-")[0];
-							String leBook1 = listCountryLeBook[0].split("-")[1];
-							String countryDesc = getVisionUsersDao().getCountryDesc(country);
-							String lebookDesc = getVisionUsersDao().getLebookDesc(listCountryLeBook[0]);
-							lUser.setDefaultLebookDesc(lebookDesc);
-							lUser.setDefaultCountryDesc(countryDesc);
-							lUser.setDefaultLeBook(leBook1);
-							lUser.setDefaultCountry(country);
-						/*}*/
+						lUser.setDefaultCountry(country);
 					}
-				}else{
+				} else {
 					String countryLeBook = getVisionUsersDao().getDefaultCountryLeBook();
 					String country = countryLeBook.split("-")[0];
 					String leBook = countryLeBook.split("-")[1];
-					leBook = "'"+leBook+"'";
+					leBook = "'" + leBook + "'";
 					String legalVehicle = getVisionUsersDao().getDefaultLegalVehicle(countryLeBook);
 					String countryDesc = getVisionUsersDao().getCountryDesc(country);
 					String lebookDesc = getVisionUsersDao().getLebookDesc(countryLeBook);
@@ -562,118 +574,141 @@ public class AuthenticationBean {
 					lUser.setDefaultLeBook(leBook);
 					lUser.setDefaultLebookDesc(lebookDesc);
 				}
-			
-			}else{
+
+			} else {
 				lUsers = visionUsersDao.getActiveUserByUserLoginId(visionUsersVb);
 				if (lUsers == null || lUsers.isEmpty() || lUsers.size() > 1) {
 					request.setAttribute("status", "LoginError");
-					logger.error("User does not exists or more than one user exists with same login id[" + strUserName+ "]");
+					logger.error("User does not exists or more than one user exists with same login id[" + strUserName
+							+ "]");
 					return false;
 				}
-				
+
 				lUser = ((ArrayList<VisionUsersVb>) lUsers).get(0);
-				
-				if(lUser.getUserStatus()!=0){
-					httpses.setAttribute("loginStatus", "The User Is Inactive/Deleted/Old for login id ["+strUserName+"]");
-					getVisionUsersDao().doInsertUserLoginAudit(lUser, request.getRemoteAddr(), 1, "The User Is Inactive/Deleted/Old for login id");
+
+				if (lUser.getUserStatus() != 0) {
+					httpses.setAttribute("loginStatus",
+							"The User Is Inactive/Deleted/Old for login id [" + strUserName + "]");
+					getVisionUsersDao().doInsertUserLoginAudit(lUser, request.getRemoteAddr(), 1,
+							"The User Is Inactive/Deleted/Old for login id");
 					return false;
 				}
 				String maxLoginAttempts = getMaxLoginAttempts();
-				if(ValidationUtil.isValid(lUser.getLastUnsuccessfulLoginAttempts())  && ValidationUtil.isValid(maxLoginAttempts)){
-					if(Integer.parseInt(lUser.getLastUnsuccessfulLoginAttempts()) >= Integer.parseInt(getMaxLoginAttempts())){
-						httpses.setAttribute("loginStatus", "User account has been locked. Please Contact System Admin");
-					   getVisionUsersDao().doInsertUserLoginAudit(lUser, request.getRemoteAddr(), 1, "User account has been locked in Vision level");
-					   return false;
-		    		}
+				if (ValidationUtil.isValid(lUser.getLastUnsuccessfulLoginAttempts())
+						&& ValidationUtil.isValid(maxLoginAttempts)) {
+					if (Integer.parseInt(lUser.getLastUnsuccessfulLoginAttempts()) >= Integer
+							.parseInt(getMaxLoginAttempts())) {
+						httpses.setAttribute("loginStatus",
+								"User account has been locked. Please Contact System Admin");
+						getVisionUsersDao().doInsertUserLoginAudit(lUser, request.getRemoteAddr(), 1,
+								"User account has been locked in Vision level");
+						return false;
+					}
 				}
-				
+
+				// ---- App access check (Non-AD) ----
+				if (!hasAppAccess(lUser)) {
+					String msg = "You are not authorized to access the application: " + productName;
+					httpses.setAttribute("loginStatus", msg);
+					request.setAttribute("status", "LoginError");
+					getVisionUsersDao().doInsertUserLoginAudit(
+							lUser, request.getRemoteAddr(), 1, "Unauthorized application access: " + productName);
+					return false;
+				}
+				// ---- end app access check ----
+
 				List<VisionUsersVb> lUsersPwd = visionUsersDao.getPasswordByVisionId(lUser);
-				
-				String Crctpwd=(String) request.getAttribute("Crctpwd");
-				System.out.println("Crctpwd : "+Crctpwd);
+
+				String Crctpwd = (String) request.getAttribute("Crctpwd");
+				System.out.println("Crctpwd : " + Crctpwd);
 				String digest = DigestUtils.md5Hex(Crctpwd);
 				String dbEncriptPwd = lUsersPwd.get(0).getPassword1();
-				
-				if(lUsersPwd.size() >= 1 && Integer.parseInt(getPassHistoryCount(lUser.getVisionId()))==0 && !dbEncriptPwd.equalsIgnoreCase(digest)){
+
+				if (lUsersPwd.size() >= 1 && Integer.parseInt(getPassHistoryCount(lUser.getVisionId())) == 0
+						&& !dbEncriptPwd.equalsIgnoreCase(digest)) {
 					updateUnsuccessfulLoginAttempts(strUserName.toLowerCase());
-					request.setAttribute("status", "Invalid Password with same login id ["+strUserName+"]");
-					getVisionUsersDao().doInsertUserLoginAudit(lUser, request.getRemoteAddr(), 1, "Invalid Password with same login id");
+					request.setAttribute("status", "Invalid Password with same login id [" + strUserName + "]");
+					getVisionUsersDao().doInsertUserLoginAudit(lUser, request.getRemoteAddr(), 1,
+							"Invalid Password with same login id");
 					return false;
 				}
-				if(Integer.parseInt(getPassHistoryCount(lUser.getVisionId()))==0 && "N".equalsIgnoreCase(lUsersPwd.get(0).getPasswordResetFlag())){
+				if (Integer.parseInt(getPassHistoryCount(lUser.getVisionId())) == 0
+						&& "N".equalsIgnoreCase(lUsersPwd.get(0).getPasswordResetFlag())) {
 					request.setAttribute("loggedInUserID", lUser.getVisionId());
-					request.setAttribute("firstTimeUserstatus", "You have logged in for the first time using a temporary password. Please proceed to set up a permanent password.|"+lUser.getVisionId());
-					httpses.setAttribute("loginStatus", "You have logged in for the first time using a temporary password. Please proceed to set up a permanent password.|"+lUser.getVisionId());
-//					getVisionUsersDao().doInsertionorUpdate(visionUsersVb, request.getRemoteAddr(), "First time Login", "You must change your password before logging in for the first time for login id");
+					request.setAttribute("firstTimeUserstatus",
+							"You have logged in for the first time using a temporary password. Please proceed to set up a permanent password.|"
+									+ lUser.getVisionId());
+					httpses.setAttribute("loginStatus",
+							"You have logged in for the first time using a temporary password. Please proceed to set up a permanent password.|"
+									+ lUser.getVisionId());
 					return false;
 				}
-				String existingPwd="";
-				System.out.println("Count : "+lUsersPwd.get(0).getChangeCount());
-				if(lUsersPwd.get(0).getChangeCount()==0 || lUsersPwd.get(0).getChangeCount()==1){
-					existingPwd=lUsersPwd.get(0).getPassword1();
-				}else if(lUsersPwd.get(0).getChangeCount()==2){
-					existingPwd=lUsersPwd.get(0).getPassword2();
-				}else{
-					existingPwd=lUsersPwd.get(0).getPassword3();
+				String existingPwd = "";
+				System.out.println("Count : " + lUsersPwd.get(0).getChangeCount());
+				if (lUsersPwd.get(0).getChangeCount() == 0 || lUsersPwd.get(0).getChangeCount() == 1) {
+					existingPwd = lUsersPwd.get(0).getPassword1();
+				} else if (lUsersPwd.get(0).getChangeCount() == 2) {
+					existingPwd = lUsersPwd.get(0).getPassword2();
+				} else {
+					existingPwd = lUsersPwd.get(0).getPassword3();
 				}
 				String existingDecPwd = existingPwd;
-				System.out.println("DB Pwd : "+existingDecPwd+" Login Pwd : "+digest);
-				if(!digest.equalsIgnoreCase(existingDecPwd)){
+				System.out.println("DB Pwd : " + existingDecPwd + " Login Pwd : " + digest);
+				if (!digest.equalsIgnoreCase(existingDecPwd)) {
 					updateUnsuccessfulLoginAttempts(strUserName.toLowerCase());
-					request.setAttribute("status", "Invalid Password with same login id ["+strUserName+"]");
-					getVisionUsersDao().doInsertUserLoginAudit(visionUsersVb, request.getRemoteAddr(), 1, "Invalid Password with same login id");
+					request.setAttribute("status", "Invalid Password with same login id [" + strUserName + "]");
+					getVisionUsersDao().doInsertUserLoginAudit(visionUsersVb, request.getRemoteAddr(), 1,
+							"Invalid Password with same login id");
 					return false;
-				}else{
-					setLoggedInFlag("Y",strUserName);
+				} else {
+					setLoggedInFlag("Y", strUserName);
 				}
 				long diff = -1;
-			 String nextPasswordModifyDate=lUser.getNextPasswordModifyDate().substring(0, 10).trim();
+				String nextPasswordModifyDate = lUser.getNextPasswordModifyDate().substring(0, 10).trim();
 				SimpleDateFormat sdformat = new SimpleDateFormat("dd-MM-yyyy");
 				String curDate = sdformat.format(new Date());
-			    Date currentDate = sdformat.parse(curDate);
-			    Date dbDate = sdformat.parse(nextPasswordModifyDate);
-			    System.out.println("curDate : ["+curDate+"] NextPasswordModifyDate["+nextPasswordModifyDate+"]");
-			    if (dbDate.compareTo(currentDate) <= 0) {
-//					request.setAttribute("status", "User password has been expired. Please click OK to reset the password. |"+lUser.getVisionId());
-					request.setAttribute("UserExpiredStatus", "User password has expired. Please click Ok to reset the password.|"+lUser.getVisionId());
-					httpses.setAttribute("loginStatus", "User password has expired. Please click Ok to reset the password.|"+lUser.getVisionId());
+				Date currentDate = sdformat.parse(curDate);
+				Date dbDate = sdformat.parse(nextPasswordModifyDate);
+				System.out
+						.println("curDate : [" + curDate + "] NextPasswordModifyDate[" + nextPasswordModifyDate + "]");
+				if (dbDate.compareTo(currentDate) <= 0) {
+					request.setAttribute("UserExpiredStatus",
+							"User password has expired. Please click Ok to reset the password.|" + lUser.getVisionId());
+					httpses.setAttribute("loginStatus",
+							"User password has expired. Please click Ok to reset the password.|" + lUser.getVisionId());
 					request.setAttribute("loginUserId", lUsers.get(0).getVisionId());
 					return false;
-			    }
-			    
-				lUser.setUserGrpProfile(lUser.getUserGroup()+"-"+lUser.getUserProfile());
-				System.out.println("Update : "+lUser.getUpdateRestriction());
-				if("Y".equalsIgnoreCase(lUser.getUpdateRestriction())){
-					//List<AlphaSubTabVb> listOfLeBook = getVisionUsersDao().getLeBookList(lUser);
+				}
+
+				lUser.setUserGrpProfile(lUser.getUserGroup() + "-" + lUser.getUserProfile());
+				System.out.println("Update : " + lUser.getUpdateRestriction());
+				if ("Y".equalsIgnoreCase(lUser.getUpdateRestriction())) {
 					String listOfLeBook = getVisionUsersDao().getLeBookList(lUser);
 					httpses.setAttribute("LEBOOK_LIST", listOfLeBook);
 					String leBook = listOfLeBook;
 					lUser.setUpdateRestrictionLeBook(listOfLeBook);
 					lUser.setUpdateRestrictionLegalVehicle(lUser.getLegalVehicle());
-					if(ValidationUtil.isValid(listOfLeBook)) {
+					if (ValidationUtil.isValid(listOfLeBook)) {
 						listOfLeBook = listOfLeBook.replaceAll("'", "");
-						System.out.println("listOfLeBook : "+listOfLeBook);
+						System.out.println("listOfLeBook : " + listOfLeBook);
 						String[] listCountryLeBook = listOfLeBook.split(",");
-						/*if(listCountryLeBook.length > 1 ) {
-						} else {*/
-							String country = listCountryLeBook[0].split("-")[0];
-							String leBook1 = listCountryLeBook[0].split("-")[1];
-							String countryDesc = getVisionUsersDao().getCountryDesc(country);
-							String lebookDesc = getVisionUsersDao().getLebookDesc(listCountryLeBook[0]);
-							lUser.setDefaultLebookDesc(lebookDesc);
-							lUser.setDefaultCountryDesc(countryDesc);
-							lUser.setDefaultLeBook(leBook1);
-							lUser.setDefaultCountry(country);
-						/*}*/
+						String country = listCountryLeBook[0].split("-")[0];
+						String leBook1 = listCountryLeBook[0].split("-")[1];
+						String countryDesc = getVisionUsersDao().getCountryDesc(country);
+						String lebookDesc = getVisionUsersDao().getLebookDesc(listCountryLeBook[0]);
+						lUser.setDefaultLebookDesc(lebookDesc);
+						lUser.setDefaultCountryDesc(countryDesc);
+						lUser.setDefaultLeBook(leBook1);
+						lUser.setDefaultCountry(country);
 					}
-					
-				}else{
-					
+
+				} else {
+
 					String countryLeBook = getVisionUsersDao().getDefaultCountryLeBook();
-					System.out.println("listOfLeBook 2 : "+countryLeBook);
+					System.out.println("listOfLeBook 2 : " + countryLeBook);
 					String country = countryLeBook.split("-")[0];
 					String leBook = countryLeBook.split("-")[1];
-					leBook = "'"+leBook+"'";
+					leBook = "'" + leBook + "'";
 					String legalVehicle = getVisionUsersDao().getDefaultLegalVehicle(countryLeBook);
 					String countryDesc = getVisionUsersDao().getCountryDesc(country);
 					String lebookDesc = getVisionUsersDao().getLebookDesc(countryLeBook);
@@ -683,96 +718,114 @@ public class AuthenticationBean {
 					lUser.setDefaultLebookDesc(lebookDesc);
 				}
 			}
-			
-			
+
 			String backupAo = "";
-			if(ValidationUtil.isValid(lUser.getAccountOfficer())) {
+			if (ValidationUtil.isValid(lUser.getAccountOfficer())) {
 				backupAo = visionUsersDao.getAoBackup(lUser.getAccountOfficer());
-				if(ValidationUtil.isValid(backupAo) && backupAo.length() > 1) {
+				if (ValidationUtil.isValid(backupAo) && backupAo.length() > 1) {
 					lUser.setRestrictedAo(backupAo);
 				}
 			}
 			lUser.setClientName(clientName);
 			String homeDashboard = commonDao.getUserHomeDashboard(lUser);
-			if(!ValidationUtil.isValid(homeDashboard))
+			if (!ValidationUtil.isValid(homeDashboard))
 				homeDashboard = "NA";
 			lUser.setHomeDashboard(homeDashboard);
-			
+
 			lUser.setLastSuccessfulLoginDate(lUser.getLastActivityDate());
 			ArrayList<Object> result = getMenuForUser(lUser);
+			// Updation of Last Activity Date 
+			visionUsersDao.updateActivityDateByUserLoginId(lUser);
 			httpses.setAttribute("userDetails", lUser);
 			httpses.setAttribute("menuDetails", result);
-			
-			}catch(Exception e){
-				logger.error("Exception in AuthenticationBean : " +  e.getMessage(),e);
-				request.setAttribute("status", "LoginError");
-				return false;
-			}
-			try {
-				writeUserLoginAudit(request, userId, "SUCCF", "Login Success", lUser.getVisionId());
-			} catch (UnknownHostException e) {
-				e.printStackTrace();
-			}
-			return true;
+
+		} catch (Exception e) {
+			logger.error("Exception in AuthenticationBean : " + e.getMessage(), e);
+			request.setAttribute("status", "LoginError");
+			return false;
+		}
+		try {
+			writeUserLoginAudit(request, userId, "SUCCF", "Login Success", lUser.getVisionId());
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		}
+		return true;
 	}
 
 	public String getPassHistoryCount(int visionId) {
-		try{
-			String pwdHistoryCnt =  getCommonDao().getPasswordHistoryCount(visionId);
-			if(!ValidationUtil.isValid(pwdHistoryCnt))
+		try {
+			String pwdHistoryCnt = getCommonDao().getPasswordHistoryCount(visionId);
+			if (!ValidationUtil.isValid(pwdHistoryCnt))
 				pwdHistoryCnt = "0";
 			return pwdHistoryCnt;
-		}catch(Exception e){
-			logger.error("Exception in getting the Password History Change Count : " +  e.getMessage(),e);
+		} catch (Exception e) {
+			logger.error("Exception in getting the Password History Change Count : " + e.getMessage(), e);
 			return null;
 		}
 	}
-	public ExceptionCode setLoggedInFlag(String Flag,String username) {
+
+	public ExceptionCode setLoggedInFlag(String Flag, String username) {
 		ExceptionCode exceptionCode = new ExceptionCode();
-		try{
+		try {
 			VisionUsersVb visionUsersVb = new VisionUsersVb();
 			visionUsersVb.setLoggedinflag(Flag);
 			visionUsersVb.setUserLoginId(username);
 			int updateLoginFlag = commonDao.doUpdateLoginFlag(visionUsersVb);
-			if(updateLoginFlag != Constants.SUCCESSFUL_OPERATION){
+			if (updateLoginFlag != Constants.SUCCESSFUL_OPERATION) {
 				exceptionCode.setErrorCode(0);
-				exceptionCode.setErrorMsg("Logged in flag update failed for login id ["+username+"]");
+				exceptionCode.setErrorMsg("Logged in flag update failed for login id [" + username + "]");
 				return exceptionCode;
 			}
-		 }catch(Exception e){
-				exceptionCode.setErrorCode(0);
-				exceptionCode.setErrorMsg("LoginError");
-				return exceptionCode;
-		 }
-		return exceptionCode; 
+		} catch (Exception e) {
+			exceptionCode.setErrorCode(0);
+			exceptionCode.setErrorMsg("LoginError");
+			return exceptionCode;
+		}
+		return exceptionCode;
 	}
+
 	@SuppressWarnings("null")
-	public ExceptionCode callProcToResetPassword(VisionUsersVb vObject){
-		ExceptionCode exceptionCode =new ExceptionCode();
-		try
-		{
-			vObject = getVisionUsersDao().callProcToResetPassword(vObject,"");
+	public ExceptionCode callProcToResetPassword(VisionUsersVb vObject) {
+		ExceptionCode exceptionCode = new ExceptionCode();
+		try {
+			vObject = getVisionUsersDao().callProcToResetPassword(vObject, "");
 			exceptionCode.setErrorMsg(vObject.getErrorMessage());
-			if(Integer.parseInt(vObject.getStatus()) == 0)
+			if (Integer.parseInt(vObject.getStatus()) == 0)
 				exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
 			else
 				exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
 			return exceptionCode;
-		}catch(RuntimeCustomException rex){
+		} catch (RuntimeCustomException rex) {
 			logger.error("Insert Exception " + rex.getCode().getErrorMsg());
-			logger.error( ((vObject==null)? "vObject is Null":vObject.toString()));
+			logger.error(((vObject == null) ? "vObject is Null" : vObject.toString()));
 			exceptionCode = rex.getCode();
 			return exceptionCode;
 		}
 	}
-	
-	public String createVisionDynamicToken(){
+
+	public String createVisionDynamicToken() {
 		KeyPair keys = null;
 		JCryptionUtil jCryptionUtil = new JCryptionUtil();
 		keys = jCryptionUtil.generateKeypair(512);
 		StringBuffer output = new StringBuffer();
 		String n = JCryptionUtil.getPublicKeyModulus(keys);
 		return n;
-	}	
-	
+	}
+
+	// ---------------------------
+	// App access helper
+	// ---------------------------
+	private boolean hasAppAccess(VisionUsersVb user) {
+		if (user == null) return false;
+		String apps = user.getApplicationAccess();
+		if (apps == null || apps.trim().isEmpty()) return false;
+
+		String[] allowed = apps.split(Constants.COMMA);
+		for (String a : allowed) {
+			if (a != null && productName.equalsIgnoreCase(a.trim())) {
+				return true;
+			}
+		}
+		return false;
+	}
 }

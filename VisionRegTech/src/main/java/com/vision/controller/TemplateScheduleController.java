@@ -526,7 +526,7 @@ public class TemplateScheduleController {
 				return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 			}
 			exceptionCode = templateScheduleWb.bulkApprove(vObjects,templateScheduleVb);
-			jsonExceptionCode = new JSONExceptionCode(Constants.SUCCESSFUL_OPERATION, exceptionCode.getErrorMsg(),
+			jsonExceptionCode = new JSONExceptionCode(exceptionCode.getErrorCode(), exceptionCode.getErrorMsg(),
 					exceptionCode.getResponse(), exceptionCode.getOtherInfo(), exceptionCode.getResponse1(),
 					exceptionCode.getResponse2(), null);
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
