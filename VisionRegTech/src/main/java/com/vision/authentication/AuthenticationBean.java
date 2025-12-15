@@ -462,7 +462,7 @@ public class AuthenticationBean {
 	}
 
 	public boolean processLogin(HttpServletRequest request, HttpServletResponse response) {
-		System.out.println("***processLogin***");
+ 		System.out.println("***processLogin***");
 		HttpSession httpses = request.getSession();
 		String activeDirectoryFlag = (String) request.getAttribute("activeDirectoryFlag");
 		String userId = (String) httpses.getAttribute("ntLoginDetails");
@@ -543,37 +543,37 @@ public class AuthenticationBean {
 				// ---- end app access check ----
 
 				lUser.setUserGrpProfile(lUser.getUserGroup() + "-" + lUser.getUserProfile());
-				if ("Y".equalsIgnoreCase(lUser.getUpdateRestriction())) {
-					String listOfLeBook = getVisionUsersDao().getLeBookList(lUser);
-					httpses.setAttribute("LEBOOK_LIST", listOfLeBook);
-					String leBook = listOfLeBook;
-					lUser.setUpdateRestrictionLeBook(listOfLeBook);
-					lUser.setUpdateRestrictionLegalVehicle(lUser.getLegalVehicle());
-					if (ValidationUtil.isValid(listOfLeBook)) {
-						listOfLeBook = listOfLeBook.replaceAll("'", "");
-						String[] listCountryLeBook = listOfLeBook.split(",");
-						String country = listCountryLeBook[0].split("-")[0];
-						String leBook1 = listCountryLeBook[0].split("-")[1];
-						String countryDesc = getVisionUsersDao().getCountryDesc(country);
-						String lebookDesc = getVisionUsersDao().getLebookDesc(listCountryLeBook[0]);
-						lUser.setDefaultLebookDesc(lebookDesc);
-						lUser.setDefaultCountryDesc(countryDesc);
-						lUser.setDefaultLeBook(leBook1);
-						lUser.setDefaultCountry(country);
-					}
-				} else {
-					String countryLeBook = getVisionUsersDao().getDefaultCountryLeBook();
-					String country = countryLeBook.split("-")[0];
-					String leBook = countryLeBook.split("-")[1];
-					leBook = "'" + leBook + "'";
-					String legalVehicle = getVisionUsersDao().getDefaultLegalVehicle(countryLeBook);
-					String countryDesc = getVisionUsersDao().getCountryDesc(country);
-					String lebookDesc = getVisionUsersDao().getLebookDesc(countryLeBook);
-					lUser.setDefaultCountry(country);
-					lUser.setDefaultCountryDesc(countryDesc);
-					lUser.setDefaultLeBook(leBook);
-					lUser.setDefaultLebookDesc(lebookDesc);
-				}
+//				if ("Y".equalsIgnoreCase(lUser.getUpdateRestriction())) {
+//					String listOfLeBook = getVisionUsersDao().getLeBookList(lUser);
+//					httpses.setAttribute("LEBOOK_LIST", listOfLeBook);
+//					String leBook = listOfLeBook;
+//					lUser.setUpdateRestrictionLeBook(listOfLeBook);
+//					lUser.setUpdateRestrictionLegalVehicle(lUser.getLegalVehicle());
+//					if (ValidationUtil.isValid(listOfLeBook)) {
+//						listOfLeBook = listOfLeBook.replaceAll("'", "");
+//						String[] listCountryLeBook = listOfLeBook.split(",");
+//						String country = listCountryLeBook[0].split("-")[0];
+//						String leBook1 = listCountryLeBook[0].split("-")[1];
+//						String countryDesc = getVisionUsersDao().getCountryDesc(country);
+//						String lebookDesc = getVisionUsersDao().getLebookDesc(listCountryLeBook[0]);
+//						lUser.setDefaultLebookDesc(lebookDesc);
+//						lUser.setDefaultCountryDesc(countryDesc);
+//						lUser.setDefaultLeBook(leBook1);
+//						lUser.setDefaultCountry(country);
+//					}
+//				} else {
+//					String countryLeBook = getVisionUsersDao().getDefaultCountryLeBook();
+//					String country = countryLeBook.split("-")[0];
+//					String leBook = countryLeBook.split("-")[1];
+//					leBook = "'" + leBook + "'";
+//					String legalVehicle = getVisionUsersDao().getDefaultLegalVehicle(countryLeBook);
+//					String countryDesc = getVisionUsersDao().getCountryDesc(country);
+//					String lebookDesc = getVisionUsersDao().getLebookDesc(countryLeBook);
+//					lUser.setDefaultCountry(country);
+//					lUser.setDefaultCountryDesc(countryDesc);
+//					lUser.setDefaultLeBook(leBook);
+//					lUser.setDefaultLebookDesc(lebookDesc);
+//				}
 
 			} else {
 				lUsers = visionUsersDao.getActiveUserByUserLoginId(visionUsersVb);
@@ -682,41 +682,41 @@ public class AuthenticationBean {
 
 				lUser.setUserGrpProfile(lUser.getUserGroup() + "-" + lUser.getUserProfile());
 				System.out.println("Update : " + lUser.getUpdateRestriction());
-				if ("Y".equalsIgnoreCase(lUser.getUpdateRestriction())) {
-					String listOfLeBook = getVisionUsersDao().getLeBookList(lUser);
-					httpses.setAttribute("LEBOOK_LIST", listOfLeBook);
-					String leBook = listOfLeBook;
-					lUser.setUpdateRestrictionLeBook(listOfLeBook);
-					lUser.setUpdateRestrictionLegalVehicle(lUser.getLegalVehicle());
-					if (ValidationUtil.isValid(listOfLeBook)) {
-						listOfLeBook = listOfLeBook.replaceAll("'", "");
-						System.out.println("listOfLeBook : " + listOfLeBook);
-						String[] listCountryLeBook = listOfLeBook.split(",");
-						String country = listCountryLeBook[0].split("-")[0];
-						String leBook1 = listCountryLeBook[0].split("-")[1];
-						String countryDesc = getVisionUsersDao().getCountryDesc(country);
-						String lebookDesc = getVisionUsersDao().getLebookDesc(listCountryLeBook[0]);
-						lUser.setDefaultLebookDesc(lebookDesc);
-						lUser.setDefaultCountryDesc(countryDesc);
-						lUser.setDefaultLeBook(leBook1);
-						lUser.setDefaultCountry(country);
-					}
-
-				} else {
-
-					String countryLeBook = getVisionUsersDao().getDefaultCountryLeBook();
-					System.out.println("listOfLeBook 2 : " + countryLeBook);
-					String country = countryLeBook.split("-")[0];
-					String leBook = countryLeBook.split("-")[1];
-					leBook = "'" + leBook + "'";
-					String legalVehicle = getVisionUsersDao().getDefaultLegalVehicle(countryLeBook);
-					String countryDesc = getVisionUsersDao().getCountryDesc(country);
-					String lebookDesc = getVisionUsersDao().getLebookDesc(countryLeBook);
-					lUser.setDefaultCountry(country);
-					lUser.setDefaultCountryDesc(countryDesc);
-					lUser.setDefaultLeBook(leBook);
-					lUser.setDefaultLebookDesc(lebookDesc);
-				}
+//				if ("Y".equalsIgnoreCase(lUser.getUpdateRestriction())) {
+//					String listOfLeBook = getVisionUsersDao().getLeBookList(lUser);
+//					httpses.setAttribute("LEBOOK_LIST", listOfLeBook);
+//					String leBook = listOfLeBook;
+//					lUser.setUpdateRestrictionLeBook(listOfLeBook);
+//					lUser.setUpdateRestrictionLegalVehicle(lUser.getLegalVehicle());
+//					if (ValidationUtil.isValid(listOfLeBook)) {
+//						listOfLeBook = listOfLeBook.replaceAll("'", "");
+//						System.out.println("listOfLeBook : " + listOfLeBook);
+//						String[] listCountryLeBook = listOfLeBook.split(",");
+//						String country = listCountryLeBook[0].split("-")[0];
+//						String leBook1 = listCountryLeBook[0].split("-")[1];
+//						String countryDesc = getVisionUsersDao().getCountryDesc(country);
+//						String lebookDesc = getVisionUsersDao().getLebookDesc(listCountryLeBook[0]);
+//						lUser.setDefaultLebookDesc(lebookDesc);
+//						lUser.setDefaultCountryDesc(countryDesc);
+//						lUser.setDefaultLeBook(leBook1);
+//						lUser.setDefaultCountry(country);
+//					}
+//
+//				} else {
+//
+//					String countryLeBook = getVisionUsersDao().getDefaultCountryLeBook();
+//					System.out.println("listOfLeBook 2 : " + countryLeBook);
+//					String country = countryLeBook.split("-")[0];
+//					String leBook = countryLeBook.split("-")[1];
+//					leBook = "'" + leBook + "'";
+//					String legalVehicle = getVisionUsersDao().getDefaultLegalVehicle(countryLeBook);
+//					String countryDesc = getVisionUsersDao().getCountryDesc(country);
+//					String lebookDesc = getVisionUsersDao().getLebookDesc(countryLeBook);
+//					lUser.setDefaultCountry(country);
+//					lUser.setDefaultCountryDesc(countryDesc);
+//					lUser.setDefaultLeBook(leBook);
+//					lUser.setDefaultLebookDesc(lebookDesc);
+//				}
 			}
 
 			String backupAo = "";

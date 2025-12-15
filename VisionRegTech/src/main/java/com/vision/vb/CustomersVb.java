@@ -103,6 +103,19 @@ public class CustomersVb extends CommonVb {
 	private String dualNationality1Desc = "";
 	private String dualNationality2Desc = "";
 	private String dualNationality3Desc = "";
+	private String ssn="";
+	private String customerTin="";
+	private String subSegment ="";
+	private String complianceStatus="";
+	private int complianceStatusAT=0;
+	private String jointAccount="";
+	private String phoneNumber2 = "";
+	private String phoneNumber3 ="";
+	private String phoneNumber4 ="";
+	private String phoneNumber5 ="";
+	private String phoneNumber6 ="";
+	private String phoneNumber7 ="";
+	private String commAddress3 ="";
 	
 	List<CustomerManualColVb> manualList = new ArrayList<CustomerManualColVb>();
 	
@@ -835,6 +848,111 @@ public class CustomersVb extends CommonVb {
 
 	public void setDualNationality3Desc(String dualNationality3Desc) {
 		this.dualNationality3Desc = dualNationality3Desc;
+	}
+
+	public String getSsn() {
+		return ssn;
+	}
+
+	public void setSsn(String ssn) {
+		this.ssn = ssn;
+	}
+
+	public String getCustomerTin() {
+		return customerTin;
+	}
+
+	public void setCustomerTin(String customerTin) {
+		this.customerTin = customerTin;
+	}
+
+	public String getSubSegment() {
+		return subSegment;
+	}
+
+	public void setSubSegment(String subSegment) {
+		this.subSegment = subSegment;
+	}
+
+	public String getComplianceStatus() {
+		return complianceStatus;
+	}
+
+	public void setComplianceStatus(String complianceStatus) {
+		this.complianceStatus = complianceStatus;
+	}
+
+	public int getComplianceStatusAT() {
+		return complianceStatusAT;
+	}
+
+	public void setComplianceStatusAT(int complianceStatusAT) {
+		this.complianceStatusAT = complianceStatusAT;
+	}
+
+	public String getJointAccount() {
+		return jointAccount;
+	}
+
+	public void setJointAccount(String jointAccount) {
+		this.jointAccount = jointAccount;
+	}
+
+	public String getPhoneNumber2() {
+		return phoneNumber2;
+	}
+
+	public void setPhoneNumber2(String phoneNumber2) {
+		this.phoneNumber2 = phoneNumber2;
+	}
+
+	public String getPhoneNumber3() {
+		return phoneNumber3;
+	}
+
+	public void setPhoneNumber3(String phoneNumber3) {
+		this.phoneNumber3 = phoneNumber3;
+	}
+
+	public String getPhoneNumber4() {
+		return phoneNumber4;
+	}
+
+	public void setPhoneNumber4(String phoneNumber4) {
+		this.phoneNumber4 = phoneNumber4;
+	}
+
+	public String getPhoneNumber5() {
+		return phoneNumber5;
+	}
+
+	public void setPhoneNumber5(String phoneNumber5) {
+		this.phoneNumber5 = phoneNumber5;
+	}
+
+	public String getPhoneNumber6() {
+		return phoneNumber6;
+	}
+
+	public void setPhoneNumber6(String phoneNumber6) {
+		this.phoneNumber6 = phoneNumber6;
+	}
+
+
+	public String getPhoneNumber7() {
+		return phoneNumber7;
+	}
+
+	public void setPhoneNumber7(String phoneNumber7) {
+		this.phoneNumber7 = phoneNumber7;
+	}
+
+	public String getCommAddress3() {
+		return commAddress3;
+	}
+
+	public void setCommAddress3(String commAddress3) {
+		this.commAddress3 = commAddress3;
 	}
 
 	

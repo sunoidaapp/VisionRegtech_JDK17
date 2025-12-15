@@ -2671,7 +2671,7 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		 * " AND INSTR(T2.LE_BOOK,T1.COUNTRY+ '-' +T1.LE_BOOK) > 0");
 		 */
 		StringBuffer strBuf = new StringBuffer(
-				"SELECT COUNTRY"+pipeLine+"' - '"+pipeLine+"LE_BOOK AS LE_BOOK FROM VISION_USERS_VIEW WHERE VISION_ID = ? AND COUNTRY IS NOT NULL AND LE_BOOK IS NOT NULL ");
+				"SELECT COUNTRY"+pipeLine+"' - '"+pipeLine+"LE_BOOK AS LE_BOOK FROM VISION_USERS_VW WHERE VISION_ID = ? AND COUNTRY IS NOT NULL AND LE_BOOK IS NOT NULL ");
 		try {
 			tempList = getJdbcTemplate().query(strBuf.toString(), args, getMapperLeBook());
 		} catch (Exception ex) {
@@ -3061,6 +3061,7 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 			final String authFlag = commonDao.findVisionVariableValue("RG_MAIL_SMTP_AUTH"); // "true" or "false"
 			final String username = commonDao.findVisionVariableValue("RG_MAIL_ID");
 			final String password = commonDao.findVisionVariableValue("RG_MAIL_PWD");
+			final String tlsEnable = commonDao.findVisionVariableValue("RG_TLS_ENABLE");
 
 			boolean useAuth = "true".equalsIgnoreCase(authFlag);
 
@@ -3068,7 +3069,7 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 			Properties props = new Properties();
 			props.put("mail.smtp.host", hostName);
 			props.put("mail.smtp.port", mailPort);
-			props.put("mail.smtp.starttls.enable", "true");
+			props.put("mail.smtp.starttls.enable", tlsEnable);
 			props.put("mail.smtp.auth", String.valueOf(useAuth));
 
 			Session session;
@@ -3091,7 +3092,7 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 			vObject.setPassword1(otp);
 
 			if (ValidationUtil.isValid(vObject.getUserEmailId())) {
-			    message.addRecipient(Message.RecipientType.TO, new InternetAddress(vObject.getUserEmailId()));
+			    message.addRecipient(Message.RecipientType.TO, new InternetAddress(vObject.getUserEmailId().toLowerCase()));
 			}
 			message.setFrom(new InternetAddress(username));
 

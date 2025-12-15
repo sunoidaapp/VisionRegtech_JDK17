@@ -3,8 +3,10 @@ package com.vision.dao;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
@@ -211,22 +213,23 @@ public class GlMappingDao extends AbstractDao<GLMappingVb> {
 			VisionUsersVb visionUsersVb = SessionContextHolder.getContext();
 			if (("Y".equalsIgnoreCase(visionUsersVb.getUpdateRestriction()))) {
 				if (ValidationUtil.isValid(visionUsersVb.getCountry())) {
-					CommonUtils.addToQuery(" COUNTRY IN ('" + visionUsersVb.getCountry() + "') ", strBufApprove);
-					CommonUtils.addToQuery(" COUNTRY IN ('" + visionUsersVb.getCountry() + "') ", strBufPending);
+					CommonUtils.addToQuery(" COUNTRY IN (" + toSqlInList(visionUsersVb.getCountry()) + ") ", strBufApprove);
+					CommonUtils.addToQuery(" COUNTRY IN (" + toSqlInList(visionUsersVb.getCountry()) + ") ", strBufPending);
 				}
 				if (ValidationUtil.isValid(visionUsersVb.getLeBook())) {
-					CommonUtils.addToQuery(" LE_BOOK IN ('" + visionUsersVb.getLeBook() + "') ", strBufApprove);
-					CommonUtils.addToQuery(" LE_BOOK IN ('" + visionUsersVb.getLeBook() + "') ", strBufPending);
+					CommonUtils.addToQuery(" LE_BOOK IN (" + toSqlInList(visionUsersVb.getLeBook()) + ") ", strBufApprove);
+					CommonUtils.addToQuery(" LE_BOOK IN (" + toSqlInList(visionUsersVb.getLeBook()) + ") ", strBufPending);
 				}
-			}
-			if (ValidationUtil.isValid(dObj.getCountry())) {
-				CommonUtils.addToQuery(" COUNTRY IN ('" + dObj.getCountry() + "') ", strBufApprove);
-				CommonUtils.addToQuery(" COUNTRY IN ('" + dObj.getCountry() + "') ", strBufPending);
-			}
-			if (ValidationUtil.isValid(dObj.getLeBook())) {
-				String calLeBook = removeDescLeBook(dObj.getLeBook());
-				CommonUtils.addToQuery(" LE_BOOK IN ('" + calLeBook + "') ", strBufApprove);
-				CommonUtils.addToQuery(" LE_BOOK IN ('" + calLeBook + "') ", strBufPending);
+			} else {
+				if (ValidationUtil.isValid(dObj.getCountry())) {
+					CommonUtils.addToQuery(" COUNTRY IN (" + toSqlInList(dObj.getCountry()) + ") ", strBufApprove);
+					CommonUtils.addToQuery(" COUNTRY IN (" +toSqlInList( dObj.getCountry()) + ") ", strBufPending);
+				}
+				if (ValidationUtil.isValid(dObj.getLeBook())) {
+					String calLeBook = removeDescLeBook(dObj.getLeBook());
+					CommonUtils.addToQuery(" LE_BOOK IN (" + toSqlInList(calLeBook) + ") ", strBufApprove);
+					CommonUtils.addToQuery(" LE_BOOK IN (" + toSqlInList(calLeBook) + ") ", strBufPending);
+				}
 			}
 //			params.addElement(dObj.getCountry());
 //			params.addElement(dObj.getLeBook());
@@ -246,6 +249,12 @@ public class GlMappingDao extends AbstractDao<GLMappingVb> {
 					logger.error("objParams[" + i + "]" + params.get(i).toString());
 			return null;
 		}
+	}
+	private String toSqlInList(String CcountryLeBook) {
+	    return Arrays.stream(CcountryLeBook.split(","))
+	            .map(String::trim)
+	            .map(val -> "'" + val + "'")
+	            .collect(Collectors.joining(","));
 	}
 	@Override
 	protected List<GLMappingVb> selectApprovedRecord(GLMappingVb vObject){

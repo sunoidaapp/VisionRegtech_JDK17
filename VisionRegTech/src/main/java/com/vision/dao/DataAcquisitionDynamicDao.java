@@ -6,10 +6,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.CannotGetJdbcConnectionException;
@@ -428,8 +430,8 @@ public class DataAcquisitionDynamicDao extends AbstractDao<DataAcquisitionDynami
 			VisionUsersVb visionUsersVb = SessionContextHolder.getContext();
 			if(("Y".equalsIgnoreCase(visionUsersVb.getUpdateRestriction()) || "Y".equalsIgnoreCase(visionUsersVb.getAutoUpdateRestriction()))){
 				if(ValidationUtil.isValid(visionUsersVb.getCountry())){
-					CommonUtils.addToQuery("TAppr.COUNTRY"+getDbFunction("PIPELINE")+"'-'"+getDbFunction("PIPELINE")+"TAppr.LE_BOOK IN ("+visionUsersVb.getCountry()+") ", strBufApprove);
-					CommonUtils.addToQuery("Tpend.COUNTRY"+getDbFunction("PIPELINE")+"'-'"+getDbFunction("PIPELINE")+"Tpend.LE_BOOK IN ("+visionUsersVb.getCountry()+") ", strBufApprove);
+					CommonUtils.addToQuery("TAppr.LE_BOOK IN ("+toSqlInList(visionUsersVb.getLeBook())+") ", strBufApprove);
+					CommonUtils.addToQuery("Tpend.COUNTRY IN ("+toSqlInList(visionUsersVb.getCountry())+") ", strBufApprove);
 				}
 			}
 			String orderBy=" Order By LE_BOOK ";
@@ -447,6 +449,12 @@ public class DataAcquisitionDynamicDao extends AbstractDao<DataAcquisitionDynami
 			return null;
 
 		}
+	}
+	private String toSqlInList(String CcountryLeBook) {
+	    return Arrays.stream(CcountryLeBook.split(","))
+	            .map(String::trim)
+	            .map(val -> "'" + val + "'")
+	            .collect(Collectors.joining(","));
 	}
       public List<DataAcquisitionDynamicVb> getQueryResults(DataAcquisitionDynamicVb dObj, int intStatus){
     	  

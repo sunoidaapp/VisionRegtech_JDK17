@@ -56,19 +56,19 @@ public class RgFatcaRulesWb extends AbstractDynaWorkerBean<RgFatcaRulesVb> {
 			arrListLocal.add(countryList);
 			String country = "";
 			String leBook = "";
-			VisionUsersVb visionUsers = SessionContextHolder.getContext();
-			if ("Y".equalsIgnoreCase(visionUsers.getUpdateRestriction())) {
-				if (ValidationUtil.isValid(visionUsers.getCountry())) {
-					country = visionUsers.getCountry();
-				}
-				if (ValidationUtil.isValid(visionUsers.getLeBook())) {
-					leBook = visionUsers.getLeBook();
-				}
-			} else {
-				country = commonDao.findVisionVariableValue("DEFAULT_COUNTRY");
-				leBook = commonDao.findVisionVariableValue("DEFAULT_LE_BOOK");
-			}
-			arrListLocal.add(country + "-" + leBook);
+//			VisionUsersVb visionUsers = SessionContextHolder.getContext();
+//			if ("Y".equalsIgnoreCase(visionUsers.getUpdateRestriction())) {
+//				if (ValidationUtil.isValid(visionUsers.getCountry())) {
+//					country = visionUsers.getCountry();
+//				}
+//				if (ValidationUtil.isValid(visionUsers.getLeBook())) {
+//					leBook = visionUsers.getLeBook();
+//				}
+//			} else {
+//				country = commonDao.findVisionVariableValue("DEFAULT_COUNTRY");
+//				leBook = commonDao.findVisionVariableValue("DEFAULT_LE_BOOK");
+//			}
+			arrListLocal.add("");
 			collTemp = commonDao.getLegalEntity();
 			arrListLocal.add(collTemp);
 			String custTables =  commonDao.findVisionVariableValue("CUST_TABLES");

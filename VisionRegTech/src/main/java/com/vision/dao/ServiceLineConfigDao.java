@@ -3,8 +3,10 @@ package com.vision.dao;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.UncategorizedSQLException;
@@ -227,12 +229,12 @@ public class ServiceLineConfigDao extends AbstractDao<TransLineHeaderVb> {
 			VisionUsersVb visionUsersVb = SessionContextHolder.getContext();
 			if(("Y".equalsIgnoreCase(visionUsersVb.getUpdateRestriction()))){
 				if(ValidationUtil.isValid(visionUsersVb.getCountry())){
-					CommonUtils.addToQuery(" COUNTRY IN ('"+visionUsersVb.getCountry()+"') ", strBufApprove);
-					CommonUtils.addToQuery(" COUNTRY IN ('"+visionUsersVb.getCountry()+"') ", strBufPending);
+					CommonUtils.addToQuery(" COUNTRY IN ("+toSqlInList(visionUsersVb.getCountry())+") ", strBufApprove);
+					CommonUtils.addToQuery(" COUNTRY IN ("+toSqlInList(visionUsersVb.getCountry())+") ", strBufPending);
 				}
 				if(ValidationUtil.isValid(visionUsersVb.getLeBook())){
-					CommonUtils.addToQuery(" LE_BOOK IN ('"+visionUsersVb.getLeBook()+"') ", strBufApprove);
-					CommonUtils.addToQuery(" LE_BOOK IN ('"+visionUsersVb.getLeBook()+"') ", strBufPending);
+					CommonUtils.addToQuery(" LE_BOOK IN ("+toSqlInList(visionUsersVb.getLeBook())+") ", strBufApprove);
+					CommonUtils.addToQuery(" LE_BOOK IN ("+toSqlInList(visionUsersVb.getLeBook())+") ", strBufPending);
 				}
 			}
 			orderBy=" Order by TRANS_LINE_ID ";
@@ -249,6 +251,13 @@ public class ServiceLineConfigDao extends AbstractDao<TransLineHeaderVb> {
 			return null;
 			}
 }
+	private String toSqlInList(String CcountryLeBook) {
+	    return Arrays.stream(CcountryLeBook.split(","))
+	            .map(String::trim)
+	            .map(val -> "'" + val + "'")
+	            .collect(Collectors.joining(","));
+	}
+
 	public List<TransLineHeaderVb> getQueryResults(TransLineHeaderVb dObj, int intStatus){
 		List<TransLineHeaderVb> collTemp = null;
 		final int intKeyFieldsCount = 3;

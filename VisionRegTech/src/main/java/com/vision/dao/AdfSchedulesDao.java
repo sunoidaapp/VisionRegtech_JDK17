@@ -4,8 +4,10 @@ import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -490,10 +492,10 @@ public class AdfSchedulesDao extends AbstractDao<AdfSchedulesVb> {
 			VisionUsersVb visionUsersVb = SessionContextHolder.getContext();
 			if("Y".equalsIgnoreCase(visionUsersVb.getUpdateRestriction())){
 				if(ValidationUtil.isValid(visionUsersVb.getCountry())){
-					strBufApprove.append(" AND TAppr.COUNTRY IN("+SessionContextHolder.getContext().getCountry().toUpperCase()+") ");
+					strBufApprove.append(" AND TAppr.COUNTRY IN("+toSqlInList(SessionContextHolder.getContext().getCountry().toUpperCase())+") ");
 				}
 				if(ValidationUtil.isValid(visionUsersVb.getLeBook())){
-					strBufApprove.append(" AND TAppr.COUNTRY+'-'+TAppr.LE_BOOK IN("+SessionContextHolder.getContext().getLeBook().toUpperCase()+") ");
+					strBufApprove.append(" AND TAppr.LE_BOOK IN("+toSqlInList(SessionContextHolder.getContext().getLeBook().toUpperCase())+") ");
 				}
 			}
 			String userGroupProie = visionUsersVb.getUserGroup()+"-"+visionUsersVb.getUserProfile();
@@ -516,7 +518,12 @@ public class AdfSchedulesDao extends AbstractDao<AdfSchedulesVb> {
 			return null;
 		}
 	}
-	
+	private String toSqlInList(String CcountryLeBook) {
+	    return Arrays.stream(CcountryLeBook.split(","))
+	            .map(String::trim)
+	            .map(val -> "'" + val + "'")
+	            .collect(Collectors.joining(","));
+	}
 	public AdfSchedulesVb getQueryResultsForDetails(String adfNumber) {
 		final int intKeyFieldsCount = 1;
 		String strBufApprove = new String();
@@ -1701,10 +1708,10 @@ public class AdfSchedulesDao extends AbstractDao<AdfSchedulesVb> {
 			VisionUsersVb visionUsersVb = SessionContextHolder.getContext();
 			if("Y".equalsIgnoreCase(visionUsersVb.getUpdateRestriction())){
 				if(ValidationUtil.isValid(visionUsersVb.getCountry())){
-					strBufApprove.append(" AND TAppr.COUNTRY IN("+SessionContextHolder.getContext().getCountry().toUpperCase()+") ");
+					strBufApprove.append(" AND TAppr.COUNTRY IN("+toSqlInList(SessionContextHolder.getContext().getCountry().toUpperCase())+") ");
 				}
 				if(ValidationUtil.isValid(visionUsersVb.getLeBook())){
-					strBufApprove.append(" AND TAppr.COUNTRY+'-'+TAppr.LE_BOOK IN("+SessionContextHolder.getContext().getLeBook().toUpperCase()+") ");
+					strBufApprove.append(" AND TAppr.LE_BOOK IN("+toSqlInList(SessionContextHolder.getContext().getLeBook().toUpperCase())+") ");
 				}
 			}
 			String userGroupProie = visionUsersVb.getUserGroup()+"-"+visionUsersVb.getUserProfile();
@@ -1732,6 +1739,7 @@ public class AdfSchedulesDao extends AbstractDao<AdfSchedulesVb> {
 			return null;
 		}
 	}
+	
 
 	protected RowMapper getQueryforAdfScheduleStatusMapper(){
 		RowMapper mapper = new RowMapper() {

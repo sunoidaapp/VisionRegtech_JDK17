@@ -22,6 +22,8 @@ import com.vision.vb.CustomersVb;
 import com.vision.vb.SmartSearchVb;
 import com.vision.vb.VisionUsersVb;
 
+import jakarta.validation.Validation;
+
 @Component
 public class CustomersDao extends AbstractDao<CustomersVb> {
 
@@ -51,7 +53,11 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				customersVb.setCountry(rs.getString("COUNTRY"));
 				customersVb.setLeBook(rs.getString("LE_BOOK"));
 				customersVb.setCustomerId(rs.getString("CUSTOMER_ID"));
-				customersVb.setCustomerAcronym(rs.getString("CUSTOMER_ACRONYM"));
+				if (rs.getString("CUSTOMER_ACRONYM") != null) {
+					customersVb.setCustomerAcronym(rs.getString("CUSTOMER_ACRONYM"));
+				} else {
+					customersVb.setCustomerAcronym("");
+				}
 				customersVb.setRecordIndicator(rs.getInt("RECORD_INDICATOR"));
 				customersVb.setMaker(rs.getLong("MAKER"));
 				customersVb.setVerifier(rs.getLong("VERIFIER"));
@@ -67,15 +73,31 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				}
 				customersVb.setNaicsCode(rs.getString("NAICS_CODE"));
 				customersVb.setCbOrgCodeAt(rs.getInt("CB_ORG_CODE_AT"));
-				customersVb.setCbOrgCode(rs.getString("CB_ORG_CODE"));
+				if (rs.getString("CB_ORG_CODE") != null) {
+					customersVb.setCbOrgCode(rs.getString("CB_ORG_CODE"));
+				} else {
+					customersVb.setCbOrgCode("");
+				}
 				customersVb.setCbEconomicActCodeAt(rs.getInt("CB_ECONOMIC_ACT_CODE_AT"));
+				if(rs.getString("CB_ECONOMIC_ACT_CODE")!=null) {
 				customersVb.setCbEconomicActCode(rs.getString("CB_ECONOMIC_ACT_CODE"));
-				customersVb.setCbDomicile(rs.getString("CB_DOMICILE"));
+				}else {
+					customersVb.setCbEconomicActCode("");
+				}
+				if (rs.getString("CB_DOMICILE") != null) {
+					customersVb.setCbDomicile(rs.getString("CB_DOMICILE"));
+				} else {
+					customersVb.setCbDomicile("");
+				}
 				customersVb.setCbNationality(rs.getString("CB_NATIONALITY"));
 				customersVb.setCbResidence(rs.getString("CB_RESIDENCE"));
 				customersVb.setCbMajorPartyIndicator(rs.getString("CB_MAJOR_PARTY_INDICATOR"));
 				customersVb.setCustomerIdTypeAt(rs.getInt("CUSTOMER_ID_TYPE_AT"));
-				customersVb.setCustomerIdType(rs.getString("CUSTOMER_ID_TYPE"));
+				if (rs.getString("CUSTOMER_ID_TYPE") != null) {
+					customersVb.setCustomerIdType(rs.getString("CUSTOMER_ID_TYPE"));
+				} else {
+					customersVb.setCustomerIdType("");
+				}
 				if (rs.getString("ID_DETAILS") != null) {
 					customersVb.setIdDetails(rs.getString("ID_DETAILS"));
 				} else {
@@ -213,10 +235,58 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				} else {
 					customersVb.setFatcaOverRideDesc("Not Applicable");
 				}
+				
 				customersVb.setDualNationality1(rs.getString("DUAL_NATIONALITY_1"));
-				customersVb.setDualNationality2(rs.getString("DUAL_NATIONALITY_2"));
-				customersVb.setDualNationality3(rs.getString("DUAL_NATIONALITY_3"));
-
+				if (rs.getString("DUAL_NATIONALITY_2") != null) {
+					customersVb.setDualNationality2(rs.getString("DUAL_NATIONALITY_2"));
+				} else {
+					customersVb.setDualNationality2("");
+				}
+				if (rs.getString("DUAL_NATIONALITY_3") != null) {
+					customersVb.setDualNationality3(rs.getString("DUAL_NATIONALITY_3"));
+				} else {
+					customersVb.setDualNationality3("");
+				}
+				customersVb.setSsn(rs.getString("SSN"));
+				customersVb.setCustomerTin(rs.getString("CUSTOMER_TIN"));
+				customersVb.setSubSegment(rs.getString("SUB_SEGMENT"));
+				customersVb.setComplianceStatus(rs.getString("COMPLIANCE_STATUS"));
+				customersVb.setJointAccount(rs.getString("JOINT_ACCOUNT"));
+				if (rs.getString("PHONE_NUMBER_02") != null) {
+					customersVb.setPhoneNumber2(rs.getString("PHONE_NUMBER_02"));
+				} else {
+					customersVb.setPhoneNumber2("");
+				}
+				if (rs.getString("PHONE_NUMBER_03") != null) {
+					customersVb.setPhoneNumber3(rs.getString("PHONE_NUMBER_03"));
+				} else {
+					customersVb.setPhoneNumber3("");
+				}
+				if (rs.getString("PHONE_NUMBER_04") != null) {
+					customersVb.setPhoneNumber4(rs.getString("PHONE_NUMBER_04"));
+				} else {
+					customersVb.setPhoneNumber4("");
+				}
+				if (rs.getString("PHONE_NUMBER_05") != null) {
+					customersVb.setPhoneNumber5(rs.getString("PHONE_NUMBER_05"));
+				} else {
+					customersVb.setPhoneNumber5("");
+				}
+				if (rs.getString("PHONE_NUMBER_06") != null) {
+					customersVb.setPhoneNumber6(rs.getString("PHONE_NUMBER_06"));
+				} else {
+					customersVb.setPhoneNumber6("");
+				}
+				if (rs.getString("PHONE_NUMBER_07") != null) {
+					customersVb.setPhoneNumber7(rs.getString("PHONE_NUMBER_07"));
+				} else {
+					customersVb.setPhoneNumber7("");
+				}
+				if (rs.getString("COMM_ADDRESS_3") != null) {
+					customersVb.setCommAddress3(rs.getString("COMM_ADDRESS_3"));
+				} else {
+					customersVb.setCommAddress3("");
+				}
 				return customersVb;
 			}
 		};
@@ -248,13 +318,25 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				customersVb.setCbOrgCodeAt(rs.getInt("CB_ORG_CODE_AT"));
 				customersVb.setCbOrgCode(rs.getString("CB_ORG_CODE"));
 				customersVb.setCbEconomicActCodeAt(rs.getInt("CB_ECONOMIC_ACT_CODE_AT"));
-				customersVb.setCbEconomicActCode(rs.getString("CB_ECONOMIC_ACT_CODE"));
+				if (rs.getString("CB_ECONOMIC_ACT_CODE") != null) {
+					customersVb.setCbEconomicActCode(rs.getString("CB_ECONOMIC_ACT_CODE"));
+				} else {
+					customersVb.setCbEconomicActCode("");
+				}
+				if(rs.getString("CB_DOMICILE")!=null) {
 				customersVb.setCbDomicile(rs.getString("CB_DOMICILE"));
+				}else {
+					customersVb.setCbDomicile("");
+				}
 				customersVb.setCbNationality(rs.getString("CB_NATIONALITY"));
 				customersVb.setCbResidence(rs.getString("CB_RESIDENCE"));
 				customersVb.setCbMajorPartyIndicator(rs.getString("CB_MAJOR_PARTY_INDICATOR"));
 				customersVb.setCustomerIdTypeAt(rs.getInt("CUSTOMER_ID_TYPE_AT"));
-				customersVb.setCustomerIdType(rs.getString("CUSTOMER_ID_TYPE"));
+				if (rs.getString("CUSTOMER_ID_TYPE") != null) {
+					customersVb.setCustomerIdType(rs.getString("CUSTOMER_ID_TYPE"));
+				} else {
+					customersVb.setCustomerIdType("");
+				}
 				if (rs.getString("ID_DETAILS") != null) {
 					customersVb.setIdDetails(rs.getString("ID_DETAILS"));
 				} else {
@@ -360,20 +442,20 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				customersVb.setMakerName(rs.getString("MAKER_NAME"));
 				customersVb.setVerifierName(rs.getString("VERIFIER_NAME"));
 
-				customersVb.setCbDomicileDesc(rs.getString("CB_DOMICILE_DESC"));
+//				customersVb.setCbDomicileDesc(rs.getString("CB_DOMICILE_DESC"));
 				customersVb.setCbNationalityDesc(rs.getString("CB_NATIONALITY_DESC"));
 				customersVb.setCbResidenceDesc(rs.getString("CB_RESIDENCE_DESC"));
-				customersVb.setNaicsCodeDesc(rs.getString("NAICS_CODE_DESC"));
-				customersVb.setPrimaryCidDesc(rs.getString("PRIMARY_CID_DESC"));
-				customersVb.setParentCidDesc(rs.getString("PARENT_CID_DESC"));
-				customersVb.setUltimateParentDesc(rs.getString("ULTIMATE_PARENT_DESC"));
+//				customersVb.setNaicsCodeDesc(rs.getString("NAICS_CODE_DESC"));
+//				customersVb.setPrimaryCidDesc(rs.getString("PRIMARY_CID_DESC"));
+//				customersVb.setParentCidDesc(rs.getString("PARENT_CID_DESC"));
+//				customersVb.setUltimateParentDesc(rs.getString("ULTIMATE_PARENT_DESC"));
 				customersVb.setAccountOfficerDesc(rs.getString("ACCOUNT_OFFICER_DESC"));
-				customersVb.setCustomerAttribute1Desc(rs.getString("CUSTOMER_ATTRIBUTE_1_DESC"));
-				customersVb.setCustomerAttribute2Desc(rs.getString("CUSTOMER_ATTRIBUTE_2_DESC"));
-				customersVb.setCustomerAttribute3Desc(rs.getString("CUSTOMER_ATTRIBUTE_3_DESC"));
-				customersVb.setCustomerHierarchy1Desc(rs.getString("CUSTOMER_HIERARCHY_1_DESC"));
-				customersVb.setCustomerHierarchy2Desc(rs.getString("CUSTOMER_HIERARCHY_2_DESC"));
-				customersVb.setCustomerHierarchy3Desc(rs.getString("CUSTOMER_HIERARCHY_3_DESC"));
+//				customersVb.setCustomerAttribute1Desc(rs.getString("CUSTOMER_ATTRIBUTE_1_DESC"));
+//				customersVb.setCustomerAttribute2Desc(rs.getString("CUSTOMER_ATTRIBUTE_2_DESC"));
+//				customersVb.setCustomerAttribute3Desc(rs.getString("CUSTOMER_ATTRIBUTE_3_DESC"));
+//				customersVb.setCustomerHierarchy1Desc(rs.getString("CUSTOMER_HIERARCHY_1_DESC"));
+//				customersVb.setCustomerHierarchy2Desc(rs.getString("CUSTOMER_HIERARCHY_2_DESC"));
+//				customersVb.setCustomerHierarchy3Desc(rs.getString("CUSTOMER_HIERARCHY_3_DESC"));
 				customersVb.setVisionOucDesc(rs.getString("VISION_OUC_DESC"));
 				customersVb.setVisionSbuDesc(rs.getString("VISION_SBU_DESC"));
 				customersVb.setCrsOverRide(rs.getString("CRS_OVERRIDE"));
@@ -396,9 +478,49 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				customersVb.setDualNationality2(rs.getString("DUAL_NATIONALITY_2"));
 				customersVb.setDualNationality3(rs.getString("DUAL_NATIONALITY_3"));
 
-				customersVb.setDualNationality1Desc(rs.getString("DUAL_NATIONALITY_1_DESC"));
-				customersVb.setDualNationality2Desc(rs.getString("DUAL_NATIONALITY_2_DESC"));
-				customersVb.setDualNationality3Desc(rs.getString("DUAL_NATIONALITY_3_DESC"));
+//				customersVb.setDualNationality1Desc(rs.getString("DUAL_NATIONALITY_1_DESC"));
+//				customersVb.setDualNationality2Desc(rs.getString("DUAL_NATIONALITY_2_DESC"));
+//				customersVb.setDualNationality3Desc(rs.getString("DUAL_NATIONALITY_3_DESC"));
+				customersVb.setSsn(rs.getString("SSN"));
+				customersVb.setCustomerTin(rs.getString("CUSTOMER_TIN"));
+				customersVb.setSubSegment(rs.getString("SUB_SEGMENT"));
+				customersVb.setComplianceStatus(rs.getString("COMPLIANCE_STATUS"));
+				customersVb.setJointAccount(rs.getString("JOINT_ACCOUNT"));
+				if (rs.getString("PHONE_NUMBER_02") != null) {
+					customersVb.setPhoneNumber2(rs.getString("PHONE_NUMBER_02"));
+				} else {
+					customersVb.setPhoneNumber2("");
+				}
+				if (rs.getString("PHONE_NUMBER_03") != null) {
+					customersVb.setPhoneNumber3(rs.getString("PHONE_NUMBER_03"));
+				} else {
+					customersVb.setPhoneNumber3("");
+				}
+				if (rs.getString("PHONE_NUMBER_04") != null) {
+					customersVb.setPhoneNumber4(rs.getString("PHONE_NUMBER_04"));
+				} else {
+					customersVb.setPhoneNumber4("");
+				}
+				if (rs.getString("PHONE_NUMBER_05") != null) {
+					customersVb.setPhoneNumber5(rs.getString("PHONE_NUMBER_05"));
+				} else {
+					customersVb.setPhoneNumber5("");
+				}
+				if (rs.getString("PHONE_NUMBER_06") != null) {
+					customersVb.setPhoneNumber6(rs.getString("PHONE_NUMBER_06"));
+				} else {
+					customersVb.setPhoneNumber6("");
+				}
+				if (rs.getString("PHONE_NUMBER_07") != null) {
+					customersVb.setPhoneNumber7(rs.getString("PHONE_NUMBER_07"));
+				} else {
+					customersVb.setPhoneNumber7("");
+				}
+				if (rs.getString("COMM_ADDRESS_3") != null) {
+					customersVb.setCommAddress3(rs.getString("COMM_ADDRESS_3"));
+				} else {
+					customersVb.setCommAddress3("");
+				}
 				List<CustomerManualColVb> manualList = new ArrayList<CustomerManualColVb>();
 				CustomerManualColVb cmvb = new CustomerManualColVb();
 				cmvb.setEntity(customersVb.getEntity());
@@ -437,8 +559,8 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ "TAppr.SALES_ACQUISITION_CHANNEL, TAppr.MARKETING_CAMPAIGN,"
 				+ "TAppr.CROSSSALE_REFER_ID, TAppr.CUSTOMER_INDICATOR, TAppr.CUSTOMER_INDICATOR_AT,"
 				+ "TAppr.NUM_OF_ACCOUNTS, TAppr.CUSTOMER_ATTRIBUTE_1,"
-				+ "TAppr.CUSTOMER_ATTRIBUTE_2, TAppr.CUSTOMER_ATTRIBUTE_3, TAppr.CUSTOMER_SEX_AT, TAppr.CUSTOMER_SEX,TAppr.COMM_ADDRESS_1, TAppr.COMM_ADDRESS_2, TAppr.COMM_CITY, "
-				+ "TAppr.COMM_STATE, TAppr.COMM_PIN_CODE, TAppr.PHONE_NUMBER, TAppr.COMM_STATE_AT, TAppr.COMM_CITY_AT,"
+				+ "TAppr.CUSTOMER_ATTRIBUTE_2, TAppr.CUSTOMER_ATTRIBUTE_3, TAppr.CUSTOMER_SEX_AT, TAppr.CUSTOMER_SEX,TAppr.COMM_ADDRESS_1,TAppr.COMM_ADDRESS_2 ,TAppr.COMM_ADDRESS_3, TAppr.COMM_CITY, "
+				+ "TAppr.COMM_STATE, TAppr.COMM_PIN_CODE, TAppr.PHONE_NUMBER,TAppr.PHONE_NUMBER_02,TAppr.PHONE_NUMBER_03,TAppr.PHONE_NUMBER_04,TAppr.PHONE_NUMBER_05,TAppr.PHONE_NUMBER_06,TAppr.PHONE_NUMBER_07, TAppr.COMM_STATE_AT, TAppr.COMM_CITY_AT,"
 				+ "TAppr.CUSTOMER_STATUS_NT, TAppr.CUSTOMER_STATUS," + customerStatusNtApprDesc
 				+ " ,TAppr.RECORD_INDICATOR_NT, TAppr.RECORD_INDICATOR," + RecordIndicatorNtApprDesc
 				+ " ,TAppr.MAKER, TAppr.VERIFIER, TAppr.INTERNAL_STATUS," + makerApprDesc + " , " + verifierApprDesc
@@ -460,8 +582,8 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = TAppr.CUSTOMER_ATTRIBUTE_2) CUSTOMER_ATTRIBUTE_2_DESC\r\n"
 				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = TAppr.CUSTOMER_ATTRIBUTE_3) CUSTOMER_ATTRIBUTE_3_DESC"
 				+ ",(SELECT OUC_DESCRIPTION AS DESCRIPTION FROM   OUC_CODES t1  WHERE T1.COUNTRY = TAPPR.COUNTRY AND T1.LE_BOOK = TAPPR.LE_BOOK AND t1.VISION_OUC = TAPPR.VISION_OUC AND OUC_STATUS = 0) VISION_OUC_DESC "
-				+ ",TAPPR.FATCA_OVERRIDE,TAPPR.CRS_OVERRIDE, T1.DUAL_NATIONALITY_1, T1.DUAL_NATIONALITY_2, T1.DUAL_NATIONALITY_3 "
-				+ "FROM " + Customers + " TAPPR INNER JOIN " + CustomersExtras
+				+ ",TAPPR.FATCA_OVERRIDE,TAPPR.CRS_OVERRIDE, T1.DUAL_NATIONALITY_1, T1.DUAL_NATIONALITY_2, T1.DUAL_NATIONALITY_3,TAppr.SSN,TAPPR.CUSTOMER_TIN,TAPPR.SUB_SEGMENT,TAppr.COMPLIANCE_STATUS ,TAppr.JOINT_ACCOUNT "
+				+ " FROM " + Customers + " TAPPR INNER JOIN " + CustomersExtras
 				+ " T1 ON ( TAPPR.COUNTRY= T1.COUNTRY AND TAPPR.LE_BOOK= T1.LE_BOOK AND TAPPR.CUSTOMER_ID = T1.CUSTOMER_ID) "
 				+ ") TAPPR ");
 
@@ -491,8 +613,8 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ "TPend.SALES_ACQUISITION_CHANNEL, TPend.MARKETING_CAMPAIGN,"
 				+ "TPend.CROSSSALE_REFER_ID, TPend.CUSTOMER_INDICATOR, TPend.CUSTOMER_INDICATOR_AT,"
 				+ "TPend.NUM_OF_ACCOUNTS, TPend.CUSTOMER_ATTRIBUTE_1,"
-				+ "TPend.CUSTOMER_ATTRIBUTE_2, TPend.CUSTOMER_ATTRIBUTE_3, TPend.CUSTOMER_SEX_AT, TPend.CUSTOMER_SEX,TPend.COMM_ADDRESS_1, TPend.COMM_ADDRESS_2, TPend.COMM_CITY, "
-				+ "TPend.COMM_STATE, TPend.COMM_PIN_CODE, TPend.PHONE_NUMBER, TPend.COMM_STATE_AT, TPend.COMM_CITY_AT,"
+				+ "TPend.CUSTOMER_ATTRIBUTE_2, TPend.CUSTOMER_ATTRIBUTE_3, TPend.CUSTOMER_SEX_AT, TPend.CUSTOMER_SEX,TPend.COMM_ADDRESS_1, TPend.COMM_ADDRESS_2,TPend.COMM_ADDRESS_3, TPend.COMM_CITY, "
+				+ "TPend.COMM_STATE, TPend.COMM_PIN_CODE, TPend.PHONE_NUMBER,TPend.PHONE_NUMBER_02,TPend.PHONE_NUMBER_03,TPend.PHONE_NUMBER_04,TPend.PHONE_NUMBER_05,TPend.PHONE_NUMBER_06,TPend.PHONE_NUMBER_07, TPend.COMM_STATE_AT, TPend.COMM_CITY_AT,"
 				+ "TPend.CUSTOMER_STATUS_NT, TPend.CUSTOMER_STATUS," + customerStatusNtPendDesc
 				+ " ,TPend.RECORD_INDICATOR_NT, TPend.RECORD_INDICATOR," + RecordIndicatorNtPendDesc
 				+ " ,TPend.MAKER, TPend.VERIFIER, TPend.INTERNAL_STATUS," + makerPendDesc + " , " + verifierPendDesc
@@ -514,7 +636,7 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = TPend.CUSTOMER_ATTRIBUTE_2) CUSTOMER_ATTRIBUTE_2_DESC\r\n"
 				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = TPend.CUSTOMER_ATTRIBUTE_3) CUSTOMER_ATTRIBUTE_3_DESC"
 				+ ",(SELECT OUC_DESCRIPTION AS DESCRIPTION FROM OUC_CODES t1  WHERE T1.COUNTRY = TPend.COUNTRY AND T1.LE_BOOK = TPend.LE_BOOK  AND  t1.VISION_OUC = TPend.VISION_OUC AND OUC_STATUS = 0) VISION_OUC_DESC "
-				+ ",TPend.FATCA_OVERRIDE, TPend.CRS_OVERRIDE, T2.DUAL_NATIONALITY_1, T2.DUAL_NATIONALITY_2, T2.DUAL_NATIONALITY_3 "
+				+ ",TPend.FATCA_OVERRIDE, TPend.CRS_OVERRIDE, T2.DUAL_NATIONALITY_1, T2.DUAL_NATIONALITY_2, T2.DUAL_NATIONALITY_3,TPEND.SSN,TPEND.CUSTOMER_TIN,TPEND.SUB_SEGMENT,TPEND.COMPLIANCE_STATUS ,TPEND.JOINT_ACCOUNT "
 				+ " FROM " + Customers + "_PEND TPEND INNER JOIN " + CustomersExtras
 				+ "_PEND T2 ON ( TPEND.COUNTRY= T2.COUNTRY AND TPEND.LE_BOOK= T2.LE_BOOK AND TPEND.CUSTOMER_ID= T2.CUSTOMER_ID)"
 				+ " ) TPend ");
@@ -870,6 +992,42 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 						CommonUtils.addToQuerySearch(" upper(TPend.FATCA_FLAG) " + val, strBufPending,
 								data.getJoinType());
 						break;
+					case "phoneNumber2":
+						CommonUtils.addToQuerySearch(" upper(TAppr.PHONE_NUMBER_02) " + val, strBufApprove,
+								data.getJoinType());
+						CommonUtils.addToQuerySearch(" upper(TPend.PHONE_NUMBER_02) " + val, strBufPending,
+								data.getJoinType());
+					case "phoneNumber3":
+						CommonUtils.addToQuerySearch(" upper(TAppr.PHONE_NUMBER_03) " + val, strBufApprove,
+								data.getJoinType());
+						CommonUtils.addToQuerySearch(" upper(TPend.PHONE_NUMBER_03) " + val, strBufPending,
+								data.getJoinType());
+					case "phoneNumber4":
+						CommonUtils.addToQuerySearch(" upper(TAppr.PHONE_NUMBER_04) " + val, strBufApprove,
+								data.getJoinType());
+						CommonUtils.addToQuerySearch(" upper(TPend.PHONE_NUMBER_04) " + val, strBufPending,
+								data.getJoinType());
+					case "phoneNumber5":
+						CommonUtils.addToQuerySearch(" upper(TAppr.PHONE_NUMBER_05) " + val, strBufApprove,
+								data.getJoinType());
+						CommonUtils.addToQuerySearch(" upper(TPend.PHONE_NUMBER_05) " + val, strBufPending,
+								data.getJoinType());
+					case "phoneNumber6":
+						CommonUtils.addToQuerySearch(" upper(TAppr.PHONE_NUMBER_06) " + val, strBufApprove,
+								data.getJoinType());
+						CommonUtils.addToQuerySearch(" upper(TPend.PHONE_NUMBER_06) " + val, strBufPending,
+								data.getJoinType());
+					case "phoneNumber7":
+						CommonUtils.addToQuerySearch(" upper(TAppr.PHONE_NUMBER_07) " + val, strBufApprove,
+								data.getJoinType());
+						CommonUtils.addToQuerySearch(" upper(TPend.PHONE_NUMBER_07) " + val, strBufPending,
+								data.getJoinType());
+					case "commAddress3":
+						CommonUtils.addToQuerySearch(" upper(TAppr.COMM_ADDRESS_3) " + val, strBufApprove,
+								data.getJoinType());
+						CommonUtils.addToQuerySearch(" upper(TPend.COMM_ADDRESS_3) " + val, strBufPending,
+								data.getJoinType());
+						break;
 
 					default:
 					}
@@ -928,33 +1086,22 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ "TAppr.SALES_ACQUISITION_CHANNEL, TAppr.MARKETING_CAMPAIGN,"
 				+ "TAppr.CROSSSALE_REFER_ID, TAppr.CUSTOMER_INDICATOR, TAppr.CUSTOMER_INDICATOR_AT,"
 				+ "TAppr.NUM_OF_ACCOUNTS, TAppr.CUSTOMER_ATTRIBUTE_1,"
-				+ "TAppr.CUSTOMER_ATTRIBUTE_2, TAppr.CUSTOMER_ATTRIBUTE_3, TAppr.CUSTOMER_SEX_AT, TAppr.CUSTOMER_SEX,TAppr.COMM_ADDRESS_1, TAppr.COMM_ADDRESS_2, TAppr.COMM_CITY, "
-				+ "TAppr.COMM_STATE, TAppr.COMM_PIN_CODE, TAppr.PHONE_NUMBER, TAppr.COMM_STATE_AT, TAppr.COMM_CITY_AT,"
+				+ "TAppr.CUSTOMER_ATTRIBUTE_2, TAppr.CUSTOMER_ATTRIBUTE_3, TAppr.CUSTOMER_SEX_AT, TAppr.CUSTOMER_SEX,TAppr.COMM_ADDRESS_1, TAppr.COMM_ADDRESS_2,TAppr.COMM_ADDRESS_3, TAppr.COMM_CITY, "
+				+ "TAppr.COMM_STATE, TAppr.COMM_PIN_CODE, TAppr.PHONE_NUMBER,TAppr.PHONE_NUMBER_02,TAppr.PHONE_NUMBER_03,TAppr.PHONE_NUMBER_04,TAppr.PHONE_NUMBER_05,TAppr.PHONE_NUMBER_06,TAppr.PHONE_NUMBER_07 ,TAppr.COMM_STATE_AT, TAppr.COMM_CITY_AT,"
 				+ "TAppr.CUSTOMER_STATUS_NT, TAppr.CUSTOMER_STATUS," + customerStatusNtApprDesc
 				+ " ,TAppr.RECORD_INDICATOR_NT, TAppr.RECORD_INDICATOR," + RecordIndicatorNtApprDesc
 				+ " ,TAppr.MAKER, TAppr.VERIFIER, TAppr.INTERNAL_STATUS," + makerApprDesc + " , " + verifierApprDesc
 				+ " , " + dbFunctionFormats("TAppr.DATE_LAST_MODIFIED", "DATETIME_FORMAT", null)
 				+ " DATE_LAST_MODIFIED," + " " + dbFunctionFormats("TAppr.DATE_CREATION", "DATETIME_FORMAT", null)
-				+ " DATE_CREATION ," + "TAppr.CRS_FLAG,TAppr.FATCA_FLAG,"
-				+ "(SELECT NAICS_DESCRIPTION FROM NAICS_CODES WHERE NAICS_CODE = TAppr.NAICS_CODE) NAICS_CODE_DESC\r\n"
-				+ ",(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = TAppr.CB_DOMICILE) CB_DOMICILE_DESC\r\n"
+				+ " DATE_CREATION ," + "TAppr.CRS_FLAG,TAppr.FATCA_FLAG"
 				+ ",(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = TAppr.CB_NATIONALITY)CB_NATIONALITY_DESC\r\n"
 				+ ",(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY =TAppr.CB_RESIDENCE)CB_RESIDENCE_DESC\r\n"
-				+ ",(SELECT CUSTOMER_NAME FROM CUSTOMERS T1 WHERE T1.CUSTOMER_STATUS = 0 AND T1.COUNTRY = TAPPR.COUNTRY AND T1.LE_BOOK = TAPPR.LE_BOOK  AND T1.CUSTOMER_ID = TAppr.PRIMARY_CID)PRIMARY_CID_DESC\r\n"
-				+ ",(SELECT CUSTOMER_NAME FROM CUSTOMERS T1 WHERE T1.CUSTOMER_STATUS = 0 AND T1.COUNTRY = TAPPR.COUNTRY AND T1.LE_BOOK = TAPPR.LE_BOOK AND T1.CUSTOMER_ID = TAppr.PARENT_CID) PARENT_CID_DESC\r\n"
-				+ ",(SELECT CUSTOMER_NAME  FROM CUSTOMERS T1 WHERE T1.CUSTOMER_STATUS = 0 AND T1.COUNTRY = TAPPR.COUNTRY AND T1.LE_BOOK = TAPPR.LE_BOOK AND T1.CUSTOMER_ID = TAppr.ULTIMATE_PARENT)\r\n"
-				+ " ULTIMATE_PARENT_DESC\r\n"
-				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = TAppr.CUSTOMER_HIERARCHY_1) CUSTOMER_HIERARCHY_1_DESC\r\n"
-				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = TAppr.CUSTOMER_HIERARCHY_2) CUSTOMER_HIERARCHY_2_DESC\r\n"
-				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = TAppr.CUSTOMER_HIERARCHY_3) CUSTOMER_HIERARCHY_3_DESC\r\n"
-				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = TAppr.CUSTOMER_ATTRIBUTE_1) CUSTOMER_ATTRIBUTE_1_DESC\r\n"
-				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = TAppr.CUSTOMER_ATTRIBUTE_2) CUSTOMER_ATTRIBUTE_2_DESC\r\n"
-				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = TAppr.CUSTOMER_ATTRIBUTE_3) CUSTOMER_ATTRIBUTE_3_DESC"
 				+ ",(SELECT OUC_DESCRIPTION AS DESCRIPTION FROM   OUC_CODES t1 WHERE T1.COUNTRY = TAPPR.COUNTRY AND T1.LE_BOOK = TAPPR.LE_BOOK AND t1.VISION_OUC = TAPPR.VISION_OUC AND OUC_STATUS = 0) VISION_OUC_DESC "
 				+ ",TAppr.FATCA_OVERRIDE,TAppr.CRS_OVERRIDE, "
-				+ "  T1.DUAL_NATIONALITY_1, (SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = T1.DUAL_NATIONALITY_1 )DUAL_NATIONALITY_1_desc,"
-				+ " T1.DUAL_NATIONALITY_2,(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = T1.DUAL_NATIONALITY_2 )DUAL_NATIONALITY_2_desc,"
-				+ " T1.DUAL_NATIONALITY_3,(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = T1.DUAL_NATIONALITY_3 )DUAL_NATIONALITY_3_desc"
+				+ "  T1.DUAL_NATIONALITY_1, "
+				+ " T1.DUAL_NATIONALITY_2,"
+				+ " T1.DUAL_NATIONALITY_3,"
+				+ " TAPPR.SSN,TAPPR.CUSTOMER_TIN,TAPPR.SUB_SEGMENT,TAPPR.COMPLIANCE_STATUS ,TAPPR.JOINT_ACCOUNT "
 				+ " FROM " + Customers + " TAPPR INNER JOIN " + CustomersExtras
 				+ " T1 ON( TAPPR.COUNTRY= T1.COUNTRY AND TAPPR.LE_BOOK= T1.LE_BOOK AND TAPPR.CUSTOMER_ID= T1.CUSTOMER_ID) "
 				+ " WHERE TAPPR.COUNTRY = ? AND TAPPR.LE_BOOK = ? AND TAPPR.CUSTOMER_ID = ? ");
@@ -980,35 +1127,24 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ "TPend.SALES_ACQUISITION_CHANNEL, TPend.MARKETING_CAMPAIGN,"
 				+ "TPend.CROSSSALE_REFER_ID, TPend.CUSTOMER_INDICATOR, TPend.CUSTOMER_INDICATOR_AT,"
 				+ "TPend.NUM_OF_ACCOUNTS, TPend.CUSTOMER_ATTRIBUTE_1,"
-				+ "TPend.CUSTOMER_ATTRIBUTE_2, TPend.CUSTOMER_ATTRIBUTE_3, TPend.CUSTOMER_SEX_AT, TPend.CUSTOMER_SEX,TPend.COMM_ADDRESS_1, TPend.COMM_ADDRESS_2, TPend.COMM_CITY, TPend.COMM_STATE, "
-				+ "TPend.COMM_PIN_CODE, TPend.PHONE_NUMBER, TPend.COMM_STATE_AT, TPend.COMM_CITY_AT,"
+				+ "TPend.CUSTOMER_ATTRIBUTE_2, TPend.CUSTOMER_ATTRIBUTE_3, TPend.CUSTOMER_SEX_AT, TPend.CUSTOMER_SEX,TPend.COMM_ADDRESS_1, TPend.COMM_ADDRESS_2,TPend.COMM_ADDRESS_3, TPend.COMM_CITY, TPend.COMM_STATE, "
+				+ "TPend.COMM_PIN_CODE, TPend.PHONE_NUMBER,TPend.PHONE_NUMBER_02,TPend.PHONE_NUMBER_03,TPend.PHONE_NUMBER_04,TPend.PHONE_NUMBER_05,TPend.PHONE_NUMBER_06,TPend.PHONE_NUMBER_07, TPend.COMM_STATE_AT, TPend.COMM_CITY_AT,"
 				+ "TPend.CUSTOMER_STATUS_NT, TPend.CUSTOMER_STATUS," + customerStatusNtPendDesc
 				+ " ,TPend.RECORD_INDICATOR_NT, TPend.RECORD_INDICATOR," + RecordIndicatorNtPendDesc
 				+ " ,TPend.MAKER, TPend.VERIFIER, TPend.INTERNAL_STATUS," + makerPendDesc + " , " + verifierPendDesc
 				+ " , " + dbFunctionFormats("TPend.DATE_LAST_MODIFIED", "DATETIME_FORMAT", null)
 				+ " DATE_LAST_MODIFIED," + " " + dbFunctionFormats("TPend.DATE_CREATION", "DATETIME_FORMAT", null)
-				+ " DATE_CREATION ," + "TPend.CRS_FLAG,TPend.FATCA_FLAG,"
-				+ "(SELECT NAICS_DESCRIPTION FROM NAICS_CODES WHERE NAICS_CODE = Tpend.NAICS_CODE) NAICS_CODE_DESC\r\n"
-				+ ",(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = Tpend.CB_DOMICILE) CB_DOMICILE_DESC\r\n"
+				+ " DATE_CREATION ," + "TPend.CRS_FLAG,TPend.FATCA_FLAG"
 				+ ",(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = Tpend.CB_NATIONALITY)CB_NATIONALITY_DESC\r\n"
 				+ ",(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY =Tpend.CB_RESIDENCE)CB_RESIDENCE_DESC\r\n"
-				+ ",(SELECT CUSTOMER_NAME FROM CUSTOMERS T1 WHERE T1.CUSTOMER_STATUS = 0 AND T1.COUNTRY = Tpend.COUNTRY AND T1.LE_BOOK = Tpend.LE_BOOK  AND T1.CUSTOMER_ID = Tpend.PRIMARY_CID)PRIMARY_CID_DESC\r\n"
-				+ ",(SELECT CUSTOMER_NAME FROM CUSTOMERS T1 WHERE T1.CUSTOMER_STATUS = 0 AND T1.COUNTRY = Tpend.COUNTRY AND T1.LE_BOOK = Tpend.LE_BOOK AND T1.CUSTOMER_ID = Tpend.PARENT_CID) PARENT_CID_DESC\r\n"
-				+ ",(SELECT CUSTOMER_NAME  FROM CUSTOMERS T1 WHERE T1.CUSTOMER_STATUS = 0 AND T1.COUNTRY = Tpend.COUNTRY AND T1.LE_BOOK = Tpend.LE_BOOK AND T1.CUSTOMER_ID = Tpend.ULTIMATE_PARENT)\r\n"
-				+ " ULTIMATE_PARENT_DESC \r\n"
-				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = Tpend.CUSTOMER_HIERARCHY_1) CUSTOMER_HIERARCHY_1_DESC\r\n"
-				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = Tpend.CUSTOMER_HIERARCHY_2) CUSTOMER_HIERARCHY_2_DESC\r\n"
-				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = Tpend.CUSTOMER_HIERARCHY_3) CUSTOMER_HIERARCHY_3_DESC\r\n"
-				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = Tpend.CUSTOMER_ATTRIBUTE_1) CUSTOMER_ATTRIBUTE_1_DESC\r\n"
-				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = Tpend.CUSTOMER_ATTRIBUTE_2) CUSTOMER_ATTRIBUTE_2_DESC\r\n"
-				+ ",(SELECT CUSTOMER_ATTRIBUTE_NAME  FROM    CUSTOMER_ATTRIBUTES WHERE CUSTOMER_ATT_STATUS = 0 AND CUSTOMER_ATTRIBUTE = Tpend.CUSTOMER_ATTRIBUTE_3) CUSTOMER_ATTRIBUTE_3_DESC"
 				+ ",(SELECT OUC_DESCRIPTION AS DESCRIPTION FROM   OUC_CODES t1 WHERE T1.COUNTRY = TPend.COUNTRY AND T1.LE_BOOK = TPend.LE_BOOK  AND  t1.VISION_OUC = TPend.VISION_OUC AND OUC_STATUS = 0) VISION_OUC_DESC,"
 				+ " Tpend.ACCOUNT_OFFICER, "
 				+ "(SELECT  AO_NAME  AS DESCRIPTION FROM ACCOUNT_OFFICERS WHERE COUNTRY = Tpend.COUNTRY AND LE_BOOK = Tpend.LE_BOOK AND ACCOUNT_OFFICER = Tpend.ACCOUNT_OFFICER ) ACCOUNT_OFFICER_DESC "
 				+ ",TPend.FATCA_OVERRIDE,TPend.CRS_OVERRIDE,"
-				+ "  T2.DUAL_NATIONALITY_1, (SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = T2.DUAL_NATIONALITY_1 )DUAL_NATIONALITY_1_desc,"
-				+ " T2.DUAL_NATIONALITY_2,(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = T2.DUAL_NATIONALITY_2 )DUAL_NATIONALITY_2_desc,"
-				+ " T2.DUAL_NATIONALITY_3,(SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = T2.DUAL_NATIONALITY_3 )DUAL_NATIONALITY_3_desc"
+				+ "  T2.DUAL_NATIONALITY_1,"
+				+ " T2.DUAL_NATIONALITY_2,"
+				+ " T2.DUAL_NATIONALITY_3,"
+				+ " Tpend.SSN, Tpend.CUSTOMER_TIN, Tpend.SUB_SEGMENT, Tpend.COMPLIANCE_STATUS , Tpend.JOINT_ACCOUNT "
 				+ " From " + Customers + "_PEND TPend INNER JOIN " + CustomersExtras
 				+ "_PEND T2 ON ( TPend.COUNTRY= T2.COUNTRY AND TPend.LE_BOOK= T2.LE_BOOK AND TPend.CUSTOMER_ID= T2.CUSTOMER_ID) "
 				+ " Where TPend.COUNTRY = ? AND TPend.LE_BOOK = ? AND TPend.CUSTOMER_ID = ?");
@@ -1084,18 +1220,25 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ "NUM_OF_ACCOUNTS, CUSTOMER_ATTRIBUTE_1, CUSTOMER_ATTRIBUTE_2, CUSTOMER_ATTRIBUTE_3, CUSTOMER_SEX_AT, CUSTOMER_SEX,"
 				+ "COMM_ADDRESS_1, COMM_ADDRESS_2, COMM_CITY_AT, COMM_CITY, COMM_STATE_AT, COMM_STATE, COMM_PIN_CODE, PHONE_NUMBER,"
 				+ "CUSTOMER_STATUS_NT, CUSTOMER_STATUS, RECORD_INDICATOR_NT, RECORD_INDICATOR, MAKER,"
-				+ "VERIFIER, INTERNAL_STATUS, DATE_LAST_MODIFIED, DATE_CREATION,CRS_FLAG,FATCA_FLAG,FATCA_OVERRIDE,CRS_OVERRIDE )"
+				+ "VERIFIER, INTERNAL_STATUS, DATE_LAST_MODIFIED, DATE_CREATION,CRS_FLAG,FATCA_FLAG,FATCA_OVERRIDE,CRS_OVERRIDE,SSN,CUSTOMER_TIN ,SUB_SEGMENT,COMPLIANCE_STATUS,JOINT_ACCOUNT,"
+				+ " PHONE_NUMBER_02,PHONE_NUMBER_03,PHONE_NUMBER_04,PHONE_NUMBER_05,PHONE_NUMBER_06,PHONE_NUMBER_07,COMM_ADDRESS_3)"
 				+ "Values (?, ?, " + dateConvert
 				+ ", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
 				+ "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
-				+ systemDate + "," + systemDate + ",?,?,?,?)";
+				+ systemDate + "," + systemDate + ",?,?,?,?, ?, ?, ?, ?, ? , ?, ?, ?, ?, ?, ?, ?)";
 		Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getCustomerOpenDate(),
-				vObject.getCustomerId(), vObject.getCustomerName(), vObject.getCustomerAcronym(),
+				vObject.getCustomerId(), vObject.getCustomerName(),
+				ValidationUtil.isValid(vObject.getCustomerAcronym()) ? vObject.getCustomerAcronym():"NA",
 				vObject.getVisionOuc(), vObject.getVisionSbuAt(), vObject.getVisionSbu(), vObject.getGlobalCustomerId(),
-				vObject.getNaicsCode(), vObject.getCbOrgCodeAt(), vObject.getCbOrgCode(),
-				vObject.getCbEconomicActCodeAt(), vObject.getCbEconomicActCode(), vObject.getCbDomicile(),
+				vObject.getNaicsCode(), vObject.getCbOrgCodeAt(),
+				ValidationUtil.isValid(vObject.getCbOrgCode())? vObject.getCbOrgCode():"NA",
+				vObject.getCbEconomicActCodeAt(),
+				ValidationUtil.isValid( vObject.getCbEconomicActCode())? vObject.getCbEconomicActCode() :"NA",
+				ValidationUtil.isValid(vObject.getCbDomicile())? vObject.getCbDomicile():"NA",
 				vObject.getCbNationality(), vObject.getCbResidence(), vObject.getCbMajorPartyIndicator(),
-				vObject.getCustomerIdTypeAt(), vObject.getCustomerIdType(), vObject.getIdDetails(),
+				vObject.getCustomerIdTypeAt(),
+				ValidationUtil.isValid(vObject.getCustomerIdType())? vObject.getCustomerIdType() :"NA",
+				ValidationUtil.isValid( vObject.getIdDetails())? vObject.getIdDetails():"",
 				vObject.getPrimaryCid(), vObject.getParentCid(), vObject.getUltimateParent(),
 				vObject.getCustomerHierarchy1(), vObject.getCustomerHierarchy2(), vObject.getCustomerHierarchy3(),
 				vObject.getAccountOfficer(), vObject.getCreditClassificationAt(), vObject.getCreditClassification(),
@@ -1110,7 +1253,12 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				vObject.getCommState(), vObject.getCommPinCode(), vObject.getPhoneNumber(),
 				vObject.getCustomerStatusNt(), vObject.getCustomerStatus(), vObject.getRecordIndicatorNt(),
 				vObject.getRecordIndicator(), vObject.getMaker(), vObject.getVerifier(), vObject.getInternalStatus(),
-				vObject.getCrsFlag(), vObject.getFatcaFlag(), vObject.getFatcaOverRide(), vObject.getCrsOverRide() };
+				vObject.getCrsFlag(), vObject.getFatcaFlag(), vObject.getFatcaOverRide(), vObject.getCrsOverRide() ,
+				vObject.getSsn(),vObject.getCustomerTin(),vObject.getSubSegment(),vObject.getComplianceStatus(),vObject.getJointAccount(),
+				vObject.getPhoneNumber2(),vObject.getPhoneNumber3(),vObject.getPhoneNumber4(),vObject.getPhoneNumber5(),vObject.getPhoneNumber6(),
+				vObject.getPhoneNumber7(),vObject.getCommAddress3()};
+		
+		
 		return getJdbcTemplate().update(query, args);
 	}
 
@@ -1133,18 +1281,25 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ "NUM_OF_ACCOUNTS, CUSTOMER_ATTRIBUTE_1, CUSTOMER_ATTRIBUTE_2, CUSTOMER_ATTRIBUTE_3, CUSTOMER_SEX_AT, CUSTOMER_SEX,"
 				+ "COMM_ADDRESS_1, COMM_ADDRESS_2, COMM_CITY_AT, COMM_CITY, COMM_STATE_AT, COMM_STATE, COMM_PIN_CODE, PHONE_NUMBER,"
 				+ "CUSTOMER_STATUS_NT, CUSTOMER_STATUS, RECORD_INDICATOR_NT, RECORD_INDICATOR, MAKER,"
-				+ "VERIFIER, INTERNAL_STATUS, DATE_LAST_MODIFIED, DATE_CREATION,CRS_FLAG,FATCA_FLAG,FATCA_OVERRIDE,CRS_OVERRIDE)"
+				+ "VERIFIER, INTERNAL_STATUS, DATE_LAST_MODIFIED, DATE_CREATION,CRS_FLAG,FATCA_FLAG,FATCA_OVERRIDE,CRS_OVERRIDE,SSN,CUSTOMER_TIN ,SUB_SEGMENT,COMPLIANCE_STATUS,JOINT_ACCOUNT,"
+				+ "PHONE_NUMBER_02,PHONE_NUMBER_03,PHONE_NUMBER_04,PHONE_NUMBER_05,PHONE_NUMBER_06,PHONE_NUMBER_07,COMM_ADDRESS_3)"
 				+ "Values (?, ?, " + dateConvert
 				+ ", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?"
 				+ ", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
-				+ systemDate + "," + systemDate + ",?,?,?,?)";
+				+ systemDate + "," + systemDate + ",?,?,?, ?, ?, ?, ?, ?, ?, ? ,? ,? ,?, ? ,? ,?)";
 		Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getCustomerOpenDate(),
-				vObject.getCustomerId(), vObject.getCustomerName(), vObject.getCustomerAcronym(),
+				vObject.getCustomerId(), vObject.getCustomerName(), 
+				ValidationUtil.isValid(vObject.getCustomerAcronym()) ? vObject.getCustomerAcronym():"NA",
 				vObject.getVisionOuc(), vObject.getVisionSbuAt(), vObject.getVisionSbu(), vObject.getGlobalCustomerId(),
-				vObject.getNaicsCode(), vObject.getCbOrgCodeAt(), vObject.getCbOrgCode(),
-				vObject.getCbEconomicActCodeAt(), vObject.getCbEconomicActCode(), vObject.getCbDomicile(),
+				vObject.getNaicsCode(), vObject.getCbOrgCodeAt(),
+				ValidationUtil.isValid(vObject.getCbOrgCode())? vObject.getCbOrgCode():"NA",
+				vObject.getCbEconomicActCodeAt(),
+				ValidationUtil.isValid( vObject.getCbEconomicActCode()) ? vObject.getCbEconomicActCode() :"NA",
+				ValidationUtil.isValid(vObject.getCbDomicile()) ? vObject.getCbDomicile():"NA",
 				vObject.getCbNationality(), vObject.getCbResidence(), vObject.getCbMajorPartyIndicator(),
-				vObject.getCustomerIdTypeAt(), vObject.getCustomerIdType(), vObject.getIdDetails(),
+				vObject.getCustomerIdTypeAt(),
+				ValidationUtil.isValid(vObject.getCustomerIdType())? vObject.getCustomerIdType() :"NA",
+				ValidationUtil.isValid( vObject.getIdDetails())? vObject.getIdDetails():"",
 				vObject.getPrimaryCid(), vObject.getParentCid(), vObject.getUltimateParent(),
 				vObject.getCustomerHierarchy1(), vObject.getCustomerHierarchy2(), vObject.getCustomerHierarchy3(),
 				vObject.getAccountOfficer(), vObject.getCreditClassificationAt(), vObject.getCreditClassification(),
@@ -1159,7 +1314,12 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				vObject.getCommState(), vObject.getCommPinCode(), vObject.getPhoneNumber(),
 				vObject.getCustomerStatusNt(), vObject.getCustomerStatus(), vObject.getRecordIndicatorNt(),
 				vObject.getRecordIndicator(), vObject.getMaker(), vObject.getVerifier(), vObject.getInternalStatus(),
-				vObject.getCrsFlag(), vObject.getFatcaFlag(), vObject.getFatcaOverRide(), vObject.getCrsOverRide() };
+				vObject.getCrsFlag(), vObject.getFatcaFlag(), vObject.getFatcaOverRide(), vObject.getCrsOverRide() ,
+				vObject.getSsn(),vObject.getCustomerTin(),vObject.getSubSegment(),vObject.getComplianceStatus(),vObject.getJointAccount(),
+				vObject.getPhoneNumber2(),vObject.getPhoneNumber3(),vObject.getPhoneNumber4(),vObject.getPhoneNumber5(),vObject.getPhoneNumber6(),
+				vObject.getPhoneNumber7(),vObject.getCommAddress3()};
+		
+		
 		return getJdbcTemplate().update(query, args);
 	}
 
@@ -1181,18 +1341,25 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				+ "NUM_OF_ACCOUNTS, CUSTOMER_ATTRIBUTE_1, CUSTOMER_ATTRIBUTE_2, CUSTOMER_ATTRIBUTE_3, CUSTOMER_SEX_AT, CUSTOMER_SEX,"
 				+ "COMM_ADDRESS_1, COMM_ADDRESS_2, COMM_CITY_AT, COMM_CITY, COMM_STATE_AT, COMM_STATE, COMM_PIN_CODE, PHONE_NUMBER,"
 				+ "CUSTOMER_STATUS_NT, CUSTOMER_STATUS, RECORD_INDICATOR_NT, RECORD_INDICATOR, MAKER,"
-				+ "VERIFIER, INTERNAL_STATUS, DATE_LAST_MODIFIED, DATE_CREATION,CRS_FLAG,FATCA_FLAG,FATCA_OVERRIDE,CRS_OVERRIDE)"
+				+ "VERIFIER, INTERNAL_STATUS, DATE_LAST_MODIFIED, DATE_CREATION,CRS_FLAG,FATCA_FLAG,FATCA_OVERRIDE,CRS_OVERRIDE,SSN,CUSTOMER_TIN ,SUB_SEGMENT,COMPLIANCE_STATUS,JOINT_ACCOUNT,"
+				+ "PHONE_NUMBER_02,PHONE_NUMBER_03,PHONE_NUMBER_04,PHONE_NUMBER_05,PHONE_NUMBER_06,PHONE_NUMBER_07,COMM_ADDRESS_3)"
 				+ "Values (?, ?, " + dateConvert
 				+ ", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
 				+ " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?," + systemDate + ", "
-				+ dateTimeConvert + ",?,?,?,?)";
+				+ dateTimeConvert + ",?,?,?,?, ?, ?, ?, ?, ? , ? ,? ,? ,?, ?, ?, ?)";
 		Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getCustomerOpenDate(),
-				vObject.getCustomerId(), vObject.getCustomerName(), vObject.getCustomerAcronym(),
+				vObject.getCustomerId(), vObject.getCustomerName(), 
+				ValidationUtil.isValid(vObject.getCustomerAcronym()) ? vObject.getCustomerAcronym():"NA",
 				vObject.getVisionOuc(), vObject.getVisionSbuAt(), vObject.getVisionSbu(), vObject.getGlobalCustomerId(),
-				vObject.getNaicsCode(), vObject.getCbOrgCodeAt(), vObject.getCbOrgCode(),
-				vObject.getCbEconomicActCodeAt(), vObject.getCbEconomicActCode(), vObject.getCbDomicile(),
+				vObject.getNaicsCode(), vObject.getCbOrgCodeAt(), 
+				ValidationUtil.isValid(vObject.getCbOrgCode())? vObject.getCbOrgCode():"NA",
+				vObject.getCbEconomicActCodeAt(),
+				ValidationUtil.isValid( vObject.getCbEconomicActCode())? vObject.getCbEconomicActCode() :"NA",
+				ValidationUtil.isValid(vObject.getCbDomicile())? vObject.getCbDomicile():"NA",
 				vObject.getCbNationality(), vObject.getCbResidence(), vObject.getCbMajorPartyIndicator(),
-				vObject.getCustomerIdTypeAt(), vObject.getCustomerIdType(), vObject.getIdDetails(),
+				vObject.getCustomerIdTypeAt(), 
+				ValidationUtil.isValid(vObject.getCustomerIdType())? vObject.getCustomerIdType() :"NA",
+				ValidationUtil.isValid( vObject.getIdDetails())? vObject.getIdDetails():"",
 				vObject.getPrimaryCid(), vObject.getParentCid(), vObject.getUltimateParent(),
 				vObject.getCustomerHierarchy1(), vObject.getCustomerHierarchy2(), vObject.getCustomerHierarchy3(),
 				vObject.getAccountOfficer(), vObject.getCreditClassificationAt(), vObject.getCreditClassification(),
@@ -1207,7 +1374,10 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				vObject.getPhoneNumber(), vObject.getCustomerStatusNt(), vObject.getCustomerStatus(),
 				vObject.getRecordIndicatorNt(), vObject.getRecordIndicator(), vObject.getMaker(), vObject.getVerifier(),
 				vObject.getInternalStatus(), vObject.getDateCreation(), vObject.getCrsFlag(), vObject.getFatcaFlag(),
-				vObject.getFatcaOverRide(), vObject.getCrsOverRide() };
+				vObject.getFatcaOverRide(), vObject.getCrsOverRide() ,
+				vObject.getSsn(),vObject.getCustomerTin(),vObject.getSubSegment(),vObject.getComplianceStatus(),vObject.getJointAccount(),
+				vObject.getPhoneNumber2(),vObject.getPhoneNumber3(),vObject.getPhoneNumber4(),vObject.getPhoneNumber5(),vObject.getPhoneNumber6(),
+				vObject.getPhoneNumber7(),vObject.getCommAddress3()};
 		return getJdbcTemplate().update(query, args);
 	}
 
@@ -3049,9 +3219,12 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 		}
 
 		// Always clear pend after finishing
+		if(pendRows != null && !pendRows.isEmpty() ||
+				apprRows != null && !apprRows.isEmpty()	) {
 		rc = customerManualDao.deletePendByKey(key);
 		if (rc == Constants.ERRONEOUS_OPERATION)
 			return rc;
+		}
 
 		return Constants.SUCCESSFUL_OPERATION;
 	}

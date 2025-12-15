@@ -97,20 +97,20 @@ public class RgCrsRuleWb extends AbstractWorkerBean<RgCrsRuleVb> implements Serv
 			arrListLocal.add(collTemp);
 			String country = "";
 			String leBook = "";
-			VisionUsersVb visionUsers = SessionContextHolder.getContext();
-			if ("Y".equalsIgnoreCase(visionUsers.getUpdateRestriction())) {
-				if (ValidationUtil.isValid(visionUsers.getCountry())) {
-					country = visionUsers.getCountry();
-				}
-				if (ValidationUtil.isValid(visionUsers.getLeBook())) {
-					leBook = visionUsers.getLeBook();
-				}
-			} else {
-				country = commonDao.findVisionVariableValue("DEFAULT_COUNTRY");
-				leBook = commonDao.findVisionVariableValue("DEFAULT_LE_BOOK");
-			}
-			String countryLeBook = country + "-" + leBook;
-			arrListLocal.add(countryLeBook);
+//			VisionUsersVb visionUsers = SessionContextHolder.getContext();
+//			if ("Y".equalsIgnoreCase(visionUsers.getUpdateRestriction())) {
+//				if (ValidationUtil.isValid(visionUsers.getCountry())) {
+//					country = visionUsers.getCountry();
+//				}
+//				if (ValidationUtil.isValid(visionUsers.getLeBook())) {
+//					leBook = visionUsers.getLeBook();
+//				}
+//			} else {
+//				country = commonDao.findVisionVariableValue("DEFAULT_COUNTRY");
+//				leBook = commonDao.findVisionVariableValue("DEFAULT_LE_BOOK");
+//			}
+//			String countryLeBook = country + "-" + leBook;
+			arrListLocal.add("");
 
 			collTemp = getAlphaSubTabDao().findActiveAlphaSubTabsByAlphaTab(856); // Filter Condition
 			arrListLocal.add(collTemp);
@@ -894,7 +894,9 @@ public class RgCrsRuleWb extends AbstractWorkerBean<RgCrsRuleVb> implements Serv
 		ExceptionCode exceptionCode = new ExceptionCode();
 		int exitVal = 1;
 		try {
-			String memoryOptions = "-Xms" + jarMemoryMin + " -Xmx" + jarMemoryMax;
+//			String memoryOptions = "-Xms" + jarMemoryMin + " -Xmx" + jarMemoryMax;
+			 String memoryOptionsMin = "-Xms" + jarMemoryMin;
+		        String memoryOptionsMax = "-Xmx" + jarMemoryMax;
 
 			String execsPath = commonDao.findVisionVariableValue("RG_BUILD_PATH");
 			String jarName = commonDao.findVisionVariableValue("RG_BUILD_JAR_NAME");
@@ -916,37 +918,45 @@ public class RgCrsRuleWb extends AbstractWorkerBean<RgCrsRuleVb> implements Serv
 
 			// Build command
 			if(!"Y".equalsIgnoreCase(cloud)) {
-			String jarExecCmd = "java " + memoryOptions + " -jar " + execsPath + jarName + " " + vObject.getCountry()
-					+ " " + vObject.getLeBook() + " " + vObject.getVisionSbu() + " " + "01-Jan-1900 CRS N Y";
+			     List<String> command = new ArrayList<>();
+		            command.add("java");
+		            command.add(memoryOptionsMin);
+		            command.add(memoryOptionsMax);
+		            command.add("-jar");
+		            command.add(execsPath + jarName);
+		            command.add(vObject.getCountry());
+		            command.add(vObject.getLeBook());
+		            command.add(vObject.getVisionSbu());
+		            command.add("01-Jan-1900");
+		            command.add("CRS");
+		            command.add("N");
+		            command.add("Y");
 
-			logger.info("Executing: " + jarExecCmd);
+			logger.info("Executing: " + command);
 
-			Process proc = Runtime.getRuntime().exec(jarExecCmd);
+			ProcessBuilder pb = new ProcessBuilder(command);
+            pb.redirectErrorStream(true);  // Merge stderr → stdout
 
-			// Consume stdout
-			new Thread(() -> {
-				try (BufferedReader reader = new BufferedReader(new InputStreamReader(proc.getInputStream()))) {
-					reader.lines().forEach(logger::info);
-				} catch (IOException e) {
-					logger.error("Error reading stdout", e);
-				}
-			}).start();
+            Process proc = pb.start();
 
-			// Consume stderr
-			new Thread(() -> {
-				try (BufferedReader reader = new BufferedReader(new InputStreamReader(proc.getErrorStream()))) {
-					reader.lines().forEach(logger::error);
-				} catch (IOException e) {
-					logger.error("Error reading stderr", e);
-				}
-			}).start();
+            // Read output sequentially (NO DEADLOCK)
+            try (BufferedReader reader =
+                         new BufferedReader(new InputStreamReader(proc.getInputStream()))) {
 
-			// Wait for the process to finish
-			 exitVal = proc.waitFor();
-				logger.info("Exit Value from Jar [" + exitVal + "]");
-			}else {
-				exitVal = 0;
-			}
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    logger.info(line);
+                }
+            }
+
+            // Wait for process to finish
+            exitVal = proc.waitFor();
+            logger.info("Exit Value from Jar = " + exitVal);
+
+        } else {
+            exitVal = 0; // Cloud always success
+        }
+
 		
 
 			// Set exception code

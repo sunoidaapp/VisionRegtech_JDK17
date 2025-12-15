@@ -258,53 +258,90 @@ public class AuthenticateCredential {
 	
 	@PostMapping(value = "validategeneatedotp")
 	public ResponseEntity<JSONExceptionCode> doValidateGeneatedOTP(HttpServletRequest request,
-			HttpServletResponse response) {
-			LinkedHashMap<String, Object> responseMap = new LinkedHashMap<String, Object>();
-			HttpStatus status = HttpStatus.OK;
-			JSONExceptionCode exceptionCode = new JSONExceptionCode();
-			HttpSession session = request.getSession();
-			try {
-				String validationStatus = String.valueOf(request.getAttribute("OTPValidationStatus"));
-				if("SUCCESS".equalsIgnoreCase(validationStatus)) {
-					responseMap.put("token",
-							"VISION" + Base64.encode((request.getAttribute("tempTokenStorage") + "").getBytes()));
-					Date expirationDate = SessionContextHolder.getTokenProps(request.getAttribute("tempTokenStorage") + "")
-							.getNxtExpireDate();
-	
-					String connectionId = getConnectionIdFromTemporaryToken(request);
-					VisionUsersVb userDetails = null;
-					List<Object> menuSessionList = new ArrayList<Object>();
-					if (session.getAttribute("menuDetails") != null) {
-						menuSessionList = (List<Object>) session.getAttribute("menuDetails");
-					} else {
-						userDetails =  SessionContextHolder.getContext();
-						if(userDetails == null)
-							userDetails =  SessionContextHolder.getUserDetails(connectionId);
-						menuSessionList = authenticationBean.getMenuForUser(userDetails);
-					}
-	
-					responseMap.put("expired_on", expirationDate.getTime());
-					responseMap.put("user_details", userDetails);
-					if (menuSessionList != null && menuSessionList.size() > 1) {
-						responseMap.put("menu_details", menuSessionList.get(0));
-						responseMap.put("menu_hierarchy", menuSessionList.get(1));
-					}
-					visionUsersDao.doDeleteOpt(userDetails.getVisionId());
-					responseMap.put("businessDay", session.getAttribute("businessDay"));
-					exceptionCode.setResponse(responseMap);
-					SessionContextHolder.removeTempTokenForConnectionId(request.getHeader("temporary-token"));
-					exceptionCode.setStatus(Constants.SUCCESSFUL_OPERATION);
-					return new ResponseEntity<JSONExceptionCode>(exceptionCode, status);
-				}else{
-					exceptionCode.setMessage(String.valueOf(session.getAttribute("loginStatus")));
-					exceptionCode.setStatus(Constants.ERRONEOUS_OPERATION);
-					return new ResponseEntity<JSONExceptionCode>(exceptionCode, status);
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-				throw new RuntimeCustomException(e.getMessage());
-			} 
+	        HttpServletResponse response) {
+	    LinkedHashMap<String, Object> responseMap = new LinkedHashMap<>();
+	    HttpStatus status = HttpStatus.OK;
+	    JSONExceptionCode exceptionCode = new JSONExceptionCode();
+	    HttpSession session = request.getSession(false); // don't create new session if none
+	 
+	    try {
+	        String validationStatus = String.valueOf(request.getAttribute("OTPValidationStatus"));
+	        if (!"SUCCESS".equalsIgnoreCase(validationStatus)) {
+	            exceptionCode.setMessage(String.valueOf(session != null ? session.getAttribute("loginStatus") : "OTP validation failed"));
+	            exceptionCode.setStatus(Constants.ERRONEOUS_OPERATION);
+	            return new ResponseEntity<>(exceptionCode, status);
+	        }
+	 
+	        // token and expiry
+	        Object tempTokenObj = request.getAttribute("tempTokenStorage");
+	        String tempToken = tempTokenObj != null ? tempTokenObj.toString() : "";
+	        responseMap.put("token", "VISION" + Base64.encode((tempToken).getBytes()));
+	        Date expirationDate = SessionContextHolder.getTokenProps(tempToken).getNxtExpireDate();
+	 
+	        String connectionId = getConnectionIdFromTemporaryToken(request);
+	        VisionUsersVb userDetails = null;
+	        List<Object> menuSessionList = new ArrayList<>();
+	 
+	        // try session-stored menu first
+	        if (session != null && session.getAttribute("menuDetails") != null) {
+	            menuSessionList = (List<Object>) session.getAttribute("menuDetails");
+	            // if menu was in session, try to get userDetails from SessionContextHolder context
+	            userDetails = SessionContextHolder.getContext();
+	        }
+	 
+	        // fallback: try to get userDetails using connectionId (temp token)
+	        if (userDetails == null) {
+	            userDetails = SessionContextHolder.getUserDetails(connectionId);
+	        }
+	 
+	        // If still null, we cannot proceed safely — return error
+	        if (userDetails == null) {
+	            // log helpful info for debugging
+	        	System.out.println("validateGeneratedOTP: userDetails is null. connectionId={"+connectionId+"}, tempTokenPresent={"+!tempToken.isEmpty()+"}, sessionMenuPresent={"+(session != null && session.getAttribute("menuDetails") != null)+"}");
+	            exceptionCode.setMessage("User details not found after OTP validation.");
+	            exceptionCode.setStatus(Constants.ERRONEOUS_OPERATION);
+	            return new ResponseEntity<>(exceptionCode, status);
+	        }
+	 
+	        // If menuSessionList empty, obtain it from authenticationBean using resolved userDetails
+	        if (menuSessionList == null || menuSessionList.isEmpty()) {
+	            menuSessionList = authenticationBean.getMenuForUser(userDetails);
+	        }
+	 
+	        // Build response
+	        responseMap.put("expired_on", expirationDate.getTime());
+	        responseMap.put("user_details", userDetails);
+	        if (menuSessionList != null && menuSessionList.size() > 1) {
+	            responseMap.put("menu_details", menuSessionList.get(0));
+	            responseMap.put("menu_hierarchy", menuSessionList.get(1));
+	        }
+	 
+	        // safe call now that userDetails is guaranteed non-null
+	        try {
+	            visionUsersDao.doDeleteOpt(userDetails.getVisionId());
+	            System.out.println("Sucess to delete OTP for userId {"+userDetails.getVisionId()+"}");
+	        } catch (Exception daoEx) {
+	            // Log and continue — deletion failure shouldn't break the whole flow
+	        	System.out.println("Failed to delete OTP for userId {"+userDetails.getVisionId()+"}: {"+daoEx.getMessage()+"}");
+	        }
+	 
+	        responseMap.put("businessDay", session != null ? session.getAttribute("businessDay") : null);
+	        exceptionCode.setResponse(responseMap);
+	        SessionContextHolder.removeTempTokenForConnectionId(request.getHeader("temporary-token"));
+	        exceptionCode.setStatus(Constants.SUCCESSFUL_OPERATION);
+	        return new ResponseEntity<>(exceptionCode, status);
+	 
+	    } catch (Exception e) {
+	        System.out.println(e.getMessage());
+	        // Return a controlled error rather than rethrowing raw runtime exception
+	        exceptionCode.setMessage("Internal server error while validating OTP.");
+	        exceptionCode.setStatus(Constants.ERRONEOUS_OPERATION);
+	        return new ResponseEntity<>(exceptionCode, HttpStatus.INTERNAL_SERVER_ERROR);
+	    }
 	}
+	 
+	 
+
 	
 	@PostMapping(value = "regeneatedotp")
 	public ResponseEntity<JSONExceptionCode> doReGeneratedOTP(HttpServletRequest request,

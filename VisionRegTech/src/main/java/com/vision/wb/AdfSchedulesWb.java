@@ -204,8 +204,9 @@ public class AdfSchedulesWb extends AbstractDynaWorkerBean<AdfSchedulesVb> {
 		setVerifReqDeleteType(vObject);
 		List<AdfSchedulesVb> collTemp = adfSchedulesDao.getQueryResults(vObject, intStatus);
 		List<AdfSchedulesVb> collTemp1 = adfSchedulesDao.getQueryResultsForStatusBars(vObject, intStatus);
-		String environmentParam = "UAT";
+//		String environmentParam = "UAT";
 //				System.getenv("VISION_SERVER_ENVIRONMENT");
+		String environmentParam = System.getenv("VISION_SERVER_ENVIRONMENT");
 		if (!ValidationUtil.isValid(environmentParam))
 			environmentParam = "UAT";
 		String cronNameDelimited = "";

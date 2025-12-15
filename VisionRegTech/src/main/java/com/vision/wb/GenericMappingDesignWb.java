@@ -57,22 +57,22 @@ public class GenericMappingDesignWb extends AbstractWorkerBean<TemplateNameGBMVb
 			arrListLocal.add(collTemp);
 			collTemp = commonDao.getLegalEntity();
 			arrListLocal.add(collTemp);
-			String country = "";
-			String leBook = "";
-			VisionUsersVb visionUsers = SessionContextHolder.getContext();
-			if("Y".equalsIgnoreCase(visionUsers.getUpdateRestriction())) {
-				if(ValidationUtil.isValid(visionUsers.getCountry())) {
-					country = visionUsers.getCountry();
-				}
-				if(ValidationUtil.isValid(visionUsers.getLeBook())) {
-					leBook = visionUsers.getLeBook();
-				}
-			}else {
-				country = commonDao.findVisionVariableValue("DEFAULT_COUNTRY");
-				leBook = commonDao.findVisionVariableValue("DEFAULT_LE_BOOK");
-			}
-			String countryLeBook = country + "-" + leBook;
-			arrListLocal.add(countryLeBook);
+//			String country = "";
+//			String leBook = "";
+//			VisionUsersVb visionUsers = SessionContextHolder.getContext();
+//			if("Y".equalsIgnoreCase(visionUsers.getUpdateRestriction())) {
+//				if(ValidationUtil.isValid(visionUsers.getCountry())) {
+//					country = visionUsers.getCountry();
+//				}
+//				if(ValidationUtil.isValid(visionUsers.getLeBook())) {
+//					leBook = visionUsers.getLeBook();
+//				}
+//			}else {
+//				country = commonDao.findVisionVariableValue("DEFAULT_COUNTRY");
+//				leBook = commonDao.findVisionVariableValue("DEFAULT_LE_BOOK");
+//			}
+//			String countryLeBook = country + "-" + leBook;
+			arrListLocal.add("");
 			return arrListLocal;
 		}catch(Exception ex){
 			ex.printStackTrace();

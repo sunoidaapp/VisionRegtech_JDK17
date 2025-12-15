@@ -4,10 +4,12 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
@@ -176,20 +178,20 @@ public class MagnifierDao extends AbstractDao<MagnifierResultVb> {
 			VisionUsersVb visionUsersVb = SessionContextHolder.getContext();
 			if(("Y".equalsIgnoreCase(visionUsersVb.getUpdateRestriction()))){
 				if(ValidationUtil.isValid(visionUsersVb.getCountry()) && "Y".equalsIgnoreCase(vObject.getRestrictionCountry())){
-					query = query + " and Country IN ('"+visionUsersVb.getCountry()+ "') ";
+					query = query + " and Country IN ("+toSqlInList(visionUsersVb.getCountry())+ ") ";
 				}
 				if(ValidationUtil.isValid(visionUsersVb.getUpdateRestrictionLeBook()) && "Y".equalsIgnoreCase(vObject.getRestrictionLeBook())){
-						query = query + " and COUNTRY"+pipeLine+"'-'"+pipeLine+"LE_BOOK IN ("+visionUsersVb.getUpdateRestrictionLeBook().toUpperCase()+ ") ";
+						query = query + " and LE_BOOK IN ("+toSqlInList(visionUsersVb.getUpdateRestrictionLeBook().toUpperCase())+ ") ";
 					
 				}
 				if(ValidationUtil.isValid(visionUsersVb.getAccountOfficer()) && "Y".equalsIgnoreCase(vObject.getRestrictionAo())){
-					query = query + " and account_Officer IN ('"+visionUsersVb.getAccountOfficer()+ "') ";
+					query = query + " and account_Officer IN ("+toSqlInList(visionUsersVb.getAccountOfficer())+ ") ";
 				}
 				if(ValidationUtil.isValid(visionUsersVb.getOucAttribute()) && "Y".equalsIgnoreCase(vObject.getRestrictionOuc())){
-					query = query + " and Vision_ouc IN ('"+visionUsersVb.getOucAttribute()+ "') ";
+					query = query + " and Vision_ouc IN ("+toSqlInList(visionUsersVb.getOucAttribute())+ ") ";
 				}
 				if(ValidationUtil.isValid(visionUsersVb.getSbuCode()) && "Y".equalsIgnoreCase(vObject.getRestrictionSbu())){
-					query = query + " and Vision_Sbu IN ('"+visionUsersVb.getSbuCode()+ "') ";
+					query = query + " and Vision_Sbu IN ("+toSqlInList(visionUsersVb.getSbuCode())+ ") ";
 				}
 			}
 			if(ValidationUtil.isValid(dObj.getPrompt1()) && !"'ALL'".equalsIgnoreCase(dObj.getPrompt1())) {
@@ -217,6 +219,13 @@ public class MagnifierDao extends AbstractDao<MagnifierResultVb> {
 
 		}
 	}
+	private String toSqlInList(String CcountryLeBook) {
+	    return Arrays.stream(CcountryLeBook.split(","))
+	            .map(String::trim)
+	            .map(val -> "'" + val + "'")
+	            .collect(Collectors.joining(","));
+	}
+
 	protected RowMapper magnifierQueryMapper(){
 		RowMapper mapper = new RowMapper() {
 			public Object mapRow(ResultSet rs, int rowNum) throws SQLException {

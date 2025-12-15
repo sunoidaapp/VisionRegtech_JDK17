@@ -45,9 +45,9 @@ public class CbGlCodesWb extends AbstractDynaWorkerBean<CbGlCodesVb> {
 
 			collTemp = getAlphaSubTabDao().findActiveAlphaSubTabsByAlphaTab(5030);
 			arrListLocal.add(collTemp);
-			String country = commonDao.findVisionVariableValue("DEFAULT_COUNTRY");
-			String leBook = commonDao.findVisionVariableValue("DEFAULT_LE_BOOK");
-			arrListLocal.add(country + "-" + leBook);
+//			String country = commonDao.findVisionVariableValue("DEFAULT_COUNTRY");
+//			String leBook = commonDao.findVisionVariableValue("DEFAULT_LE_BOOK");
+			arrListLocal.add("");
 			collTemp = commonDao.getLegalEntity();
 			arrListLocal.add(collTemp);
 			return arrListLocal;

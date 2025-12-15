@@ -51,4 +51,7 @@ public class Constants {
 	public static final String ORACLE = "ORACLE";
 	public static final String MSSQL = "MSSQL";
 	public static final String POSTGRES = "POSTGRES";
+	
+	public static final String FATCA = "FATCA";
+	public static final String CRS = "CRS";
 }

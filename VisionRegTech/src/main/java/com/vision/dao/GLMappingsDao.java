@@ -2,8 +2,10 @@ package com.vision.dao;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
+import java.util.stream.Collectors;
 
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
@@ -13,6 +15,7 @@ import com.vision.util.CommonUtils;
 import com.vision.util.Constants;
 import com.vision.util.ValidationUtil;
 import com.vision.vb.GLMappingsVb;
+import com.vision.vb.VisionUsersVb;
 @Component
 public class GLMappingsDao extends AbstractDao<GLMappingsVb> {
 	 	
@@ -163,24 +166,45 @@ public class GLMappingsDao extends AbstractDao<GLMappingsVb> {
 			}
 
 			//check if the column [COUNTRY] should be included in the query
-			if (ValidationUtil.isValid(dObj.getCountry()))
-			{
-				params.addElement(dObj.getCountry().toUpperCase());
-				CommonUtils.addToQuery("TAppr.COUNTRY = ?", strBufApprove);
-				CommonUtils.addToQuery("TPend.COUNTRY = ?", strBufPending);
-			}
-
-			//check if the column [LE_BOOK] should be included in the query
-			if (ValidationUtil.isValid(dObj.getLeBook()))
-			{
-				params.addElement("%"+CalLeBook+ "%");
-				CommonUtils.addToQuery("TAppr.LE_BOOK LIKE ?", strBufApprove);
-				CommonUtils.addToQuery("TPend.LE_BOOK LIKE ?", strBufPending);
-			}
-			if (ValidationUtil.isValid(SessionContextHolder.getContext().getUpdateRestrictionLeBook()))
-			{
-				CommonUtils.addToQuery("TAppr.COUNTRY+ '-' +TAppr.LE_BOOK IN("+SessionContextHolder.getContext().getUpdateRestrictionLeBook().toUpperCase()+") ", strBufApprove);
-				CommonUtils.addToQuery("TPend.COUNTRY+ '-' +TPend.LE_BOOK IN("+SessionContextHolder.getContext().getUpdateRestrictionLeBook().toUpperCase()+") ", strBufPending);
+//			if (ValidationUtil.isValid(dObj.getCountry()))
+//			{
+//				params.addElement(dObj.getCountry().toUpperCase());
+//				CommonUtils.addToQuery("TAppr.COUNTRY = ?", strBufApprove);
+//				CommonUtils.addToQuery("TPend.COUNTRY = ?", strBufPending);
+//			}
+//
+//			//check if the column [LE_BOOK] should be included in the query
+//			if (ValidationUtil.isValid(dObj.getLeBook()))
+//			{
+//				params.addElement("%"+CalLeBook+ "%");
+//				CommonUtils.addToQuery("TAppr.LE_BOOK LIKE ?", strBufApprove);
+//				CommonUtils.addToQuery("TPend.LE_BOOK LIKE ?", strBufPending);
+//			}
+//			if (ValidationUtil.isValid(SessionContextHolder.getContext().getUpdateRestrictionLeBook()))
+//			{
+//				CommonUtils.addToQuery("TAppr.COUNTRY+ '-' +TAppr.LE_BOOK IN("+SessionContextHolder.getContext().getUpdateRestrictionLeBook().toUpperCase()+") ", strBufApprove);
+//				CommonUtils.addToQuery("TPend.COUNTRY+ '-' +TPend.LE_BOOK IN("+SessionContextHolder.getContext().getUpdateRestrictionLeBook().toUpperCase()+") ", strBufPending);
+//			}
+			VisionUsersVb visionUsersVb = SessionContextHolder.getContext();
+			if (("Y".equalsIgnoreCase(visionUsersVb.getUpdateRestriction()))) {
+				if (ValidationUtil.isValid(visionUsersVb.getCountry())) {
+					CommonUtils.addToQuery(" COUNTRY IN (" + toSqlInList(visionUsersVb.getCountry()) + ") ", strBufApprove);
+					CommonUtils.addToQuery(" COUNTRY IN (" + toSqlInList(visionUsersVb.getCountry()) + ") ", strBufPending);
+				}
+				if (ValidationUtil.isValid(visionUsersVb.getLeBook())) {
+					CommonUtils.addToQuery(" LE_BOOK IN (" + toSqlInList(visionUsersVb.getLeBook()) + ") ", strBufApprove);
+					CommonUtils.addToQuery(" LE_BOOK IN (" + toSqlInList(visionUsersVb.getLeBook()) + ") ", strBufPending);
+				}
+			} else {
+				if (ValidationUtil.isValid(dObj.getCountry())) {
+					CommonUtils.addToQuery(" COUNTRY IN (" + toSqlInList(dObj.getCountry()) + ") ", strBufApprove);
+					CommonUtils.addToQuery(" COUNTRY IN (" + toSqlInList(dObj.getCountry()) + ") ", strBufPending);
+				}
+				if (ValidationUtil.isValid(dObj.getLeBook())) {
+					String calLeBook = removeDescLeBook(dObj.getLeBook());
+					CommonUtils.addToQuery(" LE_BOOK IN (" + toSqlInList(calLeBook )+ ") ", strBufApprove);
+					CommonUtils.addToQuery(" LE_BOOK IN (" + toSqlInList(calLeBook) + ") ", strBufPending);
+				}
 			}
 			//check if the column [BS_GL] should be included in the query
 			if (ValidationUtil.isValid(dObj.getBsGl()))
@@ -321,6 +345,13 @@ public class GLMappingsDao extends AbstractDao<GLMappingsVb> {
 
 		}
 	}
+	private String toSqlInList(String CcountryLeBook) {
+	    return Arrays.stream(CcountryLeBook.split(","))
+	            .map(String::trim)
+	            .map(val -> "'" + val + "'")
+	            .collect(Collectors.joining(","));
+	}
+
 	public List<GLMappingsVb> getQueryResults(GLMappingsVb dObj, int intStatus){
 		
 		String CalLeBook = removeDescLeBook(dObj.getLeBook());

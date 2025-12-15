@@ -244,6 +244,12 @@ public class CustomerManualDao extends AbstractDao<CustomerManualColVb> {
 			v.setDateLastModified(getDateTime(rs, "DATE_LAST_MODIFIED"));
 
 			v.setVariableName(CommonUtils.toCamelCase(colName));
+			if (colName.equalsIgnoreCase(("CRS_OVERRIDE"))) {
+				v.setVariableName("crsOverRide");
+			}
+			if (colName.equalsIgnoreCase(("FATCA_OVERRIDE"))) {
+				v.setVariableName("fatcaOverRide");
+			}
 
 			return v;
 		}

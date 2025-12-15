@@ -2,7 +2,9 @@ package com.vision.dao;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
@@ -56,7 +58,7 @@ public class TransLinesSbuDao extends AbstractDao<TransLineSbuVb> {
 			if(("Y".equalsIgnoreCase(visionUsersVb.getUpdateRestriction()))){
 				if(ValidationUtil.isValid(visionUsersVb.getSbuCode())){
 					query.append(" AND ");
-					query.append(" BUSINESS_VERTICAL IN( '"+visionUsersVb.getSbuCode() + "') ");
+					query.append(" BUSINESS_VERTICAL IN( "+toSqlInList(visionUsersVb.getSbuCode()) + ") ");
 				}
 			}
 			Object objParams[] = new Object[3];
@@ -71,6 +73,13 @@ public class TransLinesSbuDao extends AbstractDao<TransLineSbuVb> {
 			return null;
 		}
 	}
+	private String toSqlInList(String CcountryLeBook) {
+	    return Arrays.stream(CcountryLeBook.split(","))
+	            .map(String::trim)
+	            .map(val -> "'" + val + "'")
+	            .collect(Collectors.joining(","));
+	}
+
 	protected int deleteTransLineSbuAppr(TransLineHeaderVb vObject){
 		String query = "Delete from RA_MST_TRANS_LINE_SBU where COUNTRY = ? AND LE_BOOK = ? AND TRANS_LINE_ID = ? ";
 		Object[] args = {vObject.getCountry(),vObject.getLeBook(),vObject.getTransLineId()};

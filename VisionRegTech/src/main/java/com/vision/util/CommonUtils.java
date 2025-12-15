@@ -52,6 +52,10 @@ public class CommonUtils {
 	private static String strSeverityFlags[] = new String[50];
 	private static String SPACE = " ";
 	private static final SecureRandom random = new SecureRandom();
+	private static final String ALPHA_NUM =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+ 
 
 	static {
 		strErrMsgs[0] = new String("System error.  Contact System Admin");
@@ -619,13 +623,13 @@ public class CommonUtils {
 			} else if ("MSSQL".equalsIgnoreCase(dataBaseType)) {
 				if (ValidationUtil.isValid(dbInstance) && ValidationUtil.isValid(hostName)) {
 					jdbcUrl = "jdbc:sqlserver://" + dbIP + ":" + dbPortNumber + ";instanceName=" + dbInstance
-							+ ";databaseName=" + hostName;
+							+ ";databaseName=" + hostName+";encrypt =false";
 				} else if (ValidationUtil.isValid(dbInstance) && !ValidationUtil.isValid(hostName)) {
-					jdbcUrl = "jdbc:sqlserver://" + dbIP + ":" + dbPortNumber + ";instanceName=" + dbInstance;
+					jdbcUrl = "jdbc:sqlserver://" + dbIP + ":" + dbPortNumber + ";instanceName=" + dbInstance+";encrypt=false";
 				} else if (!ValidationUtil.isValid(dbInstance) && ValidationUtil.isValid(hostName)) {
-					jdbcUrl = "jdbc:sqlserver://" + dbIP + ":" + dbPortNumber + ";databaseName=" + hostName;
+					jdbcUrl = "jdbc:sqlserver://" + dbIP + ":" + dbPortNumber + ";databaseName=" + hostName+";encrypt=false";
 				} else {
-					jdbcUrl = "jdbc:sqlserver://" + dbIP + ":" + dbPortNumber + ";databaseName=" + hostName;
+					jdbcUrl = "jdbc:sqlserver://" + dbIP + ":" + dbPortNumber + ";databaseName=" + hostName+";encrypt=false";
 				}
 
 				con = getDbConnection(jdbcUrl, dbUserName, dbPassWord, "MSSQL", version);
@@ -1351,4 +1355,11 @@ public class CommonUtils {
 	    }
 	    return sb.toString();
 	}
+	public static String generateRandom32() {
+        StringBuilder sb = new StringBuilder(32);
+        for (int i = 0; i < 32; i++) {
+            sb.append(ALPHA_NUM.charAt(SECURE_RANDOM.nextInt(ALPHA_NUM.length())));
+        }
+        return sb.toString();
+    }
 }

@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -883,79 +884,91 @@ public class RgFatcaRuleWb extends AbstractWorkerBean<RgFatcaRuleVb> implements 
 	}
 
 	public ExceptionCode runBuilds(RgFatcaRuleVb vObject) {
-		ExceptionCode exceptionCode = new ExceptionCode();
-		int exitVal = 1;
-		try {
-			String execsPath = commonDao.findVisionVariableValue("RG_BUILD_PATH");
-			String jarName = commonDao.findVisionVariableValue("RG_BUILD_JAR_NAME");
-			String logPath = commonDao.findVisionVariableValue("RG_BUILDLOG_PATH");
+	    ExceptionCode exceptionCode = new ExceptionCode();
+	    	int exitVal = 1;
 
-			// Validation
-			if (!ValidationUtil.isValid(execsPath)) {
-				exceptionCode.setErrorMsg("RG FATCA Build Run Failed! Missing RG_BUILD_PATH");
-				return exceptionCode;
-			}
-			if (!ValidationUtil.isValid(jarName)) {
-				exceptionCode.setErrorMsg("RG FATCA Build Run Failed! Missing RG_BUILD_JAR_NAME");
-				return exceptionCode;
-			}
-			if (!ValidationUtil.isValid(logPath)) {
-				exceptionCode.setErrorMsg("RG FATCA Build Run Failed! Missing RG_BUILDLOG_PATH");
-				return exceptionCode;
-			}
-			if (!"Y".equalsIgnoreCase(cloud)) {
-				// Memory options from application.properties
-				String memoryOptions = "-Xms" + jarMemoryMin + " -Xmx" + jarMemoryMax;
+	    try {
+	        String execsPath = commonDao.findVisionVariableValue("RG_BUILD_PATH");
+	        String jarName = commonDao.findVisionVariableValue("RG_BUILD_JAR_NAME");
+	        String logPath = commonDao.findVisionVariableValue("RG_BUILDLOG_PATH");
 
-				String jarExecCmd = "java " + memoryOptions + " -jar " + execsPath + jarName + " "
-						+ vObject.getCountry() + " " + vObject.getLeBook() + " " + vObject.getVisionSbu() + " "
-						+ "01-Jan-1900 FATCA N Y";
+	        // Validation
+	        if (!ValidationUtil.isValid(execsPath)) {
+	            exceptionCode.setErrorMsg("RG FATCA Build Run Failed! Missing RG_BUILD_PATH");
+	            return exceptionCode;
+	        }
+	        if (!ValidationUtil.isValid(jarName)) {
+	            exceptionCode.setErrorMsg("RG FATCA Build Run Failed! Missing RG_BUILD_JAR_NAME");
+	            return exceptionCode;
+	        }
+	        if (!ValidationUtil.isValid(logPath)) {
+	            exceptionCode.setErrorMsg("RG FATCA Build Run Failed! Missing RG_BUILDLOG_PATH");
+	            return exceptionCode;
+	        }
 
-				logger.info("Executing: " + jarExecCmd);
+	        if (!"Y".equalsIgnoreCase(cloud)) {
 
-				Process proc = Runtime.getRuntime().exec(jarExecCmd);
+	            // JVM memory options → MUST BE SPLIT
+	            String xms = "-Xms" + jarMemoryMin;
+	            String xmx = "-Xmx" + jarMemoryMax;
 
-				// Consume stdout
-				new Thread(() -> {
-					try (BufferedReader reader = new BufferedReader(new InputStreamReader(proc.getInputStream()))) {
-						reader.lines().forEach(logger::info);
-					} catch (IOException e) {
-						logger.error("Error reading stdout", e);
-					}
-				}).start();
+	            // Build command list properly
+	          List<String> command = new ArrayList<>();
+				command.add("java");
+				command.add(xms);
+				command.add(xmx);
+				command.add("-jar");
+				command.add(execsPath + jarName);
+				command.add(vObject.getCountry());
+				command.add(vObject.getLeBook());
+				command.add(vObject.getVisionSbu());
+				command.add("01-Jan-1900");
+				command.add("FATCA");
+				command.add("N");
+				command.add("Y");
 
-				// Consume stderr
-				new Thread(() -> {
-					try (BufferedReader reader = new BufferedReader(new InputStreamReader(proc.getErrorStream()))) {
-						reader.lines().forEach(logger::error);
-					} catch (IOException e) {
-						logger.error("Error reading stderr", e);
-					}
-				}).start();
+	            logger.info("Executing FATCA Build Command: " + command);
 
-				// Wait for process to finish
-				exitVal = proc.waitFor();
-				logger.info("Exit Value from Jar [" + exitVal + "]");
-			} else {
-				exitVal = 0;
-			}
+	            ProcessBuilder pb = new ProcessBuilder(command);
+	            pb.redirectErrorStream(true); // merge stderr → stdout
 
-			// Set exception code
-			if (exitVal != Constants.SUCCESSFUL_OPERATION) {
-				exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
-				exceptionCode.setErrorMsg("RG FATCA Build Run Successfully!");
-			} else {
-				exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
-				exceptionCode.setErrorMsg("RG FATCA Build Run Failed!");
-			}
+	            Process proc = pb.start();
 
-		} catch (Exception ex) {
-			logger.error("Exception while running RG FATCA Build", ex);
-			exceptionCode.setErrorMsg("RG FATCA Build Run Failed! Error: " + ex.getMessage());
-		}
+	            // Read output safely (NO DEADLOCK)
+	            try (BufferedReader reader = new BufferedReader(
+	                    new InputStreamReader(proc.getInputStream()))) {
 
-		return exceptionCode;
+	                String line;
+	                while ((line = reader.readLine()) != null) {
+	                    logger.info(line);
+	                }
+	            }
+
+	            // Wait for process to complete
+	            exitVal = proc.waitFor();
+	            logger.info("Exit Value from FATCA Build JAR = " + exitVal);
+
+	        } else {
+	            exitVal = 0; // Cloud mode always success
+	        }
+
+	        // Correct success logic
+	       	if (exitVal != Constants.SUCCESSFUL_OPERATION) {
+					exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
+					exceptionCode.setErrorMsg("RG FATCA Build Run Successfully!");
+				} else {
+					exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
+					exceptionCode.setErrorMsg("RG FATCA Build Run Failed!");
+				}
+	    } catch (Exception ex) {
+	        logger.error("Exception while running RG FATCA Build", ex);
+	        exceptionCode.setErrorMsg("RG FATCA Build Run Failed! Error: " + ex.getMessage());
+	        exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
+	    }
+
+	    return exceptionCode;
 	}
+
 
 	public ExceptionCode updateBuildFlag(RgFatcaRuleVb vObject) {
 		ExceptionCode exceptionCode = new ExceptionCode();

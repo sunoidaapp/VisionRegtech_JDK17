@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.UncategorizedSQLException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -241,17 +242,77 @@ public abstract class AbstractCommonDao {
 				"ORA-20012:", "ORA-20013:", "ORA-20014:", "ORA-20015:", "ORA-20016:", "ORA-20017:", "ORA-20018:",
 				"ORA-20019:", "ORA-20020:", "ORA-20021:", "ORA-20022:", "ORA-20023:", "ORA-20024:", "ORA-20025:",
 				"ORA-20102:", "ORA-20105:", "ORA-01422:", "ORA-06502:", "ORA-20082:", "ORA-20030:", "ORA-20010:",
-				"ORA-20034:", "ORA-20043:", "ORA-20111:", "ORA-06512:", "ORA-04088:", "ORA-06552:", "ORA-00001:" };
+				"ORA-20034:", "ORA-20043:", "ORA-20111:", "ORA-06512:", "ORA-04088:", "ORA-06552:", "ORA-00001:","ORA-01407" };
 		for (String sqlErrorCode : sqlErrorCodes) {
 			if (ValidationUtil.isValid(strErrorDesc) && strErrorDesc.lastIndexOf(sqlErrorCode) >= 0) {
 				strErrorDesc = strErrorDesc.substring(
 						strErrorDesc.lastIndexOf(sqlErrorCode) + sqlErrorCode.length() + 1, strErrorDesc.length());
+				if (sqlErrorCode.equals("ORA-01400:") || sqlErrorCode.equals("ORA-01407:")) {
+
+					// Find last quoted column name
+					int lastQuote = strErrorDesc.lastIndexOf("\"");
+					int prevQuote = strErrorDesc.lastIndexOf("\"", lastQuote - 1);
+
+					if (prevQuote > 0 && lastQuote > prevQuote) {
+						String column = strErrorDesc.substring(prevQuote + 1, lastQuote);
+
+						if (sqlErrorCode.equals("ORA-01400:")) {
+							return column + " cannot be NULL";
+						} else {
+							return column + " cannot be updated to NULL";
+						}
+					}
+
+					return "Required field cannot be NULL";
+				}
 				if (strErrorDesc.indexOf("ORA-06512:") >= 0) {
 					strErrorDesc = strErrorDesc.substring(0, strErrorDesc.indexOf("ORA-06512:"));
 				}
+				
+				strErrorDesc = strErrorDesc.replaceAll("\"[A-Z0-9_]+\"\\.", ""); // schema
+	            strErrorDesc = strErrorDesc.replaceAll("\"[A-Z0-9_]+\"\\.", ""); // table
+	            strErrorDesc = strErrorDesc.replaceAll("\"", "");                
 			}
 		}
 		return strErrorDesc;
+	}
+
+	protected String parseErrorMsg(DataIntegrityViolationException exception) {
+
+	    String msg = exception.getMessage();
+	    if (msg == null) return "Unknown database error";
+
+	    // Step 1: First find ORA-01400 (cannot insert NULL)
+	    if (msg.contains("ORA-01400")) {
+	        // Extract column name inside the last quote
+	        int lastQuote = msg.lastIndexOf("\"");
+	        int prevQuote = msg.lastIndexOf("\"", lastQuote - 1);
+
+	        if (lastQuote > 0 && prevQuote > 0) {
+	            String column = msg.substring(prevQuote + 1, lastQuote);
+	            return column + " cannot be NULL";
+	        }
+
+	        return "Required field cannot be NULL";
+	    }
+
+	    // Step 2: Generic Oracle error parsing (without schema/table names)
+	    String[] codes = { "ORA-" };
+	    for (String code : codes) {
+	        if (msg.contains(code)) {
+	            int idx = msg.indexOf(code);
+	            String cleaned = msg.substring(idx);
+
+	            // Remove schema/table parts inside quotes
+	            cleaned = cleaned.replaceAll("\"[A-Z0-9_]+\"\\.", "");  // Remove schema
+	            cleaned = cleaned.replaceAll("\"[A-Z0-9_]+\"\\.", "");  // Remove table
+	            cleaned = cleaned.replaceAll("\"", "");                 // Remove quotes
+
+	            return cleaned;
+	        }
+	    }
+
+	    return msg;
 	}
 
 	protected RuntimeCustomException buildRuntimeCustomException(ExceptionCode rObject) {
@@ -582,6 +643,8 @@ public abstract class AbstractCommonDao {
 				break;
 			case "DATETIME_FORMAT":
 				functionName = "dd-MMM-yyyy HH:mm:ss";
+			case "STRING_AGG":
+				functionName = "STRING_AGG";
 				break;
 			}
 		}else if("ORACLE".equalsIgnoreCase(databaseType)) {
@@ -621,6 +684,8 @@ public abstract class AbstractCommonDao {
 				break;
 			case "DATETIME_FORMAT":
 				functionName = "DD-Mon-RRRR HH24:MI:SS";
+			case "STRING_AGG":
+				functionName = "LISTAGG";
 				break;
 			}
 		}

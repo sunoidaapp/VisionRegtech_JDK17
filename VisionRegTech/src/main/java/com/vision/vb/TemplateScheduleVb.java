@@ -62,6 +62,8 @@ public class TemplateScheduleVb extends CommonVb {
 	private String submitterMailId = "";
 
 	private String submissionDate = "";
+	
+	private String dependentTemplates="";
 
 	public String getSubmissionDate() {
 		return submissionDate;
@@ -480,4 +482,14 @@ public class TemplateScheduleVb extends CommonVb {
 	public void setSubmitterMailId(String submitterMailId) {
 		this.submitterMailId = submitterMailId;
 	}
+
+	public String getDependentTemplates() {
+		return dependentTemplates;
+	}
+
+	public void setDependentTemplates(String dependentTemplates) {
+		this.dependentTemplates = dependentTemplates;
+	}
+	
+	
 }

@@ -12,14 +12,13 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-
-import jakarta.servlet.ServletContext;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +43,8 @@ import com.vision.vb.MenuVb;
 import com.vision.vb.NotificationsVb;
 import com.vision.vb.ProfileData;
 import com.vision.vb.VisionUsersVb;
+
+import jakarta.servlet.ServletContext;
 
 @Component
 public class CommonDao {
@@ -487,19 +488,19 @@ public class CommonDao {
 
 		if ("Y".equalsIgnoreCase(visionUsersVb.getUpdateRestriction())) {
 			if (ValidationUtil.isValid(visionUsersVb.getCountry())) {
-				sql = sql + "and Country in ('" + visionUsersVb.getCountry() + "') ";
+				sql = sql + "and Country in (" + toSqlInList(visionUsersVb.getCountry()) + ") ";
 			}
 			if (ValidationUtil.isValid(visionUsersVb.getLeBook())) {
-				sql = sql + "and LE_Book in ('" + visionUsersVb.getLeBook() + "') ";
+				sql = sql + "and LE_Book in (" + toSqlInList(visionUsersVb.getLeBook()) + ") ";
 			}
 			if (ValidationUtil.isValid(visionUsersVb.getAccountOfficer())) {
-				sql = sql + "and Account_officer in ('" + visionUsersVb.getAccountOfficer() + "') ";
+				sql = sql + "and Account_officer in (" +toSqlInList( visionUsersVb.getAccountOfficer()) + ") ";
 			}
 			if (ValidationUtil.isValid(visionUsersVb.getOucAttribute())) {
-				sql = sql + "and Vision_OUC in ('" + visionUsersVb.getOucAttribute() + "') ";
+				sql = sql + "and Vision_OUC in (" +toSqlInList( visionUsersVb.getOucAttribute()) + ") ";
 			}
 			if (ValidationUtil.isValid(visionUsersVb.getSbuCode())) {
-				sql = sql + "and Vision_sbu in ('" + visionUsersVb.getSbuCode() + "')";
+				sql = sql + "and Vision_sbu in (" + toSqlInList(visionUsersVb.getSbuCode()) + ")";
 			}
 		}
 		sql = sql + " Order by Sequence ";
@@ -523,7 +524,12 @@ public class CommonDao {
 		List<NotificationsVb> nodeAvailablelst = getJdbcTemplate().query(sql, mapper);
 		return nodeAvailablelst;
 	}
-
+	private String toSqlInList(String CcountryLeBook) {
+	    return Arrays.stream(CcountryLeBook.split(","))
+	            .map(String::trim)
+	            .map(val -> "'" + val + "'")
+	            .collect(Collectors.joining(","));
+	}
 	public int updateNotification(NotificationsVb vObject) {
 		String query = " Update MDM_Notification set NOTIFICATION_STATUS = 0,NOTIFICATION_READ_DATE= sysdate where Sequence = '"
 				+ vObject.getSequence() + "' ";
@@ -543,13 +549,13 @@ public class CommonDao {
 		VisionUsersVb visionUsersVb = SessionContextHolder.getContext();
 		if (("Y".equalsIgnoreCase(visionUsersVb.getUpdateRestriction()))) {
 			if (ValidationUtil.isValid(visionUsersVb.getCountry())) {
-				sql = sql + " and Country IN ('" + visionUsersVb.getCountry() + "') ";
+				sql = sql + " and Country IN (" + toSqlInList(visionUsersVb.getCountry() )+ ") ";
 			}
 			if (ValidationUtil.isValid(visionUsersVb.getLeBook())) {
-				sql = sql + " and COUNTRY+'-'+LE_BOOK IN ('" + visionUsersVb.getLeBook() + "') ";
+				sql = sql + " and LE_BOOK IN (" + toSqlInList(visionUsersVb.getLeBook()) + ") ";
 			}
 			if (ValidationUtil.isValid(visionUsersVb.getAccountOfficer())) {
-				sql = sql + " and account_Officer IN ('" + visionUsersVb.getAccountOfficer() + "'"
+				sql = sql + " and account_Officer IN (" + toSqlInList(visionUsersVb.getAccountOfficer()) + ""
 						+ restrictedAoPermission(module) + ") ";
 			}
 		}
@@ -1237,16 +1243,62 @@ public class CommonDao {
 //			return getJdbcTemplate().query(sql, getPageLoadValuesMapper());
 //		}
 
+//	public List<AlphaSubTabVb> getLegalEntity() {
+//		VisionUsersVb visionUsersVb = SessionContextHolder.getContext();
+//		
+//		String sql = "Select Country" + getDbFunction("PIPELINE") + "'-'" + getDbFunction("PIPELINE")
+//				+ "LE_Book ALPHA_SUB_TAB,LEB_DESCRIPTION ALPHA_SUBTAB_DESCRIPTION "
+//				+ "from LE_Book where LEB_Status = 0 and Country != 'ZZ' Order by INTERNAL_STATUS DESC ";
+////			if(clientName.equals("CLOUD")) {
+////				String defaultLvQuery = commonApiDao.getPrdQueryConfig("RA_DEFAULT_LV");
+////				sql = StringUtils.isNotEmpty(defaultLvQuery)?defaultLvQuery:sql;
+////			}
+//		if(ValidationUtil.isValid(visionUsersVb.getCountry())) {
+//			
+//		}
+//		return getJdbcTemplate().query(sql, getAlphaSubTabMapper());
+//	}
+	
 	public List<AlphaSubTabVb> getLegalEntity() {
-		VisionUsersVb visionUsersVb = SessionContextHolder.getContext();
-		String sql = "Select Country" + getDbFunction("PIPELINE") + "'-'" + getDbFunction("PIPELINE")
-				+ "LE_Book ALPHA_SUB_TAB,LEB_DESCRIPTION ALPHA_SUBTAB_DESCRIPTION "
-				+ "from LE_Book where LEB_Status = 0 and Country != 'ZZ' Order by INTERNAL_STATUS DESC ";
-//			if(clientName.equals("CLOUD")) {
-//				String defaultLvQuery = commonApiDao.getPrdQueryConfig("RA_DEFAULT_LV");
-//				sql = StringUtils.isNotEmpty(defaultLvQuery)?defaultLvQuery:sql;
-//			}
-		return getJdbcTemplate().query(sql, getAlphaSubTabMapper());
+		 
+	    VisionUsersVb user = SessionContextHolder.getContext();
+ 
+	    StringBuilder sql = new StringBuilder(
+	            "SELECT Country" + getDbFunction("PIPELINE") + "'-'" + getDbFunction("PIPELINE")
+	                    + " LE_Book ALPHA_SUB_TAB, LEB_DESCRIPTION ALPHA_SUBTAB_DESCRIPTION "
+	                    + "FROM LE_Book WHERE LEB_Status = 0 AND Country != 'ZZ' "
+	    );
+ 
+	    List<Object> params = new ArrayList<>();
+ 
+	    if ("Y".equalsIgnoreCase(user.getUpdateRestriction())) {
+ 
+	        if (ValidationUtil.isValid(user.getCountry())) {
+ 
+	            List<String> countries = Arrays.asList(user.getCountry().split("\\s*,\\s*"));
+	            String placeholders = countries.stream()
+	                    .map(x -> "?")
+	                    .collect(Collectors.joining(", "));
+ 
+	            sql.append(" AND Country IN (" + placeholders + ") ");
+	            params.addAll(countries);
+	        }
+ 
+	        if (ValidationUtil.isValid(user.getLeBook())) {
+ 
+	            List<String> lebooks = Arrays.asList(user.getLeBook().split("\\s*,\\s*"));
+	            String placeholders = lebooks.stream()
+	                    .map(x -> "?")
+	                    .collect(Collectors.joining(", "));
+ 
+	            sql.append(" AND LE_BOOK IN (" + placeholders + ") ");
+	            params.addAll(lebooks);
+	        }
+	    }
+ 
+	    sql.append(" ORDER BY INTERNAL_STATUS DESC");
+ 
+	    return getJdbcTemplate().query(sql.toString(), params.toArray(), getAlphaSubTabMapper());
 	}
 
 	protected RowMapper getAlphaSubTabMapper() {

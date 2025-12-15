@@ -3,8 +3,10 @@ package com.vision.dao;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
@@ -191,10 +193,10 @@ public class EtlManagerDao extends AbstractDao<EtlManagerVb> {
 			VisionUsersVb visionUsersVb = SessionContextHolder.getContext();
 			if(("Y".equalsIgnoreCase(visionUsersVb.getUpdateRestriction()))){
 				if(ValidationUtil.isValid(visionUsersVb.getCountry())){
-					CommonUtils.addToQuery(" COUNTRY IN ('"+visionUsersVb.getCountry()+"') ", strBufApprove);
+					CommonUtils.addToQuery(" COUNTRY IN ("+toSqlInList(visionUsersVb.getCountry())+") ", strBufApprove);
 				}
 				if(ValidationUtil.isValid(visionUsersVb.getLeBook())){
-					CommonUtils.addToQuery(" LE_BOOK IN ('"+visionUsersVb.getLeBook()+"') ", strBufApprove);
+					CommonUtils.addToQuery(" LE_BOOK IN ("+toSqlInList(visionUsersVb.getLeBook())+") ", strBufApprove);
 				}
 			}
 			orderBy=" Order by COUNTRY,LE_BOOK,EXTRACTION_FREQUENCY,EXTRACTION_SEQUENCE ";
@@ -209,6 +211,12 @@ public class EtlManagerDao extends AbstractDao<EtlManagerVb> {
 			return null;
 			}
 }
+	private String toSqlInList(String CcountryLeBook) {
+	    return Arrays.stream(CcountryLeBook.split(","))
+	            .map(String::trim)
+	            .map(val -> "'" + val + "'")
+	            .collect(Collectors.joining(","));
+	}
 	public List<EtlManagerVb> getQueryResults(EtlManagerVb dObj, int intStatus){
 		List<EtlManagerVb> collTemp = null;
 		final int intKeyFieldsCount = 4;

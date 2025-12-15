@@ -37,6 +37,7 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import org.apache.commons.math3.analysis.function.Constant;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.entity.mime.FileBody;
 import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
@@ -58,11 +59,13 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.UncategorizedSQLException;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vision.authentication.SessionContextHolder;
+import com.vision.dao.AbstractCommonDao;
 import com.vision.dao.AbstractDao;
 import com.vision.dao.CommonDao;
 import com.vision.dao.ReportsDao;
@@ -592,7 +595,7 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 	}
 
 	public ExceptionCode insertRecord(TemplateScheduleVb vObject) {
-		ExceptionCode exceptionCode = null;
+		ExceptionCode exceptionCode = new ExceptionCode();
 		String tableName = "";
 		int retval = 0;
 		try {
@@ -603,7 +606,6 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 					String whereClause = "MAKER != ?";
 					int recordCnt = templateScheduleDao.getPendDataCnt(tableName, whereClause, new ArrayList<>());
 					if (recordCnt > 0) {
-						exceptionCode = new ExceptionCode();
 						exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
 						exceptionCode.setErrorMsg("This Template has modified by Other User ");
 						return exceptionCode;
@@ -635,7 +637,11 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 				}
 
 			}
-		} catch (Exception e) {
+		} 
+		catch (Exception e) {
+			exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
+			exceptionCode.setErrorMsg(e.getMessage());
+			exceptionCode.setOtherInfo(vObject);
 			e.printStackTrace();
 		}
 		return exceptionCode;
@@ -2097,6 +2103,7 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 	        final String authFlag = commonDao.findVisionVariableValue("RG_MAIL_SMTP_AUTH"); // "true" or "false"
 	        final String username = commonDao.findVisionVariableValue("RG_MAIL_ID");
 	        final String password = commonDao.findVisionVariableValue("RG_MAIL_PWD");
+	        final String tlsEnable = commonDao.findVisionVariableValue("RG_TLS_ENABLE");
 	        
 	        System.out.println("Host Name"+hostName);
 	        System.out.println("Mail Port"+mailPort);
@@ -2109,6 +2116,7 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 	        logger.info("Auth Flag"+authFlag);
 	        logger.info("User Name"+username);
 	        logger.info("Password "+password);
+	        logger.info("tlsEnable "+tlsEnable);
 
 	        boolean useAuth = Boolean.parseBoolean(authFlag);
 
@@ -2116,7 +2124,7 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 	        Properties props = new Properties();
 	        props.put("mail.smtp.host", hostName);
 	        props.put("mail.smtp.port", mailPort);
-	        props.put("mail.smtp.starttls.enable", "true");
+	        props.put("mail.smtp.starttls.enable", tlsEnable);
 	        props.put("mail.smtp.auth", String.valueOf(useAuth));
 
 	        Session session = Session.getInstance(props, new jakarta.mail.Authenticator() {

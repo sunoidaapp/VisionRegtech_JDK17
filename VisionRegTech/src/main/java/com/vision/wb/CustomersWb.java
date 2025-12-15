@@ -1,5 +1,8 @@
 package com.vision.wb;
 
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -11,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import com.vision.authentication.SessionContextHolder;
 import com.vision.dao.AbstractDao;
+import com.vision.dao.CustomerManualColVb;
 import com.vision.dao.CustomerManualDao;
 import com.vision.dao.CustomersDao;
 import com.vision.exception.ExceptionCode;
@@ -23,7 +27,6 @@ import com.vision.vb.CustomersVb;
 import com.vision.vb.NumSubTabVb;
 import com.vision.vb.ReviewResultVb;
 import com.vision.vb.VisionUsersVb;
-
 @Component
 public class CustomersWb extends AbstractWorkerBean<CustomersVb> {
 	@Autowired
@@ -72,23 +75,25 @@ public class CustomersWb extends AbstractWorkerBean<CustomersVb> {
 			arrListLocal.add(collTemp);
 			collTemp = getCommonDao().getLegalEntity();
 			arrListLocal.add(collTemp);
-			String country = "";
-			String leBook = "";
-			VisionUsersVb visionUsers = SessionContextHolder.getContext();
-			if ("Y".equalsIgnoreCase(visionUsers.getUpdateRestriction())) {
-				if (ValidationUtil.isValid(visionUsers.getCountry())) {
-					country = visionUsers.getCountry();
-				}
-				if (ValidationUtil.isValid(visionUsers.getLeBook())) {
-					leBook = visionUsers.getLeBook();
-				}
-			} else {
-				country = getCommonDao().findVisionVariableValue("DEFAULT_COUNTRY");
-				leBook = getCommonDao().findVisionVariableValue("DEFAULT_LE_BOOK");
-			}
-			String countryLeBook = country + "-" + leBook;
-			arrListLocal.add(countryLeBook);
+//			String country = "";
+//			String leBook = "";
+//			VisionUsersVb visionUsers = SessionContextHolder.getContext();
+//			if ("Y".equalsIgnoreCase(visionUsers.getUpdateRestriction())) {
+//				if (ValidationUtil.isValid(visionUsers.getCountry())) {
+//					country = visionUsers.getCountry();
+//				}
+//				if (ValidationUtil.isValid(visionUsers.getLeBook())) {
+//					leBook = visionUsers.getLeBook();
+//				}
+//			} else {
+//				country = getCommonDao().findVisionVariableValue("DEFAULT_COUNTRY");
+//				leBook = getCommonDao().findVisionVariableValue("DEFAULT_LE_BOOK");
+//			}
+//			String countryLeBook = country + "-" + leBook;
+			arrListLocal.add("");
 			collTemp = customerManualDao.findAllGroupedAsCustomers();
+			arrListLocal.add(collTemp);
+			collTemp =getAlphaSubTabDao().findActiveAlphaSubTabsByAlphaTab(150);
 			arrListLocal.add(collTemp);
 			return arrListLocal;
 		} catch (Exception ex) {
@@ -100,443 +105,564 @@ public class CustomersWb extends AbstractWorkerBean<CustomersVb> {
 
 	@Override
 	protected List<ReviewResultVb> transformToReviewResults(List<CustomersVb> approvedCollection,
-			List<CustomersVb> pendingCollection) {
-		ArrayList collTemp = getPageLoadValues();
-		ResourceBundle rsb = CommonUtils.getResourceManger();
-		if (pendingCollection != null)
-			getScreenDao().fetchMakerVerifierNames(pendingCollection.get(0));
-		if (approvedCollection != null)
-			getScreenDao().fetchMakerVerifierNames(approvedCollection.get(0));
-		ArrayList<ReviewResultVb> lResult = new ArrayList<ReviewResultVb>();
+	        List<CustomersVb> pendingCollection) {
 
-//		ReviewResultVb lCountry = new ReviewResultVb(rsb.getString("country"),(pendingCollection == null || pendingCollection.isEmpty())?"":pendingCollection.get(0).getCountry(),
-//				(approvedCollection == null || approvedCollection.isEmpty())?"":approvedCollection.get(0).getCountry());
-//		lResult.add(lCountry);
-//		ReviewResultVb lLeBook = new ReviewResultVb(rsb.getString("leBook"),(pendingCollection == null || pendingCollection.isEmpty())?"":pendingCollection.get(0).getLeBook(),
-//				(approvedCollection == null || approvedCollection.isEmpty())?"":approvedCollection.get(0).getLeBook());
-//		lResult.add(lLeBook);
+	    ArrayList collTemp = getPageLoadValues();
 
-		ReviewResultVb lCustomerId = new ReviewResultVb(rsb.getString("customerId"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getCustomerId(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getCustomerId(),
-				(!pendingCollection.get(0).getCustomerId().equals(approvedCollection.get(0).getCustomerId())));
-		lResult.add(lCustomerId);
-		ReviewResultVb lCustomerName = new ReviewResultVb(rsb.getString("customerName"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getCustomerName(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getCustomerName(),
-				(!pendingCollection.get(0).getCustomerName().equals(approvedCollection.get(0).getCustomerName())));
-		lResult.add(lCustomerName);
-		ReviewResultVb lCustomerAcronym = new ReviewResultVb(rsb.getString("customerAccronym"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getCustomerAcronym(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getCustomerAcronym(),
-				(!pendingCollection.get(0).getCustomerAcronym()
-						.equals(approvedCollection.get(0).getCustomerAcronym())));
-		lResult.add(lCustomerAcronym);
-		ReviewResultVb lVisionOuc = new ReviewResultVb(rsb.getString("visionOUC"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getVisionOuc(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getVisionOuc(),
-				(!pendingCollection.get(0).getVisionOuc().equals(approvedCollection.get(0).getVisionOuc())));
-		lResult.add(lVisionOuc);
-		ReviewResultVb lVisionSbu = new ReviewResultVb(rsb.getString("visionSBU"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(2),
-								pendingCollection.get(0).getVisionSbu()),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(2),
-								approvedCollection.get(0).getVisionSbu()),
-				(!pendingCollection.get(0).getVisionSbu().equals(approvedCollection.get(0).getVisionSbu())));
-		lResult.add(lVisionSbu);
-		ReviewResultVb lGlobalCustomerId = new ReviewResultVb(rsb.getString("globalCustomerId"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getGlobalCustomerId(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getGlobalCustomerId(),
-				(!pendingCollection.get(0).getGlobalCustomerId()
-						.equals(approvedCollection.get(0).getGlobalCustomerId())));
-		lResult.add(lGlobalCustomerId);
-		ReviewResultVb lNaicsCode = new ReviewResultVb(rsb.getString("naicsCode"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: String.valueOf(pendingCollection.get(0).getNaicsCode()),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: String.valueOf(approvedCollection.get(0).getNaicsCode()),
-				(!pendingCollection.get(0).getNaicsCode().equals(approvedCollection.get(0).getNaicsCode())));
-		lResult.add(lNaicsCode);
-		ReviewResultVb lCbOrgCode = new ReviewResultVb(rsb.getString("cbOrgCode"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(3),
-								pendingCollection.get(0).getCbOrgCode()),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(3),
-								approvedCollection.get(0).getCbOrgCode()),
-				(!pendingCollection.get(0).getCbOrgCode().equals(approvedCollection.get(0).getCbOrgCode())));
-		lResult.add(lCbOrgCode);
-		ReviewResultVb lCbOEcnomicActCode = new ReviewResultVb(rsb.getString("cbEconomicActCode"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(4),
-								pendingCollection.get(0).getCbEconomicActCode()),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(4),
-								approvedCollection.get(0).getCbEconomicActCode()),
-				(!pendingCollection.get(0).getCbEconomicActCode()
-						.equals(approvedCollection.get(0).getCbEconomicActCode())));
-		lResult.add(lCbOEcnomicActCode);
-		ReviewResultVb lCbDomicel = new ReviewResultVb(rsb.getString("cbDomicile"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getCbDomicile(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getCbDomicile(),
-				(!pendingCollection.get(0).getCbDomicile().equals(approvedCollection.get(0).getCbDomicile())));
-		lResult.add(lCbDomicel);
-		ReviewResultVb lCbNationality = new ReviewResultVb(rsb.getString("cbNationality"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getCbNationality(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getCbNationality(),
-				(!pendingCollection.get(0).getCbNationality().equals(approvedCollection.get(0).getCbNationality())));
-		lResult.add(lCbNationality);
-		ReviewResultVb lCbResidency = new ReviewResultVb(rsb.getString("cbResidence"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getCbResidence(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getCbResidence(),
-				(!pendingCollection.get(0).getCbResidence().equals(approvedCollection.get(0).getCbResidence())));
-		lResult.add(lCbResidency);
-		ReviewResultVb lCbMajorPartyInd = new ReviewResultVb(rsb.getString("majorPartyIndicator"),
-				"Y".equalsIgnoreCase(pendingCollection.get(0).getCbMajorPartyIndicator()) ? "Yes" : "No",
-				("Y".equalsIgnoreCase(approvedCollection.get(0).getCbMajorPartyIndicator()) ? "yes" : "no"));
-		lResult.add(lCbMajorPartyInd);
-		ReviewResultVb lCustomerIdType = new ReviewResultVb(rsb.getString("customerIdType"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(5),
-								pendingCollection.get(0).getCustomerIdType()),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(5),
-								approvedCollection.get(0).getCustomerIdType()),
-				(!pendingCollection.get(0).getCustomerIdType().equals(approvedCollection.get(0).getCustomerIdType())));
-		lResult.add(lCustomerIdType);
-		ReviewResultVb lIdDetails = new ReviewResultVb(rsb.getString("idDetails"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getIdDetails(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getIdDetails(),
-				(!pendingCollection.get(0).getIdDetails().equals(approvedCollection.get(0).getIdDetails())));
-		lResult.add(lIdDetails);
-		ReviewResultVb lPrimaryCid = new ReviewResultVb(rsb.getString("primaryCid"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getPrimaryCid(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getPrimaryCid(),
-				(!pendingCollection.get(0).getPrimaryCid().equals(approvedCollection.get(0).getPrimaryCid())));
-		lResult.add(lPrimaryCid);
-		ReviewResultVb lParentCid = new ReviewResultVb(rsb.getString("parentCid"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getParentCid(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getParentCid(),
-				(!pendingCollection.get(0).getParentCid().equals(approvedCollection.get(0).getParentCid())));
-		lResult.add(lParentCid);
-		ReviewResultVb lUltimateParent = new ReviewResultVb(rsb.getString("ultimateParent"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getUltimateParent(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getUltimateParent(),
-				(!pendingCollection.get(0).getUltimateParent().equals(approvedCollection.get(0).getUltimateParent())));
-		lResult.add(lUltimateParent);
-		ReviewResultVb lCustomerHierarchy1 = new ReviewResultVb(rsb.getString("customerHierarchy1"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getCustomerHierarchy1(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getCustomerHierarchy1(),
-				(!pendingCollection.get(0).getCustomerHierarchy1()
-						.equals(approvedCollection.get(0).getCustomerHierarchy1())));
-		lResult.add(lCustomerHierarchy1);
-		ReviewResultVb lCustomerHierarchy2 = new ReviewResultVb(rsb.getString("customerHierarchy2"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getCustomerHierarchy2(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getCustomerHierarchy2(),
-				(!pendingCollection.get(0).getCustomerHierarchy2()
-						.equals(approvedCollection.get(0).getCustomerHierarchy2())));
-		lResult.add(lCustomerHierarchy2);
-		ReviewResultVb lCustomerHierarchy3 = new ReviewResultVb(rsb.getString("customerHierarchy3"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getCustomerHierarchy3(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getCustomerHierarchy3(),
-				(!pendingCollection.get(0).getCustomerHierarchy3()
-						.equals(approvedCollection.get(0).getCustomerHierarchy3())));
-		lResult.add(lCustomerHierarchy3);
-		ReviewResultVb lAccountOfficer = new ReviewResultVb(rsb.getString("accountOfficer"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getAccountOfficer(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getAccountOfficer(),
-				(!pendingCollection.get(0).getAccountOfficer().equals(approvedCollection.get(0).getAccountOfficer())));
-		lResult.add(lAccountOfficer);
-		ReviewResultVb lCreditClassification = new ReviewResultVb(rsb.getString("creditClassification"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(7),
-								pendingCollection.get(0).getCreditClassification()),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(7),
-								approvedCollection.get(0).getCreditClassification()),
-				(!pendingCollection.get(0).getCreditClassification()
-						.equals(approvedCollection.get(0).getCreditClassification())));
-		lResult.add(lCreditClassification);
-		ReviewResultVb lExternalRiskRating = new ReviewResultVb(rsb.getString("externalRiskRating"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(8),
-								pendingCollection.get(0).getExternalRiskRating()),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(8),
-								approvedCollection.get(0).getExternalRiskRating()),
-				(!pendingCollection.get(0).getExternalRiskRating()
-						.equals(approvedCollection.get(0).getExternalRiskRating())));
-		lResult.add(lExternalRiskRating);
-		ReviewResultVb lObligorRiskRating = new ReviewResultVb(rsb.getString("obligorRiskRating"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(9),
-								pendingCollection.get(0).getObligorRiskRating()),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(9),
-								approvedCollection.get(0).getObligorRiskRating()),
-				(!pendingCollection.get(0).getObligorRiskRating()
-						.equals(approvedCollection.get(0).getObligorRiskRating())));
-		lResult.add(lObligorRiskRating);
-		ReviewResultVb lRelatedParty = new ReviewResultVb(rsb.getString("relatedParty"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(10),
-								pendingCollection.get(0).getRelatedParty()),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(10),
-								approvedCollection.get(0).getRelatedParty()),
-				(!pendingCollection.get(0).getRelatedParty().equals(approvedCollection.get(0).getRelatedParty())));
-		lResult.add(lRelatedParty);
-		ReviewResultVb lCustomerTiring = new ReviewResultVb(rsb.getString("customerTiering"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(11),
-								pendingCollection.get(0).getCustomerTiering()),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(11),
-								approvedCollection.get(0).getCustomerTiering()),
-				(!pendingCollection.get(0).getCustomerTiering()
-						.equals(approvedCollection.get(0).getCustomerTiering())));
-		lResult.add(lCustomerTiring);
-		ReviewResultVb lSalesQcquisition = new ReviewResultVb(rsb.getString("salesAcquisitionChannel"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(12),
-								pendingCollection.get(0).getSalesAcquisitionChannel()),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(12),
-								approvedCollection.get(0).getSalesAcquisitionChannel()),
-				(!pendingCollection.get(0).getSalesAcquisitionChannel()
-						.equals(approvedCollection.get(0).getSalesAcquisitionChannel())));
-		lResult.add(lSalesQcquisition);
-		ReviewResultVb lMarketingCampaign = new ReviewResultVb(rsb.getString("marketingCampaign"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getMarketingCampaign(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getMarketingCampaign(),
-				(!pendingCollection.get(0).getMarketingCampaign()
-						.equals(approvedCollection.get(0).getMarketingCampaign())));
-		lResult.add(lMarketingCampaign);
-		ReviewResultVb lCrossReferId = new ReviewResultVb(rsb.getString("crosssaleReferId"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getCrosssaleReferId(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getCrosssaleReferId(),
-				(!pendingCollection.get(0).getCrosssaleReferId()
-						.equals(approvedCollection.get(0).getCrosssaleReferId())));
-		lResult.add(lCrossReferId);
-		ReviewResultVb lCustomerInd = new ReviewResultVb(rsb.getString("customerIndicator"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(13),
-								pendingCollection.get(0).getCustomerIndicator()),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(13),
-								approvedCollection.get(0).getCustomerIndicator()),
-				(!pendingCollection.get(0).getCustomerIndicator()
-						.equals(approvedCollection.get(0).getCustomerIndicator())));
-		lResult.add(lCustomerInd);
-		ReviewResultVb lNumOfAccounts = new ReviewResultVb(rsb.getString("noOfAccounts"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: String.valueOf(pendingCollection.get(0).getNumOfAccounts()),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: String.valueOf(approvedCollection.get(0).getNumOfAccounts()),
-				(!pendingCollection.get(0).getNumOfAccounts().equals(approvedCollection.get(0).getNumOfAccounts())));
-		lResult.add(lNumOfAccounts);
-		ReviewResultVb lCustomerAttribute1 = new ReviewResultVb(rsb.getString("customerAttribute1"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getCustomerAttribute1(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getCustomerAttribute1(),
-				(!pendingCollection.get(0).getCustomerAttribute1()
-						.equals(approvedCollection.get(0).getCustomerAttribute1())));
-		lResult.add(lCustomerAttribute1);
-		ReviewResultVb lCustomerAttribute2 = new ReviewResultVb(rsb.getString("customerAttribute2"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getCustomerAttribute2(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getCustomerAttribute2(),
-				(!pendingCollection.get(0).getCustomerAttribute2()
-						.equals(approvedCollection.get(0).getCustomerAttribute2())));
-		lResult.add(lCustomerAttribute2);
-		ReviewResultVb lCustomerAttribute3 = new ReviewResultVb(rsb.getString("customerAttribute3"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getCustomerAttribute3(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getCustomerAttribute3(),
-				(!pendingCollection.get(0).getCustomerAttribute3()
-						.equals(approvedCollection.get(0).getCustomerAttribute3())));
-		lResult.add(lCustomerAttribute3);
-		ReviewResultVb lCustomerOpenDate = new ReviewResultVb(rsb.getString("openDate"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getCustomerOpenDate(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getCustomerOpenDate(),
-				(!pendingCollection.get(0).getCustomerOpenDate()
-						.equals(approvedCollection.get(0).getCustomerOpenDate())));
-		lResult.add(lCustomerOpenDate);
-		ReviewResultVb lCustomerSex = new ReviewResultVb(rsb.getString("customerSex"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(6),
-								pendingCollection.get(0).getCustomerSex()),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(6),
-								approvedCollection.get(0).getCustomerSex()),
-				(!pendingCollection.get(0).getCustomerSex().equals(approvedCollection.get(0).getCustomerSex())));
-		lResult.add(lCustomerSex);
-		ReviewResultVb lCommAddress1 = new ReviewResultVb(rsb.getString("commAddress1"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getCommAddress1(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getCommAddress1(),
-				(!pendingCollection.get(0).getCommAddress1().equals(approvedCollection.get(0).getCommAddress1())));
-		lResult.add(lCommAddress1);
-		ReviewResultVb lCommAddress2 = new ReviewResultVb(rsb.getString("commAddress2"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getCommAddress2(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getCommAddress2(),
-				(!pendingCollection.get(0).getCommAddress2().equals(approvedCollection.get(0).getCommAddress2())));
-		lResult.add(lCommAddress2);
-		ReviewResultVb lCity = new ReviewResultVb(rsb.getString("commCity"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(14),
-								pendingCollection.get(0).getCommCity()),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(14),
-								approvedCollection.get(0).getCommCity()),
-				(!pendingCollection.get(0).getCommCity().equals(approvedCollection.get(0).getCommCity())));
-		lResult.add(lCity);
-		ReviewResultVb lState = new ReviewResultVb(rsb.getString("commState"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(15),
-								pendingCollection.get(0).getCommState()),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: getAtDescription((List<AlphaSubTabVb>) collTemp.get(15),
-								approvedCollection.get(0).getCommState()),
-				(!pendingCollection.get(0).getCommState().equals(approvedCollection.get(0).getCommState())));
-		lResult.add(lState);
-		ReviewResultVb lPinCode = new ReviewResultVb(rsb.getString("commPinCode"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getCommPinCode(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getCommPinCode(),
-				(!pendingCollection.get(0).getCommPinCode().equals(approvedCollection.get(0).getCommPinCode())));
-		lResult.add(lPinCode);
-		ReviewResultVb lPhoneNumber = new ReviewResultVb(rsb.getString("phoneNumber"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getPhoneNumber(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getPhoneNumber(),
-				(!pendingCollection.get(0).getPhoneNumber().equals(approvedCollection.get(0).getPhoneNumber())));
-		lResult.add(lPhoneNumber);
+	    ResourceBundle rsb = CommonUtils.getResourceManger();
 
-		ReviewResultVb dualNationality1 = new ReviewResultVb("Nationality 2",
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getDualNationality1(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getDualNationality1(),
-				(!pendingCollection.get(0).getDualNationality1()
-						.equals(approvedCollection.get(0).getDualNationality1())));
-		lResult.add(dualNationality1);
+	    CustomersVb pending = (pendingCollection != null && !pendingCollection.isEmpty())
+	            ? pendingCollection.get(0)
+	            : null;
+	    CustomersVb approved = (approvedCollection != null && !approvedCollection.isEmpty())
+	            ? approvedCollection.get(0)
+	            : null;
 
-		ReviewResultVb dualNationality2 = new ReviewResultVb("Nationality 3",
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getDualNationality2(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getDualNationality2(),
-				(!pendingCollection.get(0).getDualNationality2()
-						.equals(approvedCollection.get(0).getDualNationality2())));
-		lResult.add(dualNationality2);
+	    if (pending != null) {
+	        getScreenDao().fetchMakerVerifierNames(pending);
+	    }
+	    if (approved != null) {
+	        getScreenDao().fetchMakerVerifierNames(approved);
+	    }
 
-		ReviewResultVb dualNationality3 = new ReviewResultVb("Nationality 4",
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getDualNationality3(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getDualNationality3(),
-				(!pendingCollection.get(0).getDualNationality3()
-						.equals(approvedCollection.get(0).getDualNationality3())));
-		lResult.add(dualNationality3);
+	    // Apply manual overrides to pending BEFORE building review results
+	    if (pending != null && pending.getManualList() != null && !pending.getManualList().isEmpty()) {
+	        applyManualOverridesToPending(pending);
+	    }
 
-		ReviewResultVb lCustomerStatus = new ReviewResultVb(rsb.getString("status"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: getNtDescription((List<NumSubTabVb>) collTemp.get(0),
-								pendingCollection.get(0).getCustomerStatus()),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: getNtDescription((List<NumSubTabVb>) collTemp.get(0),
-								approvedCollection.get(0).getCustomerStatus()),
-				(pendingCollection.get(0).getCustomerStatus() != approvedCollection.get(0).getCustomerStatus()));
-		lResult.add(lCustomerStatus);
-		ReviewResultVb lRecordIndicator = new ReviewResultVb(rsb.getString("recordIndicator"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: getNtDescription((List<NumSubTabVb>) collTemp.get(1),
-								pendingCollection.get(0).getRecordIndicator()),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: getNtDescription((List<NumSubTabVb>) collTemp.get(1),
-								approvedCollection.get(0).getRecordIndicator()),
-				(pendingCollection.get(0).getRecordIndicator() != approvedCollection.get(0).getRecordIndicator()));
-		lResult.add(lRecordIndicator);
-		ReviewResultVb lMaker = new ReviewResultVb(rsb.getString("maker"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getMaker() == 0 ? "" : pendingCollection.get(0).getMakerName(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getMaker() == 0 ? "" : approvedCollection.get(0).getMakerName(),
-				(pendingCollection.get(0).getMaker() != approvedCollection.get(0).getMaker()));
-		lResult.add(lMaker);
-		ReviewResultVb lVerifier = new ReviewResultVb(rsb.getString("verifier"),
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getVerifier() == 0 ? "" : pendingCollection.get(0).getVerifierName(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getVerifier() == 0 ? ""
-								: approvedCollection.get(0).getVerifierName(),
-				(pendingCollection.get(0).getVerifier() != approvedCollection.get(0).getVerifier()));
-		lResult.add(lVerifier);
-		ReviewResultVb lDateLastModified = new ReviewResultVb("Date Last Modified",
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getDateLastModified(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getDateLastModified(),
-				(!pendingCollection.get(0).getDateLastModified()
-						.equals(approvedCollection.get(0).getDateLastModified())));
-		lResult.add(lDateLastModified);
-		ReviewResultVb lDateCreation = new ReviewResultVb("Date Creation",
-				(pendingCollection == null || pendingCollection.isEmpty()) ? ""
-						: pendingCollection.get(0).getDateCreation(),
-				(approvedCollection == null || approvedCollection.isEmpty()) ? ""
-						: approvedCollection.get(0).getDateCreation(),
-				(!pendingCollection.get(0).getDateCreation().equals(approvedCollection.get(0).getDateCreation())));
-		lResult.add(lDateCreation);
-		return lResult;
+	    ArrayList<ReviewResultVb> lResult = new ArrayList<>();
+
+	    // helper lambda to safe-get string values
+	    java.util.function.Function<Object, String> safeToStr = o -> o == null ? "" : String.valueOf(o);
+
+	    // Example of replacing many repetitive blocks using pending/approved locals.
+	    // If pending or approved is null, we fallback to empty strings or default values.
+
+	    lResult.add(new ReviewResultVb(rsb.getString("customerId"),
+	            (pending == null ? "" : safeToStr.apply(pending.getCustomerId())),
+	            (approved == null ? "" : safeToStr.apply(approved.getCustomerId())),
+	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCustomerId())
+	                    .equals(safeToStr.apply(approved.getCustomerId()))));
+
+	    lResult.add(new ReviewResultVb(rsb.getString("customerName"),
+	            (pending == null ? "" : safeToStr.apply(pending.getCustomerName())),
+	            (approved == null ? "" : safeToStr.apply(approved.getCustomerName())),
+	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCustomerName())
+	                    .equals(safeToStr.apply(approved.getCustomerName()))));
+
+//	    lResult.add(new ReviewResultVb(rsb.getString("customerAccronym"),
+//	            (pending == null ? "" : safeToStr.apply(pending.getCustomerAcronym())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getCustomerAcronym())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCustomerAcronym())
+//	                    .equals(safeToStr.apply(approved.getCustomerAcronym()))));
+
+	    lResult.add(new ReviewResultVb(rsb.getString("visionOUC"),
+	            (pending == null ? "" : safeToStr.apply(pending.getVisionOuc())),
+	            (approved == null ? "" : safeToStr.apply(approved.getVisionOuc())),
+	            !(pending == null || approved == null) && !safeToStr.apply(pending.getVisionOuc())
+	                    .equals(safeToStr.apply(approved.getVisionOuc()))));
+
+	    lResult.add(new ReviewResultVb(rsb.getString("visionSBU"),
+	            (pending == null ? ""
+	                    : getAtDescription((List<AlphaSubTabVb>) collTemp.get(2), pending.getVisionSbu())),
+	            (approved == null ? ""
+	                    : getAtDescription((List<AlphaSubTabVb>) collTemp.get(2), approved.getVisionSbu())),
+	            !(pending == null || approved == null) && !safeToStr.apply(pending.getVisionSbu())
+	                    .equals(safeToStr.apply(approved.getVisionSbu()))));
+//
+//	    lResult.add(new ReviewResultVb(rsb.getString("globalCustomerId"),
+//	            (pending == null ? "" : safeToStr.apply(pending.getGlobalCustomerId())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getGlobalCustomerId())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getGlobalCustomerId())
+//	                    .equals(safeToStr.apply(approved.getGlobalCustomerId()))));
+//
+//	    // naicsCode (convert to string safely)
+//	    lResult.add(new ReviewResultVb(rsb.getString("naicsCode"),
+//	            (pending == null ? "" : safeToStr.apply(pending.getNaicsCode())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getNaicsCode())),
+//	            !(pending == null || approved == null)
+//	                    && !safeToStr.apply(pending.getNaicsCode()).equals(safeToStr.apply(approved.getNaicsCode()))));
+
+	    // cbOrgCode using getAtDescription
+//	    lResult.add(new ReviewResultVb(rsb.getString("cbOrgCode"),
+//	            (pending == null ? "" : getAtDescription((List<AlphaSubTabVb>) collTemp.get(3), pending.getCbOrgCode())),
+//	            (approved == null ? "" : getAtDescription((List<AlphaSubTabVb>) collTemp.get(3), approved.getCbOrgCode())),
+//	            !(pending == null || approved == null)
+//	                    && !safeToStr.apply(pending.getCbOrgCode()).equals(safeToStr.apply(approved.getCbOrgCode()))));
+
+	    // cbEconomicActCode
+//	    lResult.add(new ReviewResultVb(rsb.getString("cbEconomicActCode"),
+//	            (pending == null ? "" : getAtDescription((List<AlphaSubTabVb>) collTemp.get(4),
+//	                    pending.getCbEconomicActCode())),
+//	            (approved == null ? "" : getAtDescription((List<AlphaSubTabVb>) collTemp.get(4),
+//	                    approved.getCbEconomicActCode())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCbEconomicActCode())
+//	                    .equals(safeToStr.apply(approved.getCbEconomicActCode()))));
+
+	    // cbDomicile
+//	    lResult.add(new ReviewResultVb(rsb.getString("cbDomicile"),
+//	            (pending == null ? "" : safeToStr.apply(pending.getCbDomicile())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getCbDomicile())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCbDomicile())
+//	                    .equals(safeToStr.apply(approved.getCbDomicile()))));
+
+	    // cbNationality
+	    lResult.add(new ReviewResultVb(rsb.getString("cbNationality"),
+	            (pending == null ? "" : safeToStr.apply(pending.getCbNationality())),
+	            (approved == null ? "" : safeToStr.apply(approved.getCbNationality())),
+	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCbNationality())
+	                    .equals(safeToStr.apply(approved.getCbNationality()))));
+
+	    // cbResidence
+	    lResult.add(new ReviewResultVb(rsb.getString("cbResidence"),
+	            (pending == null ? "" : safeToStr.apply(pending.getCbResidence())),
+	            (approved == null ? "" : safeToStr.apply(approved.getCbResidence())),
+	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCbResidence())
+	                    .equals(safeToStr.apply(approved.getCbResidence()))));
+
+	    // majorPartyIndicator -> Yes/No
+//	    lResult.add(new ReviewResultVb(rsb.getString("majorPartyIndicator"),
+//	            (pending == null ? "" : ("Y".equalsIgnoreCase(pending.getCbMajorPartyIndicator()) ? "Yes" : "No")),
+//	            (approved == null ? "" : ("Y".equalsIgnoreCase(approved.getCbMajorPartyIndicator()) ? "Yes" : "No")),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCbMajorPartyIndicator())
+//	                    .equals(safeToStr.apply(approved.getCbMajorPartyIndicator()))));
+
+	    // customerIdType
+//	    lResult.add(new ReviewResultVb(rsb.getString("customerIdType"),
+//	            (pending == null ? ""
+//	                    : getAtDescription((List<AlphaSubTabVb>) collTemp.get(5), pending.getCustomerIdType())),
+//	            (approved == null ? ""
+//	                    : getAtDescription((List<AlphaSubTabVb>) collTemp.get(5), approved.getCustomerIdType())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCustomerIdType())
+//	                    .equals(safeToStr.apply(approved.getCustomerIdType()))));
+//
+//	    // idDetails
+//	    lResult.add(new ReviewResultVb(rsb.getString("idDetails"),
+//	            (pending == null ? "" : safeToStr.apply(pending.getIdDetails())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getIdDetails())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getIdDetails())
+//	                    .equals(safeToStr.apply(approved.getIdDetails()))));
+
+	    // primaryCid
+//	    lResult.add(new ReviewResultVb(rsb.getString("primaryCid"),
+//	            (pending == null ? "" : safeToStr.apply(pending.getPrimaryCid())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getPrimaryCid())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getPrimaryCid())
+//	                    .equals(safeToStr.apply(approved.getPrimaryCid()))));
+//
+//	    // parentCid
+//	    lResult.add(new ReviewResultVb(rsb.getString("parentCid"),
+//	            (pending == null ? "" : safeToStr.apply(pending.getParentCid())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getParentCid())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getParentCid())
+//	                    .equals(safeToStr.apply(approved.getParentCid()))));
+//
+//	    // ultimateParent
+//	    lResult.add(new ReviewResultVb(rsb.getString("ultimateParent"),
+//	            (pending == null ? "" : safeToStr.apply(pending.getUltimateParent())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getUltimateParent())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getUltimateParent())
+//	                    .equals(safeToStr.apply(approved.getUltimateParent()))));
+//
+//	    // customerHierarchy1/2/3
+//	    lResult.add(new ReviewResultVb(rsb.getString("customerHierarchy1"),
+//	            (pending == null ? "" : safeToStr.apply(pending.getCustomerHierarchy1())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getCustomerHierarchy1())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCustomerHierarchy1())
+//	                    .equals(safeToStr.apply(approved.getCustomerHierarchy1()))));
+//	    lResult.add(new ReviewResultVb(rsb.getString("customerHierarchy2"),
+//	            (pending == null ? "" : safeToStr.apply(pending.getCustomerHierarchy2())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getCustomerHierarchy2())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCustomerHierarchy2())
+//	                    .equals(safeToStr.apply(approved.getCustomerHierarchy2()))));
+//	    lResult.add(new ReviewResultVb(rsb.getString("customerHierarchy3"),
+//	            (pending == null ? "" : safeToStr.apply(pending.getCustomerHierarchy3())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getCustomerHierarchy3())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCustomerHierarchy3())
+//	                    .equals(safeToStr.apply(approved.getCustomerHierarchy3()))));
+
+	    // accountOfficer
+	    lResult.add(new ReviewResultVb(rsb.getString("accountOfficer"),
+	            (pending == null ? "" : safeToStr.apply(pending.getAccountOfficer())),
+	            (approved == null ? "" : safeToStr.apply(approved.getAccountOfficer())),
+	            !(pending == null || approved == null) && !safeToStr.apply(pending.getAccountOfficer())
+	                    .equals(safeToStr.apply(approved.getAccountOfficer()))));
+
+	    // creditClassification
+//	    lResult.add(new ReviewResultVb(rsb.getString("creditClassification"),
+//	            (pending == null ? ""
+//	                    : getAtDescription((List<AlphaSubTabVb>) collTemp.get(7), pending.getCreditClassification())),
+//	            (approved == null ? ""
+//	                    : getAtDescription((List<AlphaSubTabVb>) collTemp.get(7), approved.getCreditClassification())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCreditClassification())
+//	                    .equals(safeToStr.apply(approved.getCreditClassification()))));
+
+	    // externalRiskRating
+//	    lResult.add(new ReviewResultVb(rsb.getString("externalRiskRating"),
+//	            (pending == null ? ""
+//	                    : getAtDescription((List<AlphaSubTabVb>) collTemp.get(8), pending.getExternalRiskRating())),
+//	            (approved == null ? ""
+//	                    : getAtDescription((List<AlphaSubTabVb>) collTemp.get(8), approved.getExternalRiskRating())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getExternalRiskRating())
+//	                    .equals(safeToStr.apply(approved.getExternalRiskRating()))));
+//
+//	    // obligorRiskRating
+//	    lResult.add(new ReviewResultVb(rsb.getString("obligorRiskRating"),
+//	            (pending == null ? ""
+//	                    : getAtDescription((List<AlphaSubTabVb>) collTemp.get(9), pending.getObligorRiskRating())),
+//	            (approved == null ? ""
+//	                    : getAtDescription((List<AlphaSubTabVb>) collTemp.get(9), approved.getObligorRiskRating())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getObligorRiskRating())
+//	                    .equals(safeToStr.apply(approved.getObligorRiskRating()))));
+//
+//	    // relatedParty
+//	    lResult.add(new ReviewResultVb(rsb.getString("relatedParty"),
+//	            (pending == null ? ""
+//	                    : getAtDescription((List<AlphaSubTabVb>) collTemp.get(10), pending.getRelatedParty())),
+//	            (approved == null ? ""
+//	                    : getAtDescription((List<AlphaSubTabVb>) collTemp.get(10), approved.getRelatedParty())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getRelatedParty())
+//	                    .equals(safeToStr.apply(approved.getRelatedParty()))));
+//
+//	    // customerTiering
+//	    lResult.add(new ReviewResultVb(rsb.getString("customerTiering"),
+//	            (pending == null ? ""
+//	                    : getAtDescription((List<AlphaSubTabVb>) collTemp.get(11), pending.getCustomerTiering())),
+//	            (approved == null ? ""
+//	                    : getAtDescription((List<AlphaSubTabVb>) collTemp.get(11), approved.getCustomerTiering())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCustomerTiering())
+//	                    .equals(safeToStr.apply(approved.getCustomerTiering()))));
+//
+//	    // salesAcquisitionChannel
+//	    lResult.add(new ReviewResultVb(rsb.getString("salesAcquisitionChannel"),
+//	            (pending == null ? ""
+//	                    : getAtDescription((List<AlphaSubTabVb>) collTemp.get(12), pending.getSalesAcquisitionChannel())),
+//	            (approved == null ? ""
+//	                    : getAtDescription((List<AlphaSubTabVb>) collTemp.get(12), approved.getSalesAcquisitionChannel())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getSalesAcquisitionChannel())
+//	                    .equals(safeToStr.apply(approved.getSalesAcquisitionChannel()))));
+//
+//	    // marketingCampaign
+//	    lResult.add(new ReviewResultVb(rsb.getString("marketingCampaign"),
+//	            (pending == null ? "" : safeToStr.apply(pending.getMarketingCampaign())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getMarketingCampaign())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getMarketingCampaign())
+//	                    .equals(safeToStr.apply(approved.getMarketingCampaign()))));
+//
+//	    // crosssaleReferId
+//	    lResult.add(new ReviewResultVb(rsb.getString("crosssaleReferId"),
+//	            (pending == null ? "" : safeToStr.apply(pending.getCrosssaleReferId())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getCrosssaleReferId())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCrosssaleReferId())
+//	                    .equals(safeToStr.apply(approved.getCrosssaleReferId()))));
+
+	    // customerIndicator
+	    lResult.add(new ReviewResultVb(rsb.getString("customerIndicator"),
+	            (pending == null ? ""
+	                    : getAtDescription((List<AlphaSubTabVb>) collTemp.get(13), pending.getCustomerIndicator())),
+	            (approved == null ? ""
+	                    : getAtDescription((List<AlphaSubTabVb>) collTemp.get(13), approved.getCustomerIndicator())),
+	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCustomerIndicator())
+	                    .equals(safeToStr.apply(approved.getCustomerIndicator()))));
+
+//	    // noOfAccounts
+//	    lResult.add(new ReviewResultVb(rsb.getString("noOfAccounts"),
+//	            (pending == null ? "" : safeToStr.apply(pending.getNumOfAccounts())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getNumOfAccounts())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getNumOfAccounts())
+//	                    .equals(safeToStr.apply(approved.getNumOfAccounts()))));
+
+	    // Customer attributes 1..3
+//	    lResult.add(new ReviewResultVb(rsb.getString("customerAttribute1"),
+//	            (pending == null ? "" : safeToStr.apply(pending.getCustomerAttribute1())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getCustomerAttribute1())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCustomerAttribute1())
+//	                    .equals(safeToStr.apply(approved.getCustomerAttribute1()))));
+//	    lResult.add(new ReviewResultVb(rsb.getString("customerAttribute2"),
+//	            (pending == null ? "" : safeToStr.apply(pending.getCustomerAttribute2())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getCustomerAttribute2())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCustomerAttribute2())
+//	                    .equals(safeToStr.apply(approved.getCustomerAttribute2()))));
+//	    lResult.add(new ReviewResultVb(rsb.getString("customerAttribute3"),
+//	            (pending == null ? "" : safeToStr.apply(pending.getCustomerAttribute3())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getCustomerAttribute3())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCustomerAttribute3())
+//	                    .equals(safeToStr.apply(approved.getCustomerAttribute3()))));
+
+	    // openDate, sex, addresses, etc.
+	    lResult.add(new ReviewResultVb(rsb.getString("openDate"),
+	            (pending == null ? "" : safeToStr.apply(pending.getCustomerOpenDate())),
+	            (approved == null ? "" : safeToStr.apply(approved.getCustomerOpenDate())),
+	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCustomerOpenDate())
+	                    .equals(safeToStr.apply(approved.getCustomerOpenDate()))));
+
+	    lResult.add(new ReviewResultVb(rsb.getString("customerSex"),
+	            (pending == null ? "" : getAtDescription((List<AlphaSubTabVb>) collTemp.get(6), pending.getCustomerSex())),
+	            (approved == null ? "" : getAtDescription((List<AlphaSubTabVb>) collTemp.get(6), approved.getCustomerSex())),
+	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCustomerSex())
+	                    .equals(safeToStr.apply(approved.getCustomerSex()))));
+
+//	    lResult.add(new ReviewResultVb(rsb.getString("commAddress1"),
+//	            (pending == null ? "" : safeToStr.apply(pending.getCommAddress1())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getCommAddress1())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCommAddress1())
+//	                    .equals(safeToStr.apply(approved.getCommAddress1()))));
+//
+//	    lResult.add(new ReviewResultVb(rsb.getString("commAddress2"),
+//	            (pending == null ? "" : safeToStr.apply(pending.getCommAddress2())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getCommAddress2())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCommAddress2())
+//	                    .equals(safeToStr.apply(approved.getCommAddress2()))));
+//	    
+//	    lResult.add(new ReviewResultVb("Comm Address 3",
+//	            (pending == null ? "" : safeToStr.apply(pending.getCommAddress3())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getCommAddress3())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCommAddress3())
+//	                    .equals(safeToStr.apply(approved.getCommAddress3()))));
+
+//	    lResult.add(new ReviewResultVb(rsb.getString("commCity"),
+//	            (pending == null ? "" : getAtDescription((List<AlphaSubTabVb>) collTemp.get(14), pending.getCommCity())),
+//	            (approved == null ? "" : getAtDescription((List<AlphaSubTabVb>) collTemp.get(14), approved.getCommCity())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCommCity())
+//	                    .equals(safeToStr.apply(approved.getCommCity()))));
+
+//	    lResult.add(new ReviewResultVb(rsb.getString("commState"),
+//	            (pending == null ? "" : getAtDescription((List<AlphaSubTabVb>) collTemp.get(15), pending.getCommState())),
+//	            (approved == null ? "" : getAtDescription((List<AlphaSubTabVb>) collTemp.get(15), approved.getCommState())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCommState())
+//	                    .equals(safeToStr.apply(approved.getCommState()))));
+//
+//	    lResult.add(new ReviewResultVb(rsb.getString("commPinCode"),
+//	            (pending == null ? "" : safeToStr.apply(pending.getCommPinCode())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getCommPinCode())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCommPinCode())
+//	                    .equals(safeToStr.apply(approved.getCommPinCode()))));
+//
+//	    lResult.add(new ReviewResultVb(rsb.getString("phoneNumber"),
+//	            (pending == null ? "" : safeToStr.apply(pending.getPhoneNumber())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getPhoneNumber())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getPhoneNumber())
+//	                    .equals(safeToStr.apply(approved.getPhoneNumber()))));
+//	    lResult.add(new ReviewResultVb("Phone Number2",
+//	            (pending == null ? "" : safeToStr.apply(pending.getPhoneNumber2())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getPhoneNumber2())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getPhoneNumber2())
+//	                    .equals(safeToStr.apply(approved.getPhoneNumber2()))));
+//	    lResult.add(new ReviewResultVb("Phone Number3",
+//	            (pending == null ? "" : safeToStr.apply(pending.getPhoneNumber3())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getPhoneNumber3())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getPhoneNumber3())
+//	                    .equals(safeToStr.apply(approved.getPhoneNumber3()))));
+//	    lResult.add(new ReviewResultVb("Phone Number4",
+//	            (pending == null ? "" : safeToStr.apply(pending.getPhoneNumber4())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getPhoneNumber4())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getPhoneNumber4())
+//	                    .equals(safeToStr.apply(approved.getPhoneNumber4()))));
+//	    lResult.add(new ReviewResultVb("Phone Number5",
+//	            (pending == null ? "" : safeToStr.apply(pending.getPhoneNumber5())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getPhoneNumber5())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getPhoneNumber5())
+//	                    .equals(safeToStr.apply(approved.getPhoneNumber5()))));
+//	    lResult.add(new ReviewResultVb("Phone Number6",
+//	            (pending == null ? "" : safeToStr.apply(pending.getPhoneNumber6())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getPhoneNumber6())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getPhoneNumber6())
+//	                    .equals(safeToStr.apply(approved.getPhoneNumber6()))));
+//	    lResult.add(new ReviewResultVb("Phone Number7",
+//	            (pending == null ? "" : safeToStr.apply(pending.getPhoneNumber7())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getPhoneNumber7())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getPhoneNumber7())
+//	                    .equals(safeToStr.apply(approved.getPhoneNumber7()))));
+
+	    // Dual nationalities (example labels preserved)
+//	    lResult.add(new ReviewResultVb("Nationality 2",
+//	            (pending == null ? "" : safeToStr.apply(pending.getDualNationality1())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getDualNationality1())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getDualNationality1())
+//	                    .equals(safeToStr.apply(approved.getDualNationality1()))));
+//
+//	    lResult.add(new ReviewResultVb("Nationality 3",
+//	            (pending == null ? "" : safeToStr.apply(pending.getDualNationality2())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getDualNationality2())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getDualNationality2())
+//	                    .equals(safeToStr.apply(approved.getDualNationality2()))));
+//
+//	    lResult.add(new ReviewResultVb("Nationality 4",
+//	            (pending == null ? "" : safeToStr.apply(pending.getDualNationality3())),
+//	            (approved == null ? "" : safeToStr.apply(approved.getDualNationality3())),
+//	            !(pending == null || approved == null) && !safeToStr.apply(pending.getDualNationality3())
+//	                    .equals(safeToStr.apply(approved.getDualNationality3()))));
+	    
+	    
+	    lResult.add(new ReviewResultVb("SSN",
+	            (pending == null ? "" : safeToStr.apply(pending.getSsn())),
+	            (approved == null ? "" : safeToStr.apply(approved.getSsn())),
+	            !(pending == null || approved == null) && !safeToStr.apply(pending.getSsn())
+	                    .equals(safeToStr.apply(approved.getSsn()))));
+	    lResult.add(new ReviewResultVb("Customer Tin",
+	            (pending == null ? "" : safeToStr.apply(pending.getCustomerTin())),
+	            (approved == null ? "" : safeToStr.apply(approved.getCustomerTin())),
+	            !(pending == null || approved == null) && !safeToStr.apply(pending.getCustomerTin())
+	                    .equals(safeToStr.apply(approved.getCustomerTin()))));
+	    
+	    lResult.add(new ReviewResultVb("Sub Segment",
+	            (pending == null ? "" : safeToStr.apply(pending.getSubSegment())),
+	            (approved == null ? "" : safeToStr.apply(approved.getSubSegment())),
+	            !(pending == null || approved == null) && !safeToStr.apply(pending.getSubSegment())
+	                    .equals(safeToStr.apply(approved.getSubSegment()))));
+	    
+	    lResult.add(new ReviewResultVb("Compliance Status",
+	            (pending == null ? "" : safeToStr.apply(pending.getComplianceStatus())),
+	            (approved == null ? "" : safeToStr.apply(approved.getComplianceStatus())),
+	            !(pending == null || approved == null) && !safeToStr.apply(pending.getComplianceStatus())
+	                    .equals(safeToStr.apply(approved.getComplianceStatus()))));
+	    
+	    lResult.add(new ReviewResultVb("Joint Account",
+	            (pending == null ? "" : safeToStr.apply(pending.getJointAccount())),
+	            (approved == null ? "" : safeToStr.apply(approved.getJointAccount())),
+	            !(pending == null || approved == null) && !safeToStr.apply(pending.getJointAccount())
+	                    .equals(safeToStr.apply(approved.getJointAccount()))));
+
+	    // status (NumSubTab)
+	    lResult.add(new ReviewResultVb(rsb.getString("status"),
+	            (pending == null ? "" : getNtDescription((List<NumSubTabVb>) collTemp.get(0), pending.getCustomerStatus())),
+	            (approved == null ? "" : getNtDescription((List<NumSubTabVb>) collTemp.get(0), approved.getCustomerStatus())),
+	            !(pending == null || approved == null) && pending.getCustomerStatus() != approved.getCustomerStatus()));
+
+	    // recordIndicator
+	    lResult.add(new ReviewResultVb(rsb.getString("recordIndicator"),
+	            (pending == null ? "" : getNtDescription((List<NumSubTabVb>) collTemp.get(1), pending.getRecordIndicator())),
+	            (approved == null ? "" : getNtDescription((List<NumSubTabVb>) collTemp.get(1), approved.getRecordIndicator())),
+	            !(pending == null || approved == null) && pending.getRecordIndicator() != approved.getRecordIndicator()));
+
+	    // maker / verifier (name fallback)
+	    lResult.add(new ReviewResultVb(rsb.getString("maker"),
+	            (pending == null ? "" : (pending.getMaker() == 0 ? "" : pending.getMakerName())),
+	            (approved == null ? "" : (approved.getMaker() == 0 ? "" : approved.getMakerName())),
+	            !(pending == null || approved == null) && pending.getMaker() != approved.getMaker()));
+
+	    lResult.add(new ReviewResultVb(rsb.getString("verifier"),
+	            (pending == null ? "" : (pending.getVerifier() == 0 ? "" : pending.getVerifierName())),
+	            (approved == null ? "" : (approved.getVerifier() == 0 ? "" : approved.getVerifierName())),
+	            !(pending == null || approved == null) && pending.getVerifier() != approved.getVerifier()));
+
+	    // date fields
+	    lResult.add(new ReviewResultVb("Date Last Modified",
+	            (pending == null ? "" : safeToStr.apply(pending.getDateLastModified())),
+	            (approved == null ? "" : safeToStr.apply(approved.getDateLastModified())),
+	            !(pending == null || approved == null) && !safeToStr.apply(pending.getDateLastModified())
+	                    .equals(safeToStr.apply(approved.getDateLastModified()))));
+
+	    lResult.add(new ReviewResultVb("Date Creation",
+	            (pending == null ? "" : safeToStr.apply(pending.getDateCreation())),
+	            (approved == null ? "" : safeToStr.apply(approved.getDateCreation())),
+	            !(pending == null || approved == null) && !safeToStr.apply(pending.getDateCreation())
+	                    .equals(safeToStr.apply(approved.getDateCreation()))));
+	    
+
+
+	    return lResult;
+	}
+
+	/* -------------------------
+	   Manual override helpers
+	   ------------------------- */
+
+	/**
+	 * Applies manualList overrides to the pending CustomersVb instance. 
+	 * ManualEntryVb is expected to expose getColumnName(), getVariableName(), getValue() (value optional).
+	 */
+	private void applyManualOverridesToPending(CustomersVb pending) {
+	    if (pending == null) return;
+	    List<CustomerManualColVb> manualList = pending.getManualList(); // adapt getter/type if needed
+	    if (manualList == null || manualList.isEmpty()) return;
+
+	    for (CustomerManualColVb entry : manualList) {
+	        try {
+	            String targetProp = entry.getColumnName();
+	            if (targetProp == null || targetProp.trim().isEmpty()) continue;
+
+	            String explicitValue = entry.getColumnValue(); // direct override if present
+	            String variableName = entry.getVariableName(); // name of other property on pending to copy from
+
+	            Object sourceValue = null;
+	            if (explicitValue != null) {
+	                sourceValue = explicitValue;
+	            } else if (variableName != null && !variableName.trim().isEmpty()) {
+	                sourceValue = readProperty(pending, variableName);
+	            } else {
+	                // nothing to do
+	                continue;
+	            }
+
+	            // write (with type conversion)
+	            writeProperty(pending, variableName, sourceValue);
+
+	        } catch (Exception ex) {
+	            // swallow per-entry exceptions to avoid breaking whole transform
+	            // Replace with logger.warn(...) if logger available
+	            // e.g. logger.warn("Failed manual override for entry: " + entry, ex);
+	        }
+	    }
+	}
+
+	private Object readProperty(Object bean, String propName) throws Exception {
+	    for (PropertyDescriptor pd : Introspector.getBeanInfo(bean.getClass()).getPropertyDescriptors()) {
+	        if (pd.getName().equals(propName)) {
+	            Method read = pd.getReadMethod();
+	            if (read != null) {
+	                return read.invoke(bean);
+	            }
+	            break;
+	        }
+	    }
+	    return null;
+	}
+
+	private void writeProperty(Object bean, String propName, Object value) throws Exception {
+	    PropertyDescriptor[] pds = Introspector.getBeanInfo(bean.getClass()).getPropertyDescriptors();
+	    for (PropertyDescriptor pd : pds) {
+	        if (pd.getName().equals(propName)) {
+	            Method write = pd.getWriteMethod();
+	            if (write == null) return;
+	            Class<?> targetType = pd.getPropertyType();
+	            Object converted = convertValueToTarget(value, targetType);
+	            write.invoke(bean, converted);
+	            return;
+	        }
+	    }
+	}
+
+	private Object convertValueToTarget(Object value, Class<?> targetType) throws java.text.ParseException {
+	    if (value == null) return null;
+
+	    if (targetType.isInstance(value)) return value;
+
+	    String str = String.valueOf(value);
+
+	    if (targetType == String.class) return str;
+	    if (targetType == Integer.class || targetType == int.class) return Integer.valueOf(str);
+	    if (targetType == Long.class || targetType == long.class) return Long.valueOf(str);
+	    if (targetType == Boolean.class || targetType == boolean.class) return Boolean.valueOf(str);
+	    if (targetType == Double.class || targetType == double.class) return Double.valueOf(str);
+	    if (targetType == Float.class || targetType == float.class) return Float.valueOf(str);
+
+	    if (java.util.Date.class.isAssignableFrom(targetType)) {
+	        java.text.SimpleDateFormat[] formats = new java.text.SimpleDateFormat[] {
+	                new java.text.SimpleDateFormat("yyyy-MM-dd"),
+	                new java.text.SimpleDateFormat("dd/MM/yyyy"),
+	                new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss") };
+	        for (java.text.SimpleDateFormat fmt : formats) {
+	            try {
+	                return fmt.parse(str);
+	            } catch (java.text.ParseException ignored) {
+	            }
+	        }
+	        throw new java.text.ParseException("Unparseable date: " + str, 0);
+	    }
+
+	    // fallback to string
+	    return str;
 	}
 
 	@Override
