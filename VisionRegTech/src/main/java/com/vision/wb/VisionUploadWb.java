@@ -1641,7 +1641,7 @@ public class VisionUploadWb extends AbstractDynaWorkerBean<VisionUploadVb> imple
 		ExceptionCode exceptionCode = new ExceptionCode();
 	List<LoadXlVb>	collTemp=new ArrayList<>();
 	
-	
+	org.apache.poi.util.IOUtils.setByteArrayMaxOverride(200 * 1024 * 1024); // 200 MB
 		try (Workbook workbook = WorkbookFactory.create(files.getInputStream())) {
 			int numberOfSheets = workbook.getNumberOfSheets();
 			for (int i = 0; i < numberOfSheets; i++) {

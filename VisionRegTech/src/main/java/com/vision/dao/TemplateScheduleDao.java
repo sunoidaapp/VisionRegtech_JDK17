@@ -42,14 +42,17 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.DataFormat;
+import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
@@ -522,7 +525,7 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 				+ dbFunctionFormats("TAPPR.DATE_LAST_MODIFIED", "DATETIME_FORMAT", null) + " DATE_LAST_MODIFIED," + " "
 				+ dbFunctionFormats("TAPPR.DATE_CREATION", "DATETIME_FORMAT", null)
 				+ " DATE_CREATION,TAPPR.RG_SUBMISSION_TIME,TAPPR.AUTO_SUBMIT,"
-				+ "TAPPR.DATALIST,TAPPR.CATEGORY_TYPE,TAPPR.CBK_FILE_NAME" + " FROM RG_TEMPLATE_CONFIG TAPPR"
+				+ "TAPPR.DATALIST,TAPPR.CATEGORY_TYPE,TAPPR.CBK_FILE_NAME,TAppr.INTERNAL_STATUS" + " FROM RG_TEMPLATE_CONFIG TAPPR"
 				+ " ,NUM_SUB_TAB T3,NUM_SUB_TAB T4 Where "
 				+ " t3.NUM_tab =  TAPPR.TEMPLATE_STATUS_NT AND t3.NUM_sub_tab = TAPPR.TEMPLATE_STATUS"
 				+ " AND t4.NUM_tab = TAPPR.RECORD_INDICATOR_NT AND t4.NUM_sub_tab = TAPPR.RECORD_INDICATOR"
@@ -583,6 +586,7 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 				vObject.setSubmissionTime(rs.getString("RG_SUBMISSION_TIME"));
 				vObject.setCbkFileName(rs.getString("CBK_FILE_NAME"));
 				vObject.setCategoryType(rs.getString("CATEGORY_TYPE"));
+				vObject.setInternalStatus(rs.getInt("INTERNAL_STATUS"));;
 				return vObject;
 			}
 		};
@@ -1466,8 +1470,17 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 		String cbStatusGroupBy= "";
 		if (dObj.getCategoryType().equalsIgnoreCase("RG")) {
 			dependentCond = "	 JOIN RG_TEMPLATE_DEPENDENCY  T4 " + "	 ON     T3.TEMPLATE_ID = T4.TEMPLATE_NAME "
-					+ "	AND T3.COUNTRY = T4.COUNTRY " + "	  AND T3.LE_BOOK = T4.LE_BOOK   ";
-			listTaggCond = " , "+getDbFunction("STRING_AGG")+"(T4.DEPENDENT_TEMPLATE "+getDbFunction("PIPELINE")+" '-' "+getDbFunction("PIPELINE")+" T3.RG_PROCESS_STATUS, ',') "
+					+ "	AND T3.COUNTRY = T4.COUNTRY " + "	  AND T3.LE_BOOK = T4.LE_BOOK "
+					+ " JOIN RG_PROCESS_CONTROLS T3D  "
+					+ "    ON T3D.TEMPLATE_ID = T4.DEPENDENT_TEMPLATE "
+					+ "   AND T3D.COUNTRY     = T4.COUNTRY "
+					+ "   AND T3D.LE_BOOK     = T4.LE_BOOK "
+					+ "    JOIN RG_TEMPLATE_CONFIG T2D "
+					+ "             ON     T4.DEPENDENT_TEMPLATE = T2D.TEMPLATE_ID "
+					+ "                AND T4.COUNTRY = T2D.COUNTRY "
+					+ "                AND T4.LE_BOOK = T2D.LE_BOOK  ";
+			
+			listTaggCond = " , "+getDbFunction("STRING_AGG")+"(T4.DEPENDENT_TEMPLATE "+getDbFunction("PIPELINE")+" '|' "+getDbFunction("PIPELINE")+" T3D.RG_PROCESS_STATUS"+getDbFunction("PIPELINE")+" '|'"+getDbFunction("PIPELINE")+" T2D.TEMPLATE_DESCRIPTION, '||') "
 					+ "	WITHIN GROUP (ORDER BY T4.SUBMISSION_ORDER)  DEPENDENT_TEMPLATES ";
 		}
 		 cbStatus = "ORACLE".equalsIgnoreCase(databaseType)
@@ -1507,7 +1520,7 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 					+dependentCond
 					+ "	WHERE  " + "     T2.TEMPLATE_STATUS = 0 ");
 
-			String orderBy = "  ORDER BY T1.SUBMISSION_DATE, " + "  CASE PROCESS_FREQUENCY " + "  WHEN 'I' THEN 1 "
+			String orderBy = "  ORDER BY T1.SUBMISSION_DATE, " + "  CASE t2.PROCESS_FREQUENCY " + "  WHEN 'I' THEN 1 "
 					+ "  WHEN 'D' THEN 2 " + "  WHEN 'W' THEN 3 " + "  WHEN 'M' THEN 4 " + "  WHEN 'Q' THEN 5 "
 					+ "  WHEN 'H' THEN 6 " + "  WHEN 'A' THEN 7 " + "  ELSE 8          " + "  END				"
 					+ " , TEMPLATE_ID    ";
@@ -1608,6 +1621,8 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 		}
 		return exceptionCode;
 	}
+
+ 
 
 	protected RowMapper getTemplateScheduleDetailsMapper() {
 		RowMapper mapper = new RowMapper() {
@@ -2997,7 +3012,7 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 			Boolean isFatca = Constants.FATCA.equalsIgnoreCase(vObject.getCategoryType());
 			
 			String query = "SELECT ";
-			String versionNo = "  VERSION_NO = (SELECT MAX(VERSION_NO ) FROM " + vObject.getSourceTable() + 
+			String versionNo = "  t1.VERSION_NO = (SELECT MAX(VERSION_NO ) FROM " + vObject.getSourceTable() + 
 					" WHERE COUNTRY = '"+vObject.getCountry()+"' AND LE_BOOK = '"+vObject.getLeBook()+"' )";
 
 			String cols = buildSelectColumns(vObject.getMappinglst());
@@ -3006,8 +3021,8 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 			String headerQuery = "ENTITY_BUILDING_IDENTIFIER,ENTITY_STREET,ENTITY_COUNTRY_CODE,LEGAL_ADDRESS_TYPE,ENTITY_NAME,ENTITY_CITY,"
 					+ "SENDING_COMPANY_IN,TRANSMITTING_COUNTRY, RECEIVING_COUNTRY, MESSAGE_TYPE, WARNING, CONTACT, MESSAGE_TYPE_INDIC, DOC_TYPE_IN,MESSAGE_REF_ID ";
 			if(isFatca) {
-				headerQuery = "SENDING_COMPANY_IN,TRANSMITTING_COUNTRY, RECEIVING_COUNTRY, MESSAGE_TYPE,MESSAGE_REF_ID,ENTITY_NAME,ENTITY_COUNTRY_CODE,"
-						+ "ENTITY_POSTAL_CODE,ENTITY_CITY,ENTITY_COUNTRY_CODE,ENTITY_ADDRESS_FREE,FILER_CATEGORY,ENTITY_STREET";
+				headerQuery = "T3.SENDING_COMPANY_IN,T3.TRANSMITTING_COUNTRY, T3.RECEIVING_COUNTRY, T3.MESSAGE_TYPE,T3.MESSAGE_REF_ID,T3.ENTITY_NAME,T3.ENTITY_COUNTRY_CODE,"
+						+ "T3.ENTITY_POSTAL_CODE,T3.ENTITY_CITY,T3.ENTITY_ADDRESS_FREE,T3.FILER_CATEGORY,T3.ENTITY_STREET";
 			}
 			
 
@@ -3063,7 +3078,7 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 			    } else {
 			        query += " WHERE " +versionNo;
 			    }
-			String orderBy = " ORDER BY ROW_ID";
+			String orderBy = " ORDER BY t1.ROW_ID";
 			query = query.concat(orderBy);
 
 			String tmpFilePath = System.getProperty("java.io.tmpdir");
@@ -3078,7 +3093,7 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 						+ vObject.getCountry() + "' AND LE_BOOK = '" + vObject.getLeBook() + "' ";
 			}
 			
-			xml = getJdbcTemplate().query(query, (ResultSetExtractor<String>) rs -> isFatca?generateFatcaXml(rs,cnt):generateCrsXml(rs,cnt));
+			xml = getJdbcTemplate().query(query, (ResultSetExtractor<String>) rs -> isFatca?generateFatcaXml(rs,cnt,vObject.getInternalStatus()):generateCrsXml(rs,cnt));
 			
 			String path = System.getProperty("java.io.tmpdir") + File.separator + vObject.getSourceTable() + ".xml";
 	        
@@ -4394,7 +4409,7 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 	     * @return
 	     * @throws SQLException
 	     */
-	    private String generateFatcaXml(ResultSet rs,int cnt) throws SQLException {
+	    private String generateFatcaXml(ResultSet rs,int cnt,int internalStatus) throws SQLException {
 
 	        StringBuilder xmlBuilder = new StringBuilder();
 	        boolean isFirstRow = true;
@@ -4425,13 +4440,13 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 						tagElement(xmlBuilder, "sfa:ResCountryCode",
 								rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
 					}
-					if (columnNameMap.containsKey("ENTITYTIN")
-							&& columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
+					if (columnNameMap.containsKey("SENDINGCOMPANYIN")
+							&& columnNameMap.containsKey("RECEIVINGCOUNTRY")) {
 						tagElementWithAttribute(xmlBuilder, "sfa:TIN",
-								rs.getString(columnNameMap.get("ENTITYTIN")), "issuedBy",
-								rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
+								rs.getString(columnNameMap.get("SENDINGCOMPANYIN")), "issuedBy",
+								rs.getString(columnNameMap.get("RECEIVINGCOUNTRY")));
 					}
-					if (columnNameMap.containsKey("ENTITYNAME")) {
+					if (columnNameMap.containsKey("ENTITYNAME") && rs.getString(columnNameMap.get("ENTITYNAME"))!=null) {
 						tagElement(xmlBuilder, "sfa:Name", rs.getString(columnNameMap.get("ENTITYNAME")));
 					}
 
@@ -4447,14 +4462,18 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 					if (columnNameMap.containsKey("DOCTYPEINDIC")) {
 						tagElement(xmlBuilder, "ftc:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
 					}
-					if (columnNameMap.containsKey("MESSAGEREFID")) {
-						tagElement(xmlBuilder, "ftc:DocRefId", rs.getString(columnNameMap.get("MESSAGEREFID")));
+					if (columnNameMap.containsKey("DOCREFID")) {
+						tagElement(xmlBuilder, "ftc:DocRefId", rs.getString(columnNameMap.get("DOCREFID"))+"."+CommonUtils.generateRandom32());
 					}
 
 					xmlBuilder.append("</ftc:DocSpec>");
 					xmlBuilder.append("</ftc:ReportingFI>");
 					xmlBuilder.append("<ftc:ReportingGroup>");
 					isFirstRow = false;
+					if(internalStatus == 0) {
+						createPoolReport(rs, xmlBuilder, columnNameMap);
+						return xmlBuilder.toString();
+					}
 					if(cnt==0) {
 						createDefaultStructure(rs, xmlBuilder, columnNameMap);
 					}
@@ -4465,9 +4484,11 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 					xmldocSpecBuilder(rs, xmlBuilder, columnNameMap);
 					// Account Holder Xml
 					xmlAccountHolderBuilder(rs, xmlBuilder, columnNameMap);
+					xmlBuilder.append("</ftc:AccountReport>");
 					// ---------------- FOOTER ----------------
 					// AccountReport
-					xmlFooterAccountReportBuilder(rs, xmlBuilder, columnNameMap);
+//					xmlFooterAccountReportBuilder(rs, xmlBuilder, columnNameMap);
+					xmlPaymentBuilder(rs, xmlBuilder, columnNameMap);
 				}
 			}
 			xmlBuilder.append("</ftc:ReportingGroup>");
@@ -4479,6 +4500,45 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 
 	        return xmlBuilder.toString();
 	    }
+	    
+
+		private void createPoolReport(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap) {
+			try {
+				xmlBuilder.append("<ftc:PoolReport>");
+				xmlBuilder.append("<ftc:DocSpec>");
+
+				if (columnNameMap.containsKey("DOCTYPEINDIC"))
+					tagElement(xmlBuilder, "ftc:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
+
+				if (columnNameMap.containsKey("MESSAGEREFID"))
+					tagElement(xmlBuilder, "ftc:DocRefId",
+							rs.getString(columnNameMap.get("MESSAGEREFID")) + CommonUtils.generateRandom32());
+
+				xmlBuilder.append("</ftc:DocSpec>");
+				if (columnNameMap.containsKey("ACCOUNTCOUNT"))
+					tagElement(xmlBuilder, "ftc:AccountCount",
+							rs.getString(columnNameMap.get("ACCOUNTCOUNT")) );
+				if (columnNameMap.containsKey("POOLREPORTTYPE"))
+					tagElement(xmlBuilder, "ftc:AccountPoolReportType",
+							rs.getString(columnNameMap.get("POOLREPORTTYPE")) );
+				if (columnNameMap.containsKey("TOTALACCOUNTBALANCE"))
+				    tagElementWithAttribute(xmlBuilder, "ftc:AccountBalance",
+				        ""+rs.getInt(columnNameMap.get("TOTALACCOUNTBALANCE")),
+				        "currCode", rs.getString(columnNameMap.get("CURRENCYCODE")));
+
+				xmlBuilder.append("</ftc:PoolReport>");
+				xmlBuilder.append("</ftc:ReportingGroup>");
+				xmlBuilder.append(" </ftc:FATCA>");
+				xmlBuilder.append("</ftc:FATCA_OECD>");
+				xmlBuilder.append("</Object>");
+				xmlBuilder.append("</Signature>");
+				
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+		}
 
 		private void createDefaultStructure(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap) {
 			try {
@@ -4521,8 +4581,8 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 			}
 			xmlBuilder.append("</ftc:DocSpec>");
 
-			String accountNumber = columnNameMap.containsKey("ACCOUNTNUMBER")
-					? rs.getString(columnNameMap.get("ACCOUNTNUMBER"))
+			String accountNumber = columnNameMap.containsKey("CUSTOMERID")
+					? rs.getString(columnNameMap.get("CUSTOMERID"))
 					: null;
 
 			String accountType = columnNameMap.containsKey("ACCOUNTTYPE")
@@ -4536,10 +4596,41 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 			if (accountNumber != null) {
 				tagElement(xmlBuilder, "ftc:AccountNumber", accountNumber);
 			}
-			if (accountNumber != null) {
-				tagElement(xmlBuilder, "ftc:AccountClosed", accountStatus);
+			if (accountNumber != null && accountStatus !=null ) {
+				if (accountStatus.equalsIgnoreCase("0")) {
+					tagElement(xmlBuilder, "ftc:AccountClosed", "false");
+				}else {
+					tagElement(xmlBuilder, "ftc:AccountClosed", "true");
+				}
 			}
+			xmlBuilder.append("<sfa:Address>");
 
+			// CountryCode
+			if (columnNameMap.containsKey("COUNTRYCODE")) {
+				tagElement(xmlBuilder, "sfa:CountryCode", rs.getString(columnNameMap.get("COUNTRYCODE")));
+			}
+//			if (columnNameMap.containsKey("ADDRESSFREE")) {
+//				String street = rs.getString(columnNameMap.get("ADDRESSFREE"));
+//				tagElement(xmlBuilder, "sfa:AddressFree", street != null ? street : "");
+//			}
+			xmlBuilder.append("<sfa:AddressFix>");
+			if (columnNameMap.containsKey("STREET")) {
+				tagElement(xmlBuilder, "sfa:Street", rs.getString(columnNameMap.get("STREET")));
+			}
+			if (columnNameMap.containsKey("USZIPCODE")) {
+				tagElement(xmlBuilder, "sfa:PostCode", rs.getString(columnNameMap.get("USZIPCODE")));
+			}
+			if (columnNameMap.containsKey("USCITY")) {
+				tagElement(xmlBuilder, "sfa:City", rs.getString(columnNameMap.get("USCITY")));
+			}
+			if (columnNameMap.containsKey("COUNTRYSUBENTITY")) {
+				tagElement(xmlBuilder, "sfa:CountrySubentity", rs.getString(columnNameMap.get("COUNTRYSUBENTITY")));
+			}
+			xmlBuilder.append("</sfa:AddressFix>");
+			if (columnNameMap.containsKey("ADDRESSFREE")) {
+				tagElement(xmlBuilder, "sfa:AddressFree", rs.getString(columnNameMap.get("ADDRESSFREE")));
+			}
+			xmlBuilder.append("</sfa:Address>");
 
 			// Account Holder
 			xmlAccountHolderFooterBuilder(rs, xmlBuilder, columnNameMap);
@@ -4552,8 +4643,8 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 					? rs.getString(columnNameMap.get("ACCOUNTBALANCE"))
 					: null;
 
-			String acctCurrency = columnNameMap.containsKey("ACCTCURRENCY")
-					? rs.getString(columnNameMap.get("ACCTCURRENCY"))
+			String acctCurrency = columnNameMap.containsKey("CURRENCYCODE")
+					? rs.getString(columnNameMap.get("CURRENCYCODE"))
 					: null;
 
 			if (accountBalance != null) {
@@ -4572,17 +4663,19 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 			xmlBuilder.append("<ftc:SubstantialOwner>");
 			xmlBuilder.append("<ftc:Individual>");
 
-			if (columnNameMap.containsKey("TIN"))
+			if (columnNameMap.containsKey("TIN") && rs.getString(columnNameMap.get("TIN"))!=null)
 				tagElementWithAttribute(xmlBuilder, "sfa:TIN", rs.getString(columnNameMap.get("TIN")),
-						"issuedBy", rs.getString(columnNameMap.get("RESCOUNTRYCODE")));
+						"issuedBy", rs.getString(columnNameMap.get("TINISSUEDJURISDICTION")));
 
 			xmlBuilder.append("<sfa:Name>");
+			
 			if (columnNameMap.containsKey("CUSTOMERNAME"))
 				tagElement(xmlBuilder, "sfa:FirstName", rs.getString(columnNameMap.get("CUSTOMERNAME")));
 			if (columnNameMap.containsKey("MIDDLENAME"))
 				tagElement(xmlBuilder, "sfa:MiddleName", rs.getString(columnNameMap.get("MIDDLENAME")));
 			if (columnNameMap.containsKey("LASTNAME"))
 				tagElement(xmlBuilder, "sfa:LastName", rs.getString(columnNameMap.get("LASTNAME")));
+			
 			xmlBuilder.append("</sfa:Name>");
 			
 			xmlBuilder.append("<sfa:Address>");
@@ -4666,24 +4759,24 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 			xmlBuilder.append("</sfa:Address>");
 
 			// BirthInfo
-			if(columnNameMap.containsKey("DATEOFBIRTH") || columnNameMap.containsKey("BIRTHCOUNTRYCODE")) {
-			xmlBuilder.append("<sfa:BirthInfo>");
-			if (columnNameMap.containsKey("DATEOFBIRTH")) {
-				String birthDate = rs.getString(columnNameMap.get("DATEOFBIRTH"));
-				tagElement(xmlBuilder, "sfa:BirthDate", birthDate != null ? birthDate : "");
-			}
-			if (columnNameMap.containsKey("USCITY")) {
-				String city = rs.getString(columnNameMap.get("USCITY"));
-				tagElement(xmlBuilder, "sfa:City", city != null ? city : "");
-			}
-
-			xmlBuilder.append("<sfa:CountryInfo>");
-			if (columnNameMap.containsKey("BIRTHCOUNTRYCODE")) {
-				tagElement(xmlBuilder, "sfa:CountryCode", rs.getString(columnNameMap.get("BIRTHCOUNTRYCODE")));
-			}
-			xmlBuilder.append("</sfa:CountryInfo>");
-			xmlBuilder.append("</sfa:BirthInfo>");
-			}
+//			if(columnNameMap.containsKey("DATEOFBIRTH") || columnNameMap.containsKey("BIRTHCOUNTRYCODE")) {
+//			xmlBuilder.append("<sfa:BirthInfo>");
+//			if (columnNameMap.containsKey("DATEOFBIRTH")) {
+//				String birthDate = rs.getString(columnNameMap.get("DATEOFBIRTH"));
+//				tagElement(xmlBuilder, "sfa:BirthDate", birthDate != null ? birthDate : "");
+//			}
+//			if (columnNameMap.containsKey("USCITY")) {
+//				String city = rs.getString(columnNameMap.get("USCITY"));
+//				tagElement(xmlBuilder, "sfa:City", city != null ? city : "");
+//			}
+//
+//			xmlBuilder.append("<sfa:CountryInfo>");
+//			if (columnNameMap.containsKey("BIRTHCOUNTRYCODE")) {
+//				tagElement(xmlBuilder, "sfa:CountryCode", rs.getString(columnNameMap.get("BIRTHCOUNTRYCODE")));
+//			}
+//			xmlBuilder.append("</sfa:CountryInfo>");
+//			xmlBuilder.append("</sfa:BirthInfo>");
+//			}
 			xmlBuilder.append("</ftc:Individual>");
 			xmlBuilder.append("</ftc:AccountHolder>");
 		}
@@ -4692,13 +4785,13 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 				throws SQLException {
 			xmlBuilder.append("<ftc:Payment>");
 			if (columnNameMap.containsKey("PAYMENTTYPE"))
-				tagElement(xmlBuilder, "ftc:Type", columnNameMap.get("PAYMENTTYPE"));
+				tagElement(xmlBuilder, "ftc:Type", rs.getString(columnNameMap.get("PAYMENTTYPE")));
 
-			String fdIntPaid = columnNameMap.containsKey("FDINTPAID") ? rs.getString(columnNameMap.get("FDINTPAID"))
+			String fdIntPaid = columnNameMap.containsKey("PAYMENT") ? rs.getString(columnNameMap.get("PAYMENT"))
 					: null;
 
-			String Currency = columnNameMap.containsKey("ACCTCURRENCY")
-					? rs.getString(columnNameMap.get("ACCTCURRENCY"))
+			String Currency = columnNameMap.containsKey("CURRENCYCODE")
+					? rs.getString(columnNameMap.get("CURRENCYCODE"))
 					: null;
 
 			if (fdIntPaid != null) {
@@ -4716,35 +4809,75 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 				tagElement(xmlBuilder, "ftc:AccountNumber", rs.getString(columnNameMap.get("ACCOUNTNUMBER")));
 
 			// Account Holder
-			xmlBuilder.append("<ftc:AccountHolder><ftc:Individual>");
+			xmlBuilder.append("<ftc:AccountHolder>");
+			xmlBuilder.append("<ftc:Individual>");
 
 			if (columnNameMap.containsKey("RESCOUNTRYCODE"))
 				tagElement(xmlBuilder, "sfa:ResCountryCode", rs.getString(columnNameMap.get("RESCOUNTRYCODE")));
 
-			if (columnNameMap.containsKey("TIN"))
+			if (columnNameMap.containsKey("TINISSUEDJURISDICTION"))
 				tagElementWithAttribute(xmlBuilder, "sfa:TIN", rs.getString(columnNameMap.get("TIN")),
-						"issuedBy", rs.getString(columnNameMap.get("RESCOUNTRYCODE")));
+						"issuedBy", rs.getString(columnNameMap.get("TINISSUEDJURISDICTION")));
 
 			xmlBuilder.append("<sfa:Name>");
 			if (columnNameMap.containsKey("CUSTOMERNAME"))
 				tagElement(xmlBuilder, "sfa:FirstName", rs.getString(columnNameMap.get("CUSTOMERNAME")));
+			if (columnNameMap.containsKey("MIDDLENAME"))
+				tagElement(xmlBuilder, "sfa:MiddleName", rs.getString(columnNameMap.get("MIDDLENAME")));
 			if (columnNameMap.containsKey("LASTNAME"))
 				tagElement(xmlBuilder, "sfa:LastName", rs.getString(columnNameMap.get("LASTNAME")));
 			xmlBuilder.append("</sfa:Name>");
 
-			xmlBuilder.append("</ftc:Individual></ftc:AccountHolder>");
+			//address
+			xmlBuilder.append("<sfa:Address>");
+
+			if (columnNameMap.containsKey("COUNTRYCODE")) {
+				tagElement(xmlBuilder, "sfa:CountryCode", rs.getString(columnNameMap.get("COUNTRYCODE")));
+			}
+			xmlBuilder.append("<sfa:AddressFix>");
+			if (columnNameMap.containsKey("STREET")) {
+				tagElement(xmlBuilder, "sfa:Street", rs.getString(columnNameMap.get("STREET")));
+			}
+			if (columnNameMap.containsKey("USZIPCODE")) {
+				tagElement(xmlBuilder, "sfa:PostCode", rs.getString(columnNameMap.get("USZIPCODE")));
+			}
+			if (columnNameMap.containsKey("USCITY")) {
+				tagElement(xmlBuilder, "sfa:City", rs.getString(columnNameMap.get("USCITY")));
+			}
+			if (columnNameMap.containsKey("COUNTRYSUBENTITY")) {
+				tagElement(xmlBuilder, "sfa:CountrySubentity", rs.getString(columnNameMap.get("COUNTRYSUBENTITY")));
+			}
+			xmlBuilder.append("</sfa:AddressFix>");
+			if (columnNameMap.containsKey("ADDRESSFREE")) {
+				tagElement(xmlBuilder, "sfa:AddressFree", rs.getString(columnNameMap.get("ADDRESSFREE")));
+			}
+			xmlBuilder.append("</sfa:Address>");
+			
+			xmlBuilder.append("</ftc:Individual>");
+			xmlBuilder.append("</ftc:AccountHolder>");
 
 			// Birth Info
-			xmlBuilder.append("<sfa:BirthInfo>");
-			if (columnNameMap.containsKey("DATEOFBIRTH"))
-				tagElement(xmlBuilder, "ftc:BirthDate", rs.getString(columnNameMap.get("DATEOFBIRTH")));
-			xmlBuilder.append("</sfa:BirthInfo>");
+//			xmlBuilder.append("<sfa:BirthInfo>");
+//			if (columnNameMap.containsKey("DATEOFBIRTH"))
+//				tagElement(xmlBuilder, "ftc:BirthDate", rs.getString(columnNameMap.get("DATEOFBIRTH")));
+//			xmlBuilder.append("</sfa:BirthInfo>");
+			xmlSubstantialOwnerBuilder(rs, xmlBuilder, columnNameMap);
 
 			// Account Balance
-			if (columnNameMap.containsKey("ACCOUNTBALANCE"))
-				tagElement(xmlBuilder, "sfa:AccountBalance", rs.getString(columnNameMap.get("ACCOUNTBALANCE")));
+			String accountBalance = columnNameMap.containsKey("ACCOUNTBALANCE")
+					? rs.getString(columnNameMap.get("ACCOUNTBALANCE"))
+					: null;
 
-			xmlBuilder.append("</ftc:AccountReport>");
+			String acctCurrency = columnNameMap.containsKey("CURRENCYCODE")
+					? rs.getString(columnNameMap.get("CURRENCYCODE"))
+					: null;
+
+			if (accountBalance != null) {
+				tagElementWithAttribute(xmlBuilder, "ftc:AccountBalance", accountBalance, "currCode",
+						acctCurrency != null ? acctCurrency : "");
+			}
+			
+
 		}
 
 		private void xmldocSpecBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
@@ -4756,9 +4889,31 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 
 			if (columnNameMap.containsKey("DOCREFID"))
 				tagElement(xmlBuilder, "ftc:DocRefId",
-						rs.getString(columnNameMap.get("DOCREFID")) + CommonUtils.generateRandom32());
+						rs.getString(columnNameMap.get("DOCREFID")) +"." + CommonUtils.generateRandom32());
 
 			xmlBuilder.append("</ftc:DocSpec>");
+			String accountNumber = columnNameMap.containsKey("CUSTOMERID")
+					? rs.getString(columnNameMap.get("CUSTOMERID"))
+					: null;
+
+//			String accountType = columnNameMap.containsKey("ACCOUNTTYPE")
+//					? rs.getString(columnNameMap.get("ACCOUNTTYPE"))
+//					: "";
+
+			String accountStatus = columnNameMap.containsKey("ACCOUNTSTATUS")
+					? rs.getString(columnNameMap.get("ACCOUNTSTATUS"))
+					: null;
+
+			if (accountNumber != null) {
+				tagElement(xmlBuilder, "ftc:AccountNumber", accountNumber);
+			}
+			if (accountNumber != null && accountStatus !=null ) {
+				if (accountStatus.equalsIgnoreCase("0")) {
+					tagElement(xmlBuilder, "ftc:AccountClosed", "false");
+				}else {
+					tagElement(xmlBuilder, "ftc:AccountClosed", "true");
+				}
+			}
 		}
 
 		private void xmlAddressTagBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
@@ -4850,11 +5005,107 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 					.append("</Reference>").append("</SignedInfo>")
 					.append("<SignatureValue>qZ544/xV/Z5LH36vKRYL3mo+ql7/PKqRlooXZUqUWfYH5aXxgE1zuCR7gVipCwhFYJYFJAFxMbVs1oQlTkWO0AwubpeJxZfK8JEEp5W9rzNrT3dpyGXqJmh1sEysWumqXRKNeF8+6ij99MY0Zzu4sg+UtZkb67WYZwpDEZFRehkd9MoyJS6Tk7gbdu5VVhBx5uRz22O2gQE/Nj1Fxkkz/Zs4C8tVY4E14nLXZjarjprAGecpTAezIOhDDkv2AHVMZkR14vgsJHeTTKbUDfHThbclMH6mTM7HjH0vdXn2zOQd+PJbt0JCaQmFWow+3L7ICgQGsE2nYum8LY2kOK+xPQ==</SignatureValue>")
 					.append("<KeyInfo><X509Data><X509SubjectName>CN=fatca.ncbagroup.com, O=NCBA Bank Kenya PLC, L=Nairobi, C=KE</X509SubjectName><X509Certificate>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</X509Certificate></X509Data></KeyInfo>")
-					.append("<Object Id=\"FATCA\">").append("<ftc:FATCA_OECD ")
-					.append("xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"urn:oecd:ties:fatca:v2\" ")
+					.append("<Object Id=\"FATCA\">")
+					.append("<ftc:FATCA_OECD ")
+					.append(" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"urn:oecd:ties:fatca:v2\"  ")
 					.append("xmlns:iso=\"urn:oecd:ties:isofatcatypes:v1\" ")
-					.append("xmlns:ftc=\"urn:oecd:ties:fatca:v2\" ").append("xmlns:stf=\"urn:oecd:ties:stf:v4\" ")
+					.append("xmlns:ftc=\"urn:oecd:ties:fatca:v2\" ")
+					.append("xmlns:stf=\"urn:oecd:ties:stf:v4\" ")
 					.append("xmlns:sfa=\"urn:oecd:ties:stffatcatypes:v2\" version=\"2.0\">");
 		}	
 		
+		public ExceptionCode writeXlsData(String filePath,  List<ColumnHeadersVb> headers,  List<Map<String, Object>> dataLst,String xlName) {
+			ExceptionCode exceptionCode =new ExceptionCode();
+		    try (Workbook workbook = new XSSFWorkbook()) {
+		    	String tempDir = System.getProperty("java.io.tmpdir");
+		    	String fileName =xlName+".xlsx";
+		    	 String filePathwithName = filePath + File.separator +fileName;
+
+		        Sheet sheet = workbook.createSheet("Extracted Data");
+		        int rowIndex = 0;
+
+		        // ================================
+		        // 1️⃣ HEADER ROW
+		        // ================================
+		        Row headerRow = sheet.createRow(rowIndex++);
+
+		        CellStyle headerStyle = workbook.createCellStyle();
+		        Font headerFont = workbook.createFont();
+		        headerFont.setBold(true);
+		        headerStyle.setFont(headerFont);
+
+		        for (int i = 0; i < headers.size(); i++) {
+		            Cell c = headerRow.createCell(i);
+		            c.setCellValue(headers.get(i).getCaption()); 
+		            c.setCellStyle(headerStyle);
+		        }
+
+		        // ================================
+		        // 2️⃣ DATA ROWS
+		        // ================================
+		        for (Map<String, Object> rowData : dataLst) {
+
+		            Row row = sheet.createRow(rowIndex++);
+		            int colIndex = 0;
+
+		            for (ColumnHeadersVb colHeader : headers) {
+
+		                String colName = colHeader.getDbColumnName();
+		                Object value = rowData.get(colName);
+
+		                Cell cell = row.createCell(colIndex++);
+
+		                if (value == null) {
+		                    cell.setCellValue("");
+		                    continue;
+		                }
+
+		                // Numeric type
+		                if ("N".equalsIgnoreCase(colHeader.getColType())) {
+		                    try {
+		                        cell.setCellValue(Double.parseDouble(value.toString().replace(",", "")));
+		                    } catch (Exception e) {
+		                        cell.setCellValue(value.toString()); // fallback
+		                    }
+		                }
+		                // Date type
+		                else if ("D".equalsIgnoreCase(colHeader.getColType())) {
+		                    cell.setCellValue(value.toString()); // if needed format can be added
+		                }
+		                // Text type
+		                else {
+		                    cell.setCellValue(value.toString());
+		                }
+		            }
+		        }
+
+		        // Auto-size
+		        for (int i = 0; i < headers.size(); i++) {
+		            sheet.autoSizeColumn(i);
+		        }
+
+		        // ================================
+		        // 3️⃣ WRITE TO FILE
+		        // ================================
+		        FileOutputStream out = new FileOutputStream(filePathwithName);
+		        workbook.write(out);
+		        out.close();
+
+		        System.out.println("XLS Created Successfully: " + filePathwithName);
+		        exceptionCode.setResponse(filePath);
+		        exceptionCode.setOtherInfo(fileName);
+		        exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
+		      return  exceptionCode;
+
+		    } catch (Exception e) {
+		        e.printStackTrace();
+		    }
+			return exceptionCode;
+		}
+		public ExceptionCode getEmailScheduleDet(TemplateScheduleVb templateScheduleVb) {
+			ExceptionCode exceptionCode = new ExceptionCode();
+			String Status = "";
+			String query ="";
+			return exceptionCode;
+		}
 }

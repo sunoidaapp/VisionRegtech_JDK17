@@ -398,7 +398,7 @@ public class CustomerManualDao extends AbstractDao<CustomerManualColVb> {
 				   AND CUSTOMER_ID = ?
 				""".formatted(tableName);
 
-		var args = new Object[] { vObject.getCountry(), vObject.getLeBook(), vObject.getCustomerId(),
+		var args = new Object[] { vObject.getCountry(), vObject.getLeBook(), vObject.getCustomerId()
 				 };
 
 		return getJdbcTemplate().update(sql, args);
@@ -558,6 +558,61 @@ public class CustomerManualDao extends AbstractDao<CustomerManualColVb> {
 
 	// === END: Additions for approval flow ===
 
+	/** Fetch all MANUAL (approved) rows for a customer key. */
+	public List<CustomerManualColVb> selectApprPendByKey(CustomerManualColVb key) {
+	    final String sql = """
+	        SELECT COUNTRY, LE_BOOK, CUSTOMER_ID, COLUMN_NAME, COLUMN_VALUE,
+	               CUST_MOD_STATUS_NT, CUST_MOD_STATUS,
+	               RECORD_INDICATOR_NT, RECORD_INDICATOR,
+	               MAKER, VERIFIER, DATE_CREATION, DATE_LAST_MODIFIED
+	          FROM CUSTOMER_MANUAL
+	         WHERE COUNTRY = ?
+	           AND LE_BOOK = ?
+	           AND CUSTOMER_ID = ?
+	           AND COULUMN_NAME = ?
+	        """;
+	    return getJdbcTemplate().query(sql, (rs, rn) -> {
+	        CustomerManualColVb v = new CustomerManualColVb();
+	        v.setCountry(rs.getString("COUNTRY"));
+	        v.setLeBook(rs.getString("LE_BOOK"));
+	        v.setCustomerId(rs.getString("CUSTOMER_ID"));
+	        String col = rs.getString("COLUMN_NAME");
+	        v.setColumnName(col);
+	        v.setColumnValue(rs.getString("COLUMN_VALUE"));
+	        v.setCustModStatusNt(rs.getInt("CUST_MOD_STATUS_NT"));
+	        v.setCustModStatus(rs.getInt("CUST_MOD_STATUS"));
+	        v.setRecordIndicatorNt(rs.getInt("RECORD_INDICATOR_NT"));
+	        v.setRecordIndicator(rs.getInt("RECORD_INDICATOR"));
+	        v.setMaker(rs.getInt("MAKER"));
+	        v.setVerifier(rs.getInt("VERIFIER"));
+	        v.setDateCreation(rs.getString("DATE_CREATION"));
+	        v.setDateLastModified(rs.getString("DATE_LAST_MODIFIED"));
+	        v.setVariableName(CommonUtils.toCamelCase(col));
+	        return v;
+	    }, key.getCountry(), key.getLeBook(), key.getCustomerId(),key.getColumnName());
+	}
+	public int deleteApprovedByColumn(CustomerManualColVb key,String ColumName) {
+	    CustomersVb cvb = new CustomersVb();
+	    cvb.setCountry(key.getCountry());
+	    cvb.setLeBook(key.getLeBook());
+	    cvb.setCustomerId(key.getCustomerId());
+	    return doDeleteCustomerManualByColumn(cvb, ColumName);
+	}
+	protected int doDeleteCustomerManualByColumn(CustomersVb vObject, String columnName) {
+		var tableName = "CUSTOMER_MANUAL" ;
 
+		var sql = """
+				DELETE FROM %s
+				 WHERE COUNTRY = ?
+				   AND LE_BOOK = ?
+				   AND CUSTOMER_ID = ?
+				   AND COLUMN_NAME = ?
+				""".formatted(tableName);
+
+		var args = new Object[] { vObject.getCountry(), vObject.getLeBook(), vObject.getCustomerId(),columnName
+				 };
+
+		return getJdbcTemplate().update(sql, args);
+	}
 
 }

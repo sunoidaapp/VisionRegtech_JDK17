@@ -746,4 +746,44 @@ public class TemplateScheduleController {
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 		}
 	}
+	@RequestMapping(path = "/crsFatcaExportToXL", method = RequestMethod.POST)
+	//@ApiOperation(value = "Review", notes = "Review", response = ResponseEntity.class)
+	public ResponseEntity<JSONExceptionCode> crsFatcaExportExcelXport(@RequestBody TemplateScheduleVb vObject, HttpServletRequest request,
+			HttpServletResponse response) throws IOException {
+		JSONExceptionCode jsonExceptionCode = null;
+		ExceptionCode exceptionCode = new ExceptionCode();
+		try {
+			vObject.setActionType("Query");
+			vObject.setMaxRecords(100);
+			exceptionCode = templateScheduleWb.doValidate(vObject);
+			if (exceptionCode != null && exceptionCode.getErrorMsg() != "") {
+				jsonExceptionCode = new JSONExceptionCode(Constants.ERRONEOUS_OPERATION, exceptionCode.getErrorMsg(),
+						exceptionCode.getOtherInfo());
+				return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
+			}
+			exceptionCode = templateScheduleWb.reviewCrsfatcaDetails(vObject, vObject.getXlName());
+			vObject.setSourceType("XL");
+			if ("XL".equalsIgnoreCase(vObject.getSourceType())) {
+			request.setAttribute("fileExtension", "xlsx");
+			request.setAttribute("fileName", vObject.getTemplateName());
+			request.setAttribute("filePath", exceptionCode.getResponse());
+			templateScheduleWb.setExportXlsServlet(request, response);
+			if (response.getStatus() == 404) {
+				jsonExceptionCode = new JSONExceptionCode(Constants.ERRONEOUS_OPERATION,
+						"Review Data Unable to Export.Contact System Admin!!", null);
+				return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.EXPECTATION_FAILED);
+			} else {
+				jsonExceptionCode = new JSONExceptionCode(Constants.SUCCESSFUL_OPERATION, "Success", response);
+				return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
+			}
+		} else {
+			jsonExceptionCode = new JSONExceptionCode(exceptionCode.getErrorCode(), exceptionCode.getErrorMsg(),
+					exceptionCode.getOtherInfo());
+			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
+		}
+		} catch (RuntimeCustomException rex) {
+			jsonExceptionCode = new JSONExceptionCode(Constants.ERRONEOUS_OPERATION, rex.getMessage(), "");
+			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.EXPECTATION_FAILED);
+		}
+	}
 }

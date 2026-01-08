@@ -57,6 +57,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.jcraft.jsch.Channel;
@@ -850,7 +851,7 @@ public class ExcelUploadPc {
 	}
 
 	// Main program starts here.
-//	@Scheduled(fixedRate = 30000)
+	@Scheduled(fixedRate = 30000)
 	public int uploadData() {
 		int uploadRetVal = 0;
 		char tempStr;
@@ -901,7 +902,8 @@ public class ExcelUploadPc {
 
 				Boolean firstTimeFlag = true;
 				for (;;) {
-					uploadTableName = "";
+//					uploadTableName = "";
+					   uploadTableName = null;  
 					uploadFileName = "";
 					makerId = 0;
 					uploadSequence = 0;
@@ -944,7 +946,10 @@ public class ExcelUploadPc {
 						logWriter(e.getMessage(), uploadLogFileName);
 						return ERRONEOUS_EXIT;
 					}
-
+				    if (uploadTableName == null || uploadTableName.trim().isEmpty()) {
+				        writeToMainLogFile("ERROR: uploadTableName EMPTY. Cannot proceed.");
+				        return ERRONEOUS_EXIT;
+				    }
 					reqsProcessed++;
 
 					totalInputFileColumns = 0;

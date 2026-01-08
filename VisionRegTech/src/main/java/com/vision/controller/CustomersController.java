@@ -96,8 +96,8 @@ public class CustomersController {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
 		try {
-			exceptionCode.setOtherInfo(vObject);
 			exceptionCode = customersWb.modifyRecord(vObject);
+			exceptionCode.setOtherInfo(vObject);
 			jsonExceptionCode = new JSONExceptionCode(exceptionCode.getErrorCode(), exceptionCode.getErrorMsg(),exceptionCode.getResponse(),exceptionCode.getOtherInfo());
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 		} catch (RuntimeCustomException rex) {

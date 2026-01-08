@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,8 +22,6 @@ import com.vision.util.ValidationUtil;
 import com.vision.vb.CustomersVb;
 import com.vision.vb.SmartSearchVb;
 import com.vision.vb.VisionUsersVb;
-
-import jakarta.validation.Validation;
 
 @Component
 public class CustomersDao extends AbstractDao<CustomersVb> {
@@ -2336,6 +2335,8 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 			if (vObject.getManualList() != null && !vObject.getManualList().isEmpty()) {
 				vObject.getManualList().forEach(n -> {
 					n.setRecordIndicator(vObject.getRecordIndicator());
+					n.setMaker(vObject.getMaker());
+					n.setVerifier(vObject.getVerifier());
 					retVal = customerManualDao.deleteAndInsertCustomerManualPend(n);
 				});
 			}
@@ -2362,6 +2363,7 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 			vObject.setCusExtrasStatusNt(vObject.getCustomerStatusNt());
 			//
 			vObjectlocal.setRecordIndicator(Constants.STATUS_UPDATE);
+			vObjectlocal.setMaker(intCurrentUserId);
 			retVal = doInsertionPendWithDc(vObjectlocal);
 			if (retVal != Constants.SUCCESSFUL_OPERATION) {
 				exceptionCode = getResultObject(retVal);
@@ -2375,6 +2377,8 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 			if (vObject.getManualList() != null && !vObject.getManualList().isEmpty()) {
 				vObject.getManualList().forEach(n -> {
 					n.setRecordIndicator(vObject.getRecordIndicator());
+					n.setMaker(vObject.getMaker());
+					n.setVerifier(vObject.getVerifier());
 					retVal = customerManualDao.deleteAndInsertCustomerManualPend(n);
 				});
 			}
@@ -3154,6 +3158,17 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 		// fetch current states
 		List<CustomerManualColVb> pendRows = customerManualDao.selectPendByKey(key);
 		List<CustomerManualColVb> apprRows = customerManualDao.selectApprByKey(key);
+		List<String> pendCols = pendRows.stream()
+		        .map(CustomerManualColVb::getColumnName)
+		        .collect(Collectors.toList());
+
+		List<String> apprCols = apprRows.stream()
+		        .map(CustomerManualColVb::getColumnName)
+		        .collect(Collectors.toList());
+
+		List<String> commonCols = pendCols.stream()
+		        .filter(apprCols::contains)
+		        .collect(Collectors.toList());
 
 		int rc;
 
@@ -3167,10 +3182,18 @@ public class CustomersDao extends AbstractDao<CustomersVb> {
 				rc = customerManualDao.insertHistory(apprRows, "BEFORE");
 				if (rc == Constants.ERRONEOUS_OPERATION)
 					return rc;
-
+				if (pendRows == null && pendRows.isEmpty())
 				rc = customerManualDao.deleteApprovedByKey(key);
 				if (rc == Constants.ERRONEOUS_OPERATION)
 					return rc;
+				if(commonCols!=null && !commonCols.isEmpty()) {
+					for(String ColumName: commonCols) {
+					rc = customerManualDao.deleteApprovedByColumn(key,ColumName);
+					if (rc == Constants.ERRONEOUS_OPERATION)
+						return rc;
+					}
+				}
+				
 			}
 
 			// Insert pend -> approved

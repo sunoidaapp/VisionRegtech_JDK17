@@ -97,6 +97,7 @@ public class TemplateConfigHeaderDao extends AbstractDao<TemplateConfigVb> {
 				vObject.setCbkFileName(rs.getString("CBK_FILE_NAME"));
 				vObject.setCategoryType(rs.getString("CATEGORY_TYPE"));
 				vObject.setCategoryTypeDesc(rs.getString("CATEGORY_TYPE_DESC"));
+				vObject.setInternalStatus(rs.getInt("INTERNAL_STATUS"));
 				return vObject;
 			}
 		};
@@ -120,9 +121,9 @@ public class TemplateConfigHeaderDao extends AbstractDao<TemplateConfigVb> {
 				+ " ,SOURCE_TABLE_READINESS,UPLOAD_FILE_NAME,API_CONNECTIVITY_TYPE_AT,API_CONNECTIVITY_TYPE,API_CONNECTIVITY_DETAILS"
 				+ " ,AUTH_CONNECTIVITY_TYPE_AT,AUTH_CONNECTIVITY_TYPE,AUTH_CONNECTIVITY_DETAILS,MAIN_API_STRUCTURE,TEMPLATE_STATUS_NT"
 				+ " ,TEMPLATE_STATUS,RECORD_INDICATOR_NT,RECORD_INDICATOR,MAKER,VERIFIER,DATE_LAST_MODIFIED,DATE_CREATION,RG_SUBMISSION_TIME,"
-				+ "AUTO_SUBMIT,DATALIST,CATEGORY_TYPE,CBK_FILE_NAME )"
+				+ "AUTO_SUBMIT,DATALIST,CATEGORY_TYPE,CBK_FILE_NAME,INTERNAL_STATUS )"
 				+ " Values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,"
-				+ commonDao.getDbFunction("SYSDATE") + "," + commonDao.getDbFunction("SYSDATE") + ",?,?,?,?,?)";
+				+ commonDao.getDbFunction("SYSDATE") + "," + commonDao.getDbFunction("SYSDATE") + ",?,?,?,?,?,?)";
 
 		Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getTemplateId(),
 				vObject.getTemplateDescription(), vObject.getProcessFrequencyAt(), vObject.getProcessFrequency(),
@@ -135,7 +136,7 @@ public class TemplateConfigHeaderDao extends AbstractDao<TemplateConfigVb> {
 				vObject.getAuthConnectivityType(), vObject.getAuthConnectivityDetails(), vObject.getMainAPIStructure(),
 				vObject.getTemplateStatusNt(), vObject.getTemplateStatus(), vObject.getRecordIndicatorNt(),
 				vObject.getRecordIndicator(), vObject.getMaker(), vObject.getVerifier(), vObject.getSubmissionTime(),
-				vObject.getAutoSubmit(), vObject.getDataList(),vObject.getCategoryType(),vObject.getCbkFileName() };
+				vObject.getAutoSubmit(), vObject.getDataList(),vObject.getCategoryType(),vObject.getCbkFileName(),vObject.getInternalStatus()};
 
 		return getJdbcTemplate().update(query, args);
 
@@ -148,9 +149,9 @@ public class TemplateConfigHeaderDao extends AbstractDao<TemplateConfigVb> {
 				+ " ,SOURCE_TYPE,DB_CONNECTIVITY_TYPE_AT,DB_CONNECTIVITY_TYPE,DB_CONNECTIVITY_DETAILS,SOURCE_TABLE,SOURCE_TABLE_FILTER"
 				+ " ,SOURCE_TABLE_READINESS,UPLOAD_FILE_NAME,API_CONNECTIVITY_TYPE_AT,API_CONNECTIVITY_TYPE,API_CONNECTIVITY_DETAILS"
 				+ " ,AUTH_CONNECTIVITY_TYPE_AT,AUTH_CONNECTIVITY_TYPE,AUTH_CONNECTIVITY_DETAILS,MAIN_API_STRUCTURE,TEMPLATE_STATUS_NT"
-				+ " ,TEMPLATE_STATUS,RECORD_INDICATOR_NT,RECORD_INDICATOR,MAKER,VERIFIER,DATE_LAST_MODIFIED,DATE_CREATION,RG_SUBMISSION_TIME,AUTO_SUBMIT,DATALIST,CATEGORY_TYPE,CBK_FILE_NAME )"
+				+ " ,TEMPLATE_STATUS,RECORD_INDICATOR_NT,RECORD_INDICATOR,MAKER,VERIFIER,DATE_LAST_MODIFIED,DATE_CREATION,RG_SUBMISSION_TIME,AUTO_SUBMIT,DATALIST,CATEGORY_TYPE,CBK_FILE_NAME,INTERNAL_STATUS )"
 				+ " Values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,"
-				+ commonDao.getDbFunction("SYSDATE") + "," + commonDao.getDbFunction("SYSDATE") + ",?,?,?,?,?)";
+				+ commonDao.getDbFunction("SYSDATE") + "," + commonDao.getDbFunction("SYSDATE") + ",?,?,?,?,?,?)";
 
 		Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getTemplateId(),
 				vObject.getTemplateDescription(), vObject.getProcessFrequencyAt(), vObject.getProcessFrequency(),
@@ -163,7 +164,7 @@ public class TemplateConfigHeaderDao extends AbstractDao<TemplateConfigVb> {
 				vObject.getAuthConnectivityType(), vObject.getAuthConnectivityDetails(), vObject.getMainAPIStructure(),
 				vObject.getTemplateStatusNt(), vObject.getTemplateStatus(), vObject.getRecordIndicatorNt(),
 				vObject.getRecordIndicator(), vObject.getMaker(), vObject.getVerifier(), vObject.getSubmissionTime(),
-				vObject.getAutoSubmit(), vObject.getDataList(),vObject.getCategoryType(),vObject.getCbkFileName() };
+				vObject.getAutoSubmit(), vObject.getDataList(),vObject.getCategoryType(),vObject.getCbkFileName(),vObject.getInternalStatus() };
 
 		return getJdbcTemplate().update(query, args);
 	}
@@ -176,9 +177,9 @@ public class TemplateConfigHeaderDao extends AbstractDao<TemplateConfigVb> {
 					+ " ,SOURCE_TYPE,DB_CONNECTIVITY_TYPE_AT,DB_CONNECTIVITY_TYPE,DB_CONNECTIVITY_DETAILS,SOURCE_TABLE,SOURCE_TABLE_FILTER"
 					+ " ,SOURCE_TABLE_READINESS,UPLOAD_FILE_NAME,API_CONNECTIVITY_TYPE_AT,API_CONNECTIVITY_TYPE,API_CONNECTIVITY_DETAILS"
 					+ " ,AUTH_CONNECTIVITY_TYPE_AT,AUTH_CONNECTIVITY_TYPE,AUTH_CONNECTIVITY_DETAILS,MAIN_API_STRUCTURE,TEMPLATE_STATUS_NT"
-					+ " ,TEMPLATE_STATUS,RECORD_INDICATOR_NT,RECORD_INDICATOR,MAKER,VERIFIER,DATE_LAST_MODIFIED,DATE_CREATION,RG_SUBMISSION_TIME,AUTO_SUBMIT,DATALIST,CATEGORY_TYPE,CBK_FILE_NAME )"
+					+ " ,TEMPLATE_STATUS,RECORD_INDICATOR_NT,RECORD_INDICATOR,MAKER,VERIFIER,DATE_LAST_MODIFIED,DATE_CREATION,RG_SUBMISSION_TIME,AUTO_SUBMIT,DATALIST,CATEGORY_TYPE,CBK_FILE_NAME,INTERNAL_STATUS )"
 					+ " Values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,"
-					+ commonDao.getDbFunction("SYSDATE") + ", "+dateTimeConvert+",?,?,?,?,?)";
+					+ commonDao.getDbFunction("SYSDATE") + ", "+dateTimeConvert+",?,?,?,?,?,?)";
 
 		Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getTemplateId(),
 				vObject.getTemplateDescription(), vObject.getProcessFrequencyAt(), vObject.getProcessFrequency(),
@@ -191,14 +192,14 @@ public class TemplateConfigHeaderDao extends AbstractDao<TemplateConfigVb> {
 				vObject.getAuthConnectivityType(), vObject.getAuthConnectivityDetails(), vObject.getMainAPIStructure(),
 				vObject.getTemplateStatusNt(), vObject.getTemplateStatus(), vObject.getRecordIndicatorNt(),
 				vObject.getRecordIndicator(), vObject.getMaker(), vObject.getVerifier(), vObject.getDateCreation(),
-				vObject.getSubmissionTime(), vObject.getAutoSubmit(), vObject.getDataList(),vObject.getCategoryType(),vObject.getCbkFileName() };
+				vObject.getSubmissionTime(), vObject.getAutoSubmit(), vObject.getDataList(),vObject.getCategoryType(),vObject.getCbkFileName() ,vObject.getInternalStatus()};
 
 		return getJdbcTemplate().update(query, args);
 	}
 
 	protected int doUpdateAppr(TemplateConfigVb vObject) {
 		
-		String query = " 		 UPDATE RG_TEMPLATE_CONFIG SET TEMPLATE_DESCRIPTION = ?                                                         "
+		String query = " 		 UPDATE RG_TEMPLATE_CONFIG SET INTERNAL_STATUS = ?,TEMPLATE_DESCRIPTION = ?                                                         "
 				+ "  ,PROCESS_FREQUENCY_AT = ?,PROCESS_FREQUENCY =?                                                                 "
 				+ "  ,TYPE_OF_SUBMISSION_AT = ?,TYPE_OF_SUBMISSION = ?,CSV_DELIMITER_AT = ?,CSV_DELIMITER = ?,SOURCE_TYPE_AT = ?    "
 				+ "  ,SOURCE_TYPE = ?,DB_CONNECTIVITY_TYPE_AT =?,DB_CONNECTIVITY_TYPE = ?,DB_CONNECTIVITY_DETAILS = ?,SOURCE_TABLE = ?,SOURCE_TABLE_FILTER = ? "
@@ -208,7 +209,7 @@ public class TemplateConfigHeaderDao extends AbstractDao<TemplateConfigVb> {
 				+ "  ,DATE_LAST_MODIFIED = " + commonDao.getDbFunction("SYSDATE")
 				+ ",RG_SUBMISSION_TIME = ? ,AUTO_SUBMIT = ? ,DATALIST = ?,CATEGORY_TYPE = ? ,CBK_FILE_NAME = ?  "
 				+ " WHERE COUNTRY = ? AND LE_BOOK = ? AND TEMPLATE_ID = ?                                                      ";
-		Object[] args = { vObject.getTemplateDescription(), vObject.getProcessFrequencyAt(),
+		Object[] args = { vObject.getInternalStatus(),vObject.getTemplateDescription(), vObject.getProcessFrequencyAt(),
 				vObject.getProcessFrequency(), vObject.getTypeOfSubmissionAt(), vObject.getTypeOfSubmission(),
 				vObject.getCsvDelimiterAt(), vObject.getCsvDelimiter(), vObject.getSourceTypeAt(),
 				vObject.getSourceType(), vObject.getDbConnectivityTypeAt(), vObject.getDbConnectivityType(),
@@ -225,7 +226,7 @@ public class TemplateConfigHeaderDao extends AbstractDao<TemplateConfigVb> {
 
 	protected int doUpdatePendTemplateConfigHeader(TemplateConfigVb vObject) {
 	
-		String query = "  UPDATE RG_TEMPLATE_CONFIG_PEND SET TEMPLATE_DESCRIPTION = ?                                                         "
+		String query = "  UPDATE RG_TEMPLATE_CONFIG_PEND SET INTERNAL_STATUS = ? TEMPLATE_DESCRIPTION = ?                                                         "
 				+ "  ,PROCESS_FREQUENCY_AT = ?,PROCESS_FREQUENCY =?                                                                 "
 				+ "  ,TYPE_OF_SUBMISSION_AT = ?,TYPE_OF_SUBMISSION = ?,CSV_DELIMITER_AT = ?,CSV_DELIMITER = ?,SOURCE_TYPE_AT = ?    "
 				+ "  ,SOURCE_TYPE = ?,DB_CONNECTIVITY_TYPE_AT =?,DB_CONNECTIVITY_TYPE = ?,DB_CONNECTIVITY_DETAILS = ?,SOURCE_TABLE = ?,SOURCE_TABLE_FILTER = ? "
@@ -235,7 +236,7 @@ public class TemplateConfigHeaderDao extends AbstractDao<TemplateConfigVb> {
 				+ "  ,DATE_LAST_MODIFIED = " + commonDao.getDbFunction("SYSDATE")
 				+ ",RG_SUBMISSION_TIME = ? ,AUTO_SUBMIT = ? ,DATALIST = ? ,CATEGORY_TYPE = ?,CBK_FILE_NAME = ?"
 				+ "  WHERE COUNTRY = ? AND LE_BOOK = ? AND TEMPLATE_ID = ?                                                           ";
-		Object[] args = { vObject.getTemplateDescription(), vObject.getProcessFrequencyAt(),
+		Object[] args = {vObject.getInternalStatus(), vObject.getTemplateDescription(), vObject.getProcessFrequencyAt(),
 				vObject.getProcessFrequency(), vObject.getTypeOfSubmissionAt(), vObject.getTypeOfSubmission(),
 				vObject.getCsvDelimiterAt(), vObject.getCsvDelimiter(), vObject.getSourceTypeAt(),
 				vObject.getSourceType(), vObject.getDbConnectivityTypeAt(), vObject.getDbConnectivityType(),
@@ -289,7 +290,7 @@ public class TemplateConfigHeaderDao extends AbstractDao<TemplateConfigVb> {
 				+ " DATE_LAST_MODIFIED,TAPPR.DATE_LAST_MODIFIED DATE_LAST_MODIFIED_1," + " "
 				+ dbFunctionFormats("TAPPR.DATE_CREATION", "DATETIME_FORMAT", null) + " DATE_CREATION ,"
 				+  " TAPPR.RG_SUBMISSION_TIME,DATALIST,TAPPR.CATEGORY_TYPE,TAPPR.CBK_FILE_NAME, "
-				+ "(SELECT ALPHA_SUBTAB_DESCRIPTION FROM ALPHA_SUB_TAB WHERE ALPHA_SUB_TAB = TAPPR.CATEGORY_TYPE AND ALPHA_TAB =TAPPR.CATEGORY_TYPE_AT)CATEGORY_TYPE_DESC  "
+				+ "(SELECT ALPHA_SUBTAB_DESCRIPTION FROM ALPHA_SUB_TAB WHERE ALPHA_SUB_TAB = TAPPR.CATEGORY_TYPE AND ALPHA_TAB =TAPPR.CATEGORY_TYPE_AT)CATEGORY_TYPE_DESC ,TAPPR.INTERNAL_STATUS "
 				+ " FROM RG_TEMPLATE_CONFIG TAPPR)Tappr");
 
 		strWhereNotExists = new String(
@@ -316,7 +317,7 @@ public class TemplateConfigHeaderDao extends AbstractDao<TemplateConfigVb> {
 				+ " DATE_LAST_MODIFIED,TPEND.DATE_LAST_MODIFIED DATE_LAST_MODIFIED_1," + " "
 				+ dbFunctionFormats("TPEND.DATE_CREATION", "DATETIME_FORMAT", null) + " DATE_CREATION, "
 				+ " TPEND.RG_SUBMISSION_TIME,DATALIST,TPEND.CATEGORY_TYPE,TPEND.CBK_FILE_NAME,"
-				+ "(SELECT ALPHA_SUBTAB_DESCRIPTION FROM ALPHA_SUB_TAB WHERE ALPHA_SUB_TAB = TPEND.CATEGORY_TYPE AND ALPHA_TAB =TPEND.CATEGORY_TYPE_AT)CATEGORY_TYPE_DESC "
+				+ "(SELECT ALPHA_SUBTAB_DESCRIPTION FROM ALPHA_SUB_TAB WHERE ALPHA_SUB_TAB = TPEND.CATEGORY_TYPE AND ALPHA_TAB =TPEND.CATEGORY_TYPE_AT)CATEGORY_TYPE_DESC,TPEND.INTERNAL_STATUS "
 				+ " FROM RG_TEMPLATE_CONFIG_PEND TPEND)tpend");
 		
 
@@ -486,7 +487,7 @@ public class TemplateConfigHeaderDao extends AbstractDao<TemplateConfigVb> {
 				+ "        TAPPR.RECORD_INDICATOR,TAPPR.MAKER," + "        TAPPR.VERIFIER," + " "
 				+ dbFunctionFormats("TAPPR.DATE_LAST_MODIFIED", "DATETIME_FORMAT", null) + " DATE_LAST_MODIFIED," + " "
 				+ dbFunctionFormats("TAPPR.DATE_CREATION", "DATETIME_FORMAT", null) + " DATE_CREATION ,"
-				+ "RG_SUBMISSION_TIME,DATALIST,AUTO_SUBMIT,TAPPR.CATEGORY_TYPE,TAPPR.CBK_FILE_NAME  "
+				+ "RG_SUBMISSION_TIME,DATALIST,AUTO_SUBMIT,TAPPR.CATEGORY_TYPE,TAPPR.CBK_FILE_NAME ,TAppr.INTERNAL_STATUS "
 				+ " FROM RG_TEMPLATE_CONFIG TAPPR" + " ,NUM_SUB_TAB T3,NUM_SUB_TAB T4 Where "
 				+ " t3.NUM_tab =  TAPPR.TEMPLATE_STATUS_NT AND t3.NUM_sub_tab = TAPPR.TEMPLATE_STATUS"
 				+ " AND t4.NUM_tab = TAPPR.RECORD_INDICATOR_NT AND t4.NUM_sub_tab = TAPPR.RECORD_INDICATOR"
@@ -509,7 +510,7 @@ public class TemplateConfigHeaderDao extends AbstractDao<TemplateConfigVb> {
 				+ "        TPEND.RECORD_INDICATOR,TPEND.MAKER," + "        TPEND.VERIFIER," + " "
 				+ dbFunctionFormats("TPEND.DATE_LAST_MODIFIED", "DATETIME_FORMAT", null) + " DATE_LAST_MODIFIED," + " "
 				+ dbFunctionFormats("TPEND.DATE_CREATION", "DATETIME_FORMAT", null) + " DATE_CREATION ,"
-				+ "RG_SUBMISSION_TIME,DATALIST,AUTO_SUBMIT,TPEND.CATEGORY_TYPE,TPEND.CBK_FILE_NAME  "
+				+ "RG_SUBMISSION_TIME,DATALIST,AUTO_SUBMIT,TPEND.CATEGORY_TYPE,TPEND.CBK_FILE_NAME ,TPEND.INTERNAL_STATUS "
 				+ " FROM RG_TEMPLATE_CONFIG_PEND TPEND" + " ,NUM_SUB_TAB T3,NUM_SUB_TAB T4 Where "
 				+ " t3.NUM_tab =  TPEND.TEMPLATE_STATUS_NT AND t3.NUM_sub_tab = TPEND.TEMPLATE_STATUS"
 				+ " AND t4.NUM_tab = TPEND.RECORD_INDICATOR_NT AND t4.NUM_sub_tab = TPEND.RECORD_INDICATOR"
@@ -579,6 +580,7 @@ public class TemplateConfigHeaderDao extends AbstractDao<TemplateConfigVb> {
 				vObject.setSubmissionTime(rs.getString("RG_SUBMISSION_TIME"));
 				vObject.setCbkFileName(rs.getString("CBK_FILE_NAME"));
 				vObject.setCategoryType(rs.getString("CATEGORY_TYPE"));
+				vObject.setInternalStatus(rs.getInt("INTERNAL_STATUS"));
 				return vObject;
 			}
 		};

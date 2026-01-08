@@ -1325,7 +1325,7 @@ public class AdfSchedulesDao extends AbstractDao<AdfSchedulesVb> {
 		}
 	}
 	public  long  getMaxAdfNumber(){
-		StringBuffer strBufApprove = new StringBuffer("Select MAX(TAppr.ADF_NUMBER) From ADF_SCHEDULES TAppr ");
+		StringBuffer strBufApprove = new StringBuffer("Select "+getDbFunction("NVL")+"(MAX(TAppr.ADF_NUMBER),0) From ADF_SCHEDULES TAppr ");
 		try{
 //			return getJdbcTemplate().queryForLong(strBufApprove.toString());
 			long count = getJdbcTemplate().queryForObject(strBufApprove.toString(), long.class);
@@ -1756,18 +1756,19 @@ public class AdfSchedulesDao extends AbstractDao<AdfSchedulesVb> {
 	public int doUpdateScheduleStatus(AdfSchedulesVb vObject){
 		String CalLeBook = removeDescLeBook(vObject.getLeBook());
 		String frequencyProcessModified=vObject.getFrequencyProcess();
-		vObject.setAdfScheduleStatus("K");
+//		vObject.setAdfScheduleStatus("K");
 		vObject.setSubmitterId((int)intCurrentUserId);
 		/*frequencyProcessModified=frequencyProcessModified.replaceFirst("ACQ", "");
 		frequencyProcessModified=frequencyProcessModified.substring(0,(frequencyProcessModified.length()-4));*/
 		
-		String query = "UPDATE ADF_SCHEDULES SET ADF_SCHEDULE_STATUS = ?, SUBMITTER_ID = ?, DATE_LAST_MODIFIED = "+systemDate+" WHERE COUNTRY=? AND LE_BOOK=? "
+		String query = "UPDATE ADF_SCHEDULES SET  SUBMITTER_ID = ?, DATE_LAST_MODIFIED = "+systemDate+" ,"
+				+ " TERMINATE_FLAG = 'Y' WHERE COUNTRY=? AND LE_BOOK=? "
 				+ "AND BUSINESS_DATE="+dateTimeConvert+" AND FREQUENCY_PROCESS=? AND MAJOR_BUILD = ? AND ADF_NUMBER = ? ";
 		
 		if(ValidationUtil.isValid(vObject.getAdfName())) {
 			vObject.setMajorBuild(vObject.getAdfName().toUpperCase());
 		}
-		Object[] args = {vObject.getAdfScheduleStatus(), vObject.getSubmitterId(), vObject.getCountry(), CalLeBook, vObject.getBusinessDate(), frequencyProcessModified, vObject.getMajorBuild(), vObject.getAdfNumber()};
+		Object[] args = { vObject.getSubmitterId(), vObject.getCountry(), CalLeBook, vObject.getBusinessDate(), frequencyProcessModified, vObject.getMajorBuild(), vObject.getAdfNumber()};
 		return getJdbcTemplate().update(query,args);
 	}
 }

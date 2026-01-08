@@ -37,8 +37,8 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import org.apache.commons.math3.analysis.function.Constant;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.entity.mime.FileBody;
 import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
 import org.apache.hc.client5.http.entity.mime.StringBody;
@@ -49,6 +49,7 @@ import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.core5.util.Timeout;
 import org.apache.poi.poifs.filesystem.FileMagic;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -57,15 +58,15 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jdbc.UncategorizedSQLException;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vision.authentication.SessionContextHolder;
-import com.vision.dao.AbstractCommonDao;
 import com.vision.dao.AbstractDao;
 import com.vision.dao.CommonDao;
 import com.vision.dao.ReportsDao;
@@ -79,14 +80,12 @@ import com.vision.util.Constants;
 import com.vision.util.ValidationUtil;
 import com.vision.util.ZipUtils;
 import com.vision.vb.ColumnHeadersVb;
-import com.vision.vb.EmailScheduleVb;
 import com.vision.vb.ReportsVb;
 import com.vision.vb.ReviewResultVb;
 import com.vision.vb.TemplateConfigVb;
 import com.vision.vb.TemplateErrorsVb;
 import com.vision.vb.TemplateMappingVb;
 import com.vision.vb.TemplateScheduleVb;
-import com.vision.vb.VisionUsersVb;
 
 import jakarta.mail.Message;
 import jakarta.mail.PasswordAuthentication;
@@ -99,6 +98,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 @Component
 public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleVb> {
+	public static Logger logger = LoggerFactory.getLogger(TemplateScheduleWb.class);
 	public static final long fixedRate = 30000;
 	@Value("${schedule.rgBuild}")
 	private String rgBuildFlag;
@@ -505,7 +505,6 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 			exceptionCode.setResponse(tmpFilePath);
 		} else if ("DB".equalsIgnoreCase(vObject.getSourceType())) {
 			exceptionCode = templateScheduleDao.reviewDbData(vObject);
-
 		}
 		return exceptionCode;
 	}
@@ -1835,7 +1834,8 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 						jsonObject1.put("REQUEST_ID", requestId);
 						jsonObject1.put("IS_ATTACHED", "Y");
 						jsonObject1.put("REPORTING_DATE", formattedDate);
-						jsonObject1.put(dataList, "[]");
+						jsonObject1.put(dataList, new JSONArray());
+						logger.info("jsonObject1 :" +jsonObject1.toString());
 						FileBody csvFileBody = new FileBody(csvFile, ContentType.DEFAULT_BINARY);
 						StringBody jsonDataPart = new StringBody(jsonObject1.toString(), ContentType.APPLICATION_JSON);
 						multipartEntity = MultipartEntityBuilder.create().setBoundary(boundary)
@@ -1857,7 +1857,9 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 				jsonObject1.put("REQUEST_ID", requestId);
 				jsonObject1.put("IS_ATTACHED", "Y");
 				jsonObject1.put("REPORTING_DATE", formattedDate);
-				jsonObject1.put(dataList, "[{}]");
+				jsonObject1.put(dataList, new JSONArray());
+				 System.out.println(jsonObject1.toString());
+				 logger.info("jsonObject1 :" +jsonObject1.toString());
 				String zipFilePath = (String) exceptionCodeNew.getCsvPath();
 				File zipFile = new File(zipFilePath);
 				System.out.println("PAth" + zipFilePath);
@@ -1883,7 +1885,7 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 					jsonObject1.put("REQUEST_ID", requestId);
 					jsonObject1.put("IS_ATTACHED", "Y");
 					jsonObject1.put("REPORTING_DATE", formattedDate);
-					jsonObject1.put(dataList, "[{}]");
+					jsonObject1.put(dataList, new JSONArray());
 					FileBody csvFileBody = new FileBody(csvFile, ContentType.APPLICATION_OCTET_STREAM);
 					StringBody jsonDataPart = new StringBody(jsonObject1.toString(), ContentType.APPLICATION_JSON);
 					multipartEntity = MultipartEntityBuilder.create().setBoundary(boundary)
@@ -1898,37 +1900,53 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 
 			}
 			httpPost.setEntity(multipartEntity);
+			
 
 //			 Execute request
 			try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
-//				int statusCode = response.getStatusLine().getStatusCode();
-				int statusCode = response.getCode();
-				responseBody = EntityUtils.toString(response.getEntity());
 
-				if (statusCode == 200) {
-					System.out.println("Success with response code: " + statusCode);
-					System.out.println("Response body: " + responseBody);
-					exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
-					exceptionCode.setErrorMsg(responseBody);
-					if (responseBody.startsWith("{")) {
-						JSONObject jsonResponse = new JSONObject(responseBody);
-						requestNo = jsonResponse.getString("RequestNo");
-						cbStatus = jsonResponse.getString("Status");
-					}
-					cbStatus = responseBody;
+			    int statusCode = response.getCode();
+			    responseBody = EntityUtils.toString(response.getEntity());
 
-					exceptionCode.setResponse1(requestNo);
-					exceptionCode.setResponse2(cbStatus);
+			    logger.info("HTTP Status Code: {}", statusCode);
+			    logger.info("Response Body: {}", responseBody);
+			    
+			    logger.error("HTTP Status Code: {}", statusCode);
+			    logger.error("Response Body: {}", responseBody);
 
-				} else {
-					System.out.println("Failed with response code: " + statusCode);
-					System.out.println("Response body: " + responseBody);
-					exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
-					exceptionCode.setErrorMsg(responseBody);
-					exceptionCode.setResponse1(requestNo);
-					exceptionCode.setResponse2(cbStatus);
-				}
+			    if (statusCode == 200) {
+
+			        exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
+			        exceptionCode.setErrorMsg(responseBody);
+
+			        if (responseBody != null && responseBody.trim().startsWith("{")) {
+			            JSONObject jsonResponse = new JSONObject(responseBody);
+
+			            requestNo = jsonResponse.optString("RequestNo", "");
+			            cbStatus  = jsonResponse.optString("Status", "SUCCESS");
+			        } else {
+			            cbStatus = responseBody;
+			        }
+
+			    } else {
+
+			        exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
+			        exceptionCode.setErrorMsg(responseBody);
+
+			        if (responseBody != null && responseBody.trim().startsWith("{")) {
+			            JSONObject jsonResponse = new JSONObject(responseBody);
+
+			            requestNo = jsonResponse.optString("RequestNo", "");
+			            cbStatus  = jsonResponse.optString("httpMessage", "FAILED");
+			        } else {
+			            cbStatus = responseBody;
+			        }
+			    }
+
+			    exceptionCode.setResponse1(requestNo);
+			    exceptionCode.setResponse2(cbStatus);
 			}
+
 			if (responseBody == null || responseBody.isEmpty()) {
 				responseBody = "{\"Status:\"\"No response received or an error occurred\"}";
 			}
@@ -1937,11 +1955,13 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 			try (BufferedWriter writer = new BufferedWriter(new FileWriter(logFile))) {
 				writer.write(responseBody);
 				System.out.println("Response body written to file: " + logFile.getAbsolutePath());
+				logger.info("Response body written to file: " + logFile.getAbsolutePath());
 			} catch (IOException ioe) {
 				ioe.printStackTrace();
 				exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
 				exceptionCode.setErrorMsg(ioe.getMessage());
 				System.out.println("Failed to write response body to file: " + logFile.getAbsolutePath());
+				logger.info("Failed to write response body to file: " + logFile.getAbsolutePath());
 			}
 			if (ZIP.equalsIgnoreCase(templateConfigVb.getTypeOfSubmission())) {
 				String datetimeStamp = new SimpleDateFormat("dd-MM-yyyy_HHmmss").format(new Date());
@@ -2245,5 +2265,53 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 	private String nullSafe(Object value) {
 	    return value != null ? value.toString() : "";
 	}
+	public ExceptionCode reviewCrsfatcaDetails(TemplateScheduleVb vObject, String fileName) throws IOException {
+		ExceptionCode exceptionCode = null;
+		ByteArrayOutputStream out = null;
+		OutputStream outputStream = null;
 
+		exceptionCode = doValidate(vObject);
+		if (exceptionCode != null && exceptionCode.getErrorMsg() != "") {
+			return exceptionCode;
+		}
+		String tmpFilePath = System.getProperty("java.io.tmpdir");
+		if ("XL".equalsIgnoreCase(vObject.getSourceType())) {
+			setUploadDownloadDirFromDB();
+			String uploadDir = "";
+			uploadDir = getUploadDir();
+
+			File my_file = new File(uploadDir + File.separator + fileName);
+			out = new ByteArrayOutputStream();
+			FileInputStream in = new FileInputStream(my_file);
+			out = new ByteArrayOutputStream();
+			File lfile = new File(tmpFilePath + File.separator + fileName);
+			if (lfile.exists()) {
+				lfile.delete();
+			}
+			outputStream = new FileOutputStream(tmpFilePath + File.separator + fileName);
+			int length = fileName.length();
+			int bufferSize = 1024;
+			byte[] buffer = new byte[bufferSize];
+			while ((length = in.read(buffer)) != -1) {
+				out.write(buffer, 0, length);
+			}
+			out.writeTo(outputStream);
+			outputStream.flush();
+			outputStream.close();
+			out.flush();
+			out.close();
+			in.close();
+			exceptionCode = CommonUtils.getResultObject(SERVICE_NAME, Constants.SUCCESSFUL_OPERATION, "Upload", "");
+			exceptionCode.setOtherInfo(fileName);
+			exceptionCode.setResponse(tmpFilePath);
+		} else if ("DB".equalsIgnoreCase(vObject.getSourceType())) {
+			setUploadDownloadDirFromDB();
+			String uploadDir = "";
+			uploadDir = getUploadDir();
+			exceptionCode = templateScheduleDao.reviewDbData(vObject);
+			TemplateScheduleVb templateSchedule = (TemplateScheduleVb)exceptionCode.getResponse();
+			exceptionCode =templateScheduleDao.writeXlsData(uploadDir,templateSchedule.getColumnHeaderLst(), templateSchedule.getDataLst(),vObject.getTemplateName());
+		}
+		return exceptionCode;
+	}
 }

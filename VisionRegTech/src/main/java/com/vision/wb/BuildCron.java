@@ -57,7 +57,7 @@ public class BuildCron extends EtlSwitch {
 	@Value("${schedule.adfBuild}")
 	private String adfBuildFlag;
 	
-	//@Scheduled(fixedRate = 30000)
+    //@Scheduled(fixedRate = 30000)
 	public void adfBuildCron() {
 		ExceptionCode exceptionCode = new ExceptionCode();
 		Boolean processControlDataPresent = false;
