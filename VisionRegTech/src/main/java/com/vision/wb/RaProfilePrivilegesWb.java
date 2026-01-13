@@ -134,6 +134,11 @@ public class RaProfilePrivilegesWb extends AbstractDynaWorkerBean<RaProfileVb>{
 				(!pendingCollection.get(0).getProfileDownload().equals(approvedCollection.get(0).getProfileDownload())));
 		lResult.add(lPDownload);
 		
+		ReviewResultVb lPValidate = new ReviewResultVb("P Validate","Y".equalsIgnoreCase(pendingCollection.get(0).getProfileValidate())?"Yes":"No",
+				("Y".equalsIgnoreCase(approvedCollection.get(0).getProfileValidate())?"Yes":"No"),
+				(!pendingCollection.get(0).getProfileValidate().equals(approvedCollection.get(0).getProfileValidate())));
+		lResult.add(lPValidate);
+		
 		ReviewResultVb lPrrofileStatus = new ReviewResultVb(rsb.getString("profileStatus"),
 				(pendingCollection == null || pendingCollection.isEmpty())?"":getNtDescription((List<NumSubTabVb>) collTemp.get(0),pendingCollection.get(0).getProfileStatus()),
 		        (approvedCollection == null || approvedCollection.isEmpty())?"":getNtDescription((List<NumSubTabVb>) collTemp.get(0),approvedCollection.get(0).getProfileStatus()),

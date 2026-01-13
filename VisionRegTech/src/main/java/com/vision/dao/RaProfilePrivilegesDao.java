@@ -70,6 +70,7 @@ public class RaProfilePrivilegesDao extends AbstractDao<RaProfileVb> {
 				profilePrivilegesVb.setDateCreation(rs.getString("DATE_CREATION"));
 				profilePrivilegesVb.setDateLastModified(rs.getString("DATE_LAST_MODIFIED"));
 				profilePrivilegesVb.setExcludeMenu(rs.getString("EXCLUDE_MENU_PROGRAM_LIST"));
+				profilePrivilegesVb.setProfileValidate(rs.getString("P_VALIDATE"));
 				return profilePrivilegesVb;
 			}
 		};
@@ -105,6 +106,7 @@ public class RaProfilePrivilegesDao extends AbstractDao<RaProfileVb> {
 				profilePrivilegesVb.setDateCreation(rs.getString("DATE_CREATION"));
 				profilePrivilegesVb.setDateLastModified(rs.getString("DATE_LAST_MODIFIED"));
 				profilePrivilegesVb.setExcludeMenu(rs.getString("EXCLUDE_MENU_PROGRAM_LIST"));
+				profilePrivilegesVb.setProfileValidate(rs.getString("P_VALIDATE"));
 				return profilePrivilegesVb;
 			}
 		};
@@ -140,7 +142,7 @@ public class RaProfilePrivilegesDao extends AbstractDao<RaProfileVb> {
 				+ "                P_Delete,                                              "
 				+ "                P_Inquiry,                                             "
 				+ "                P_Verification,                                        "
-				+ "                P_Excel_Upload,P_DOWNLOAD,P_SUBMIT, 							"
+				+ "                P_Excel_Upload,P_DOWNLOAD,P_SUBMIT,P_VALIDATE, 							"
 				+ "				t1.MAKER,					"
 				+ "				 t1.PROFILE_STATUS,										" + "				 "
 				+ ProfileStatusNtApprDesc + ",							"
@@ -183,7 +185,7 @@ public class RaProfilePrivilegesDao extends AbstractDao<RaProfileVb> {
 				+ "                P_Delete,                                              "
 				+ "                P_Inquiry,                                             "
 				+ "                P_Verification,                                        "
-				+ "                P_Excel_Upload,P_DOWNLOAD,P_SUBMIT, " + "				t1.MAKER,					"
+				+ "                P_Excel_Upload,P_DOWNLOAD,P_SUBMIT,P_VALIDATE, " + "				t1.MAKER,					"
 				+ "				 t1.PROFILE_STATUS,										" + "				 "
 				+ ProfileStatusNtPendDesc + ",							"
 				+ "				 t1.RECORD_INDICATOR,										" + "				 "
@@ -347,7 +349,7 @@ public class RaProfilePrivilegesDao extends AbstractDao<RaProfileVb> {
 				+ "                P_Delete,                                              "
 				+ "                P_Inquiry,                                             "
 				+ "                P_Verification,                                        "
-				+ "                P_Excel_Upload,P_DOWNLOAD,P_SUBMIT, "
+				+ "                P_Excel_Upload,P_DOWNLOAD,P_SUBMIT,P_VALIDATE, "
 				+ "				t1.MAKER,t1.VERIFIER,					" + "				t1.PROFILE_STATUS,        "
 				+ "				 t1.RECORD_INDICATOR,			" + "				 " + ProfileStatusNtApprDesc
 				+ ",							" + "				 " + RecordIndicatorNtApprDesc
@@ -382,7 +384,7 @@ public class RaProfilePrivilegesDao extends AbstractDao<RaProfileVb> {
 				+ "                P_Delete,                                              "
 				+ "                P_Inquiry,                                             "
 				+ "                P_Verification,                                        "
-				+ "                P_Excel_Upload,P_DOWNLOAD,P_SUBMIT, "
+				+ "                P_Excel_Upload,P_DOWNLOAD,P_SUBMIT,P_VALIDATE ,"
 				+ "				t1.MAKER,t1.VERIFIER,					" + "				t1.PROFILE_STATUS,        "
 				+ "				 t1.RECORD_INDICATOR,			" + "				 " + ProfileStatusNtPendDesc
 				+ ",							" + "				 " + RecordIndicatorNtPendDesc
@@ -466,15 +468,15 @@ public class RaProfilePrivilegesDao extends AbstractDao<RaProfileVb> {
 		vObject.setProfileInquiry("Y");
 		String query = "";
 		query = "Insert Into PRD_Profile_privileges_New(USER_GROUP, USER_PROFILE, MENU_GROUP, "
-				+ " P_ADD, P_MODIFY, P_DELETE, P_INQUIRY, P_VERIFICATION, P_EXCEL_UPLOAD,P_DOWNLOAD,P_SUBMIT,"
+				+ " P_ADD, P_MODIFY, P_DELETE, P_INQUIRY, P_VERIFICATION, P_EXCEL_UPLOAD,P_DOWNLOAD,P_SUBMIT,P_VALIDATE,"
 				+ " PROFILE_STATUS, RECORD_INDICATOR, MAKER, VERIFIER, INTERNAL_STATUS,"
 				+ " DATE_LAST_MODIFIED, DATE_CREATION,Application_Access,EXCLUDE_MENU_PROGRAM_LIST) "
-				+ " Values (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 0, " + getDbFunction("SYSDATE") + ", "
+				+ " Values (?,?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, 0, 0, ?, ?, 0, " + getDbFunction("SYSDATE") + ", "
 				+ getDbFunction("SYSDATE") + ",'" + productName + "',?)";
 		Object args[] = { vObject.getUserGroup(), vObject.getUserProfile(), vObject.getMenuGroup(),
 				vObject.getProfileAdd(), vObject.getProfileModify(), vObject.getProfileDelete(),
 				vObject.getProfileInquiry(), vObject.getProfileVerification(), vObject.getProfileUpload(),
-				vObject.getProfileDownload(),vObject.getProfileSubmit(), vObject.getMaker(), vObject.getVerifier(), vObject.getExcludeMenu() };
+				vObject.getProfileDownload(),vObject.getProfileSubmit(), vObject.getProfileValidate() ,vObject.getMaker(), vObject.getVerifier(), vObject.getExcludeMenu() };
 		return getJdbcTemplate().update(query, args);
 	}
 
@@ -513,15 +515,15 @@ public class RaProfilePrivilegesDao extends AbstractDao<RaProfileVb> {
 		vObject.setProfileInquiry("Y");
 		String query = "";
 		query = "Insert Into PRD_PROFILE_PRIV_NEW_PEND(USER_GROUP, USER_PROFILE, MENU_GROUP, "
-				+ " P_ADD, P_MODIFY, P_DELETE, P_INQUIRY, P_VERIFICATION, P_EXCEL_UPLOAD,P_DOWNLOAD,P_SUBMIT,"
+				+ " P_ADD, P_MODIFY, P_DELETE, P_INQUIRY, P_VERIFICATION, P_EXCEL_UPLOAD,P_DOWNLOAD,P_SUBMIT,P_VALIDATE,"
 				+ " PROFILE_STATUS, RECORD_INDICATOR, MAKER, VERIFIER, INTERNAL_STATUS,"
 				+ " DATE_LAST_MODIFIED, DATE_CREATION,Application_Access,EXCLUDE_MENU_PROGRAM_LIST) "
-				+ " Values (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, " + getDbFunction("SYSDATE") + ", "
+				+ " Values (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?, ?, 0, " + getDbFunction("SYSDATE") + ", "
 				+ getDbFunction("SYSDATE") + ",'" + productName + "',?)";
 		Object args[] = { vObject.getUserGroup(), vObject.getUserProfile(), vObject.getMenuGroup(),
 				vObject.getProfileAdd(), vObject.getProfileModify(), vObject.getProfileDelete(),
 				vObject.getProfileInquiry(), vObject.getProfileVerification(), vObject.getProfileUpload(),
-				vObject.getProfileDownload(),vObject.getProfileSubmit(), vObject.getProfileStatus(), vObject.getRecordIndicator(),
+				vObject.getProfileDownload(),vObject.getProfileSubmit(),vObject.getProfileValidate(), vObject.getProfileStatus(), vObject.getRecordIndicator(),
 				vObject.getMaker(), vObject.getVerifier(), vObject.getExcludeMenu() };
 		return getJdbcTemplate().update(query, args);
 	}
@@ -537,15 +539,15 @@ public class RaProfilePrivilegesDao extends AbstractDao<RaProfileVb> {
 
 		String query = "";
 		query = "Insert Into PRD_PROFILE_PRIV_NEW_PEND(USER_GROUP, USER_PROFILE, MENU_GROUP, "
-				+ " P_ADD, P_MODIFY, P_DELETE, P_INQUIRY, P_VERIFICATION, P_EXCEL_UPLOAD,P_DOWNLOAD,P_SUBMIT,"
+				+ " P_ADD, P_MODIFY, P_DELETE, P_INQUIRY, P_VERIFICATION, P_EXCEL_UPLOAD,P_DOWNLOAD,P_SUBMIT,P_VALIDATE,"
 				+ " PROFILE_STATUS, RECORD_INDICATOR, MAKER, VERIFIER, INTERNAL_STATUS,"
 				+ " DATE_LAST_MODIFIED, DATE_CREATION,Application_Access,EXCLUDE_MENU_PROGRAM_LIST) "
-				+ " Values (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?, 0, " + getDbFunction("SYSDATE") + ", "
+				+ " Values (?,?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?,?, ?, ?, ?, 0, " + getDbFunction("SYSDATE") + ", "
 				+ dateCreation + ",'" + productName + "',?)";
 		Object args[] = { vObject.getUserGroup(), vObject.getUserProfile(), vObject.getMenuGroup(),
 				vObject.getProfileAdd(), vObject.getProfileModify(), vObject.getProfileDelete(),
 				vObject.getProfileInquiry(), vObject.getProfileVerification(), vObject.getProfileUpload(),
-				vObject.getProfileDownload(),vObject.getProfileSubmit(), vObject.getProfileStatus(), vObject.getRecordIndicator(),
+				vObject.getProfileDownload(),vObject.getProfileSubmit(),vObject.getProfileValidate(), vObject.getProfileStatus(), vObject.getRecordIndicator(),
 				vObject.getMaker(), vObject.getVerifier(), vObject.getDateCreation(), vObject.getExcludeMenu() };
 		return getJdbcTemplate().update(query, args);
 	}
@@ -556,13 +558,13 @@ public class RaProfilePrivilegesDao extends AbstractDao<RaProfileVb> {
 		String query = "";
 		query = "Update PRD_PROFILE_PRIVILEGES_NEW Set "
 				+ " P_ADD = ?, P_MODIFY = ?,P_DELETE = ?, P_INQUIRY = ?, P_VERIFICATION = ?, P_EXCEL_UPLOAD = ?, "
-				+ " P_DOWNLOAD = ?,P_SUBMIT = ? ,MAKER = ?, VERIFIER = ?, " + " DATE_LAST_MODIFIED = " + getDbFunction("SYSDATE")
+				+ " P_DOWNLOAD = ?,P_SUBMIT = ?, P_VALIDATE =?,MAKER = ?, VERIFIER = ?, " + " DATE_LAST_MODIFIED = " + getDbFunction("SYSDATE")
 				+ " ,EXCLUDE_MENU_PROGRAM_LIST= ? ,PROFILE_STATUS = ? "
 				+ " Where USER_GROUP = ?  And USER_PROFILE = ?  " + " And MENU_GROUP = ? and Application_Access = '"
 				+ productName + "' ";
 		Object args[] = { vObject.getProfileAdd(), vObject.getProfileModify(), vObject.getProfileDelete(),
 				vObject.getProfileInquiry(), vObject.getProfileVerification(), vObject.getProfileUpload(),
-				vObject.getProfileDownload(),vObject.getProfileSubmit(), vObject.getMaker(), vObject.getVerifier(), vObject.getExcludeMenu(),
+				vObject.getProfileDownload(),vObject.getProfileSubmit(),vObject.getProfileValidate(), vObject.getMaker(), vObject.getVerifier(), vObject.getExcludeMenu(),
 				vObject.getProfileStatus(), vObject.getUserGroup(), vObject.getUserProfile(), vObject.getMenuGroup() };
 		return getJdbcTemplate().update(query, args);
 	}
@@ -573,12 +575,12 @@ public class RaProfilePrivilegesDao extends AbstractDao<RaProfileVb> {
 		String query = "";
 		query = "Update PRD_PROFILE_PRIV_NEW_PEND Set "
 				+ " P_ADD = ?, P_MODIFY = ?,P_DELETE = ?, P_INQUIRY = ?, P_VERIFICATION = ?, P_EXCEL_UPLOAD = ?, "
-				+ " P_DOWNLOAD = ?,P_SUBMIT = ? ,MAKER = ?, VERIFIER = ?, " + " DATE_LAST_MODIFIED = " + getDbFunction("SYSDATE")
+				+ " P_DOWNLOAD = ?,P_SUBMIT = ? ,P_VALIDATE =? ,MAKER = ?, VERIFIER = ?, " + " DATE_LAST_MODIFIED = " + getDbFunction("SYSDATE")
 				+ " ,EXCLUDE_MENU_PROGRAM_LIST= ?, PROFILE_STATUS = ?" + " Where USER_GROUP = ?  And USER_PROFILE = ?  "
 				+ " And MENU_GROUP = ? and Application_Access = '" + productName + "' ";
 		Object args[] = { vObject.getProfileAdd(), vObject.getProfileModify(), vObject.getProfileDelete(),
 				vObject.getProfileInquiry(), vObject.getProfileVerification(), vObject.getProfileUpload(),
-				vObject.getProfileDownload(),vObject.getProfileSubmit(), vObject.getMaker(), vObject.getVerifier(), vObject.getExcludeMenu(),
+				vObject.getProfileDownload(),vObject.getProfileSubmit(),vObject.getProfileValidate(), vObject.getMaker(), vObject.getVerifier(), vObject.getExcludeMenu(),
 				vObject.getProfileStatus(), vObject.getUserGroup(), vObject.getUserProfile(), vObject.getMenuGroup() };
 		return getJdbcTemplate().update(query, args);
 	}
@@ -693,6 +695,12 @@ public class RaProfilePrivilegesDao extends AbstractDao<RaProfileVb> {
 				strAudit.append("P_SUBMIT" + auditDelimiterColVal + vObject.getProfileSubmit().trim());
 			else
 				strAudit.append("P_SUBMIT" + auditDelimiterColVal + "NULL");
+			strAudit.append(auditDelimiter);
+			
+			if (ValidationUtil.isValid(vObject.getProfileValidate()))
+				strAudit.append("P_VALIDATE" + auditDelimiterColVal + vObject.getProfileValidate().trim());
+			else
+				strAudit.append("P_VALIDATE" + auditDelimiterColVal + "NULL");
 			strAudit.append(auditDelimiter);
 
 			strAudit.append("PROFILE_STATUS_NT" + auditDelimiterColVal + vObject.getProfileStatusNt());

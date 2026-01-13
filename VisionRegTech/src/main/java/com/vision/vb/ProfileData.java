@@ -29,6 +29,7 @@ public class ProfileData extends CommonVb implements Serializable{
 	private String profileDownload = "N";
 	private String profileView = "N";
 	private String profileSubmit = "N";
+	private String profileValidate = "N";
 	public String getProfileSubmit() {
 		return profileSubmit;
 	}
@@ -161,4 +162,11 @@ public class ProfileData extends CommonVb implements Serializable{
 	public void setProfileView(String profileView) {
 		this.profileView = profileView;
 	}
+	public String getProfileValidate() {
+		return profileValidate;
+	}
+	public void setProfileValidate(String profileValidate) {
+		this.profileValidate = profileValidate;
+	}
+	
 }

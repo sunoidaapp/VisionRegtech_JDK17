@@ -5091,7 +5091,6 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 		        workbook.write(out);
 		        out.close();
 
-		        System.out.println("XLS Created Successfully: " + filePathwithName);
 		        exceptionCode.setResponse(filePath);
 		        exceptionCode.setOtherInfo(fileName);
 		        exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);

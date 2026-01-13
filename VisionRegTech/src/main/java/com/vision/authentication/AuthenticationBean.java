@@ -171,6 +171,7 @@ public class AuthenticationBean {
 					lMenuVb.setProfileUpload(profileData.getProfileUpload());
 					lMenuVb.setProfileDownload(profileData.getProfileDownload());
 					lMenuVb.setProfileSubmit(profileData.getProfileSubmit());
+					lMenuVb.setProfileValidate(profileData.getProfileValidate());
 					lMenuVb.setMenuStatus(0);
 					ArrayList<MenuVb> subMenuGroup = commonDao.getSubMenuItemsForMenuGroup(profileData.getMenuGroup(),
 							lCurrentUser);
@@ -188,6 +189,7 @@ public class AuthenticationBean {
 							menuVb.setProfileVerification(profileData.getProfileVerification());
 							menuVb.setProfileUpload(profileData.getProfileUpload());
 							menuVb.setProfileDownload(profileData.getProfileDownload());
+							menuVb.setProfileValidate(profileData.getProfileValidate());
 							resultChilds.add(menuVb);
 						}
 					}

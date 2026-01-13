@@ -25,6 +25,7 @@ public class RaProfileVb extends CommonVb implements Serializable{
 	private String profileUpload = "N";
 	private String profileDownload = "N";
 	private String profileSubmit = "N";
+	private String profileValidate = "N";
 	private int	profileStatusNt =  1;
 	private int	profileStatus = -1;	
 	private String homeDashboard ="";
@@ -239,6 +240,14 @@ public class RaProfileVb extends CommonVb implements Serializable{
 
 	public void setProfileSubmit(String profileSubmit) {
 		this.profileSubmit = profileSubmit;
+	}
+
+	public String getProfileValidate() {
+		return profileValidate;
+	}
+
+	public void setProfileValidate(String profileValidate) {
+		this.profileValidate = profileValidate;
 	}
 	
 }

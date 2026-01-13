@@ -901,12 +901,12 @@ public class CommonDao {
 		String sql = "";
 		if ("ORACLE".equalsIgnoreCase(databaseType)) {
 			sql = "Select MENU_GROUP_SEQ,MENU_GROUP_NAME,MENU_GROUP_ICON,MENU_PROGRAM, "
-					+ " T2.P_ADD,T2.P_MODIFY,P_DELETE,P_INQUIRY,P_VERIFICATION,P_EXCEL_UPLOAD,P_DOWNLOAD,P_SUBMIT  from PRD_MENU_GROUP T1,PRD_PROFILE_PRIVILEGES_NEW T2 "
+					+ " T2.P_ADD,T2.P_MODIFY,P_DELETE,P_INQUIRY,P_VERIFICATION,P_EXCEL_UPLOAD,P_DOWNLOAD,P_SUBMIT,P_VALIDATE from PRD_MENU_GROUP T1,PRD_PROFILE_PRIVILEGES_NEW T2 "
 					+ " where T1.MENU_GROUP_Status = 0 and t2.PROFILE_STATUS =0  and T1.Application_Access = ?  AND T2.USER_GROUP||'-'||T2.USER_PROFILE = ? "
 					+ " AND T1.Application_Access = T2.Application_Access  AND T1.MENU_GROUP_SEQ = T2.MENU_GROUP  ORDER BY Menu_Display_Order ";
 		} else {
 			sql = "Select MENU_GROUP_SEQ,MENU_GROUP_NAME,MENU_GROUP_ICON,MENU_PROGRAM, "
-					+ " T2.P_ADD,T2.P_MODIFY,P_DELETE,P_INQUIRY,P_VERIFICATION,P_EXCEL_UPLOAD,P_DOWNLOAD,P_SUBMIT  from PRD_MENU_GROUP T1,PRD_PROFILE_PRIVILEGES_NEW T2 "
+					+ " T2.P_ADD,T2.P_MODIFY,P_DELETE,P_INQUIRY,P_VERIFICATION,P_EXCEL_UPLOAD,P_DOWNLOAD,P_SUBMIT,P_VALIDATE  from PRD_MENU_GROUP T1,PRD_PROFILE_PRIVILEGES_NEW T2 "
 					+ " where T1.MENU_GROUP_Status = 0  and t2.PROFILE_STATUS =0 and  T1.Application_Access = ?  AND T2.USER_GROUP+'-'+T2.USER_PROFILE = ? "
 					+ " AND T1.Application_Access = T2.Application_Access  AND T1.MENU_GROUP_SEQ = T2.MENU_GROUP  ORDER BY Menu_Display_Order ";
 		}
@@ -934,6 +934,7 @@ public class CommonDao {
 				profileData.setProfileUpload(rs.getString("P_EXCEL_UPLOAD"));
 				profileData.setProfileDownload(rs.getString("P_DOWNLOAD"));
 				profileData.setProfileSubmit(rs.getString("P_SUBMIT"));
+				profileData.setProfileValidate(rs.getString("P_VALIDATE"));
 				return profileData;
 			}
 		};

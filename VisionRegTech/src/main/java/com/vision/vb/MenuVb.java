@@ -30,6 +30,7 @@ public class MenuVb extends CommonVb implements Serializable{
 	private String profileDownload = "N";
 	private String menuIcon = "default";
 	private String profileSubmit = "N";
+	private String profileValidate = "N";
 	public String getProfileSubmit() {
 		return profileSubmit;
 	}
@@ -177,4 +178,11 @@ public class MenuVb extends CommonVb implements Serializable{
 	public void setMenuIcon(String menuIcon) {
 		this.menuIcon = menuIcon;
 	}
+	public String getProfileValidate() {
+		return profileValidate;
+	}
+	public void setProfileValidate(String profileValidate) {
+		this.profileValidate = profileValidate;
+	}
+	
 }
