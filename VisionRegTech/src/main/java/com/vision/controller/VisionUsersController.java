@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.vision.dao.CommonDao;
 import com.vision.dao.VisionUsersDao;
 import com.vision.exception.ExceptionCode;
 import com.vision.exception.JSONExceptionCode;
@@ -32,26 +33,29 @@ public class VisionUsersController {
 	VisionUploadWb visionUploadWb;
 	@Autowired
 	VisionUsersDao visionUsersDao;
+	@Autowired
+	CommonDao commonDao;
 
 	/*-------------------------------------Unlock Vision User------------------------------------------*/
 	@RequestMapping(path = "/userUnlockMail", method = RequestMethod.POST)
-	//@ApiOperation(value = "Unlock user ", notes = "unlock user", response = ResponseEntity.class)
+	// @ApiOperation(value = "Unlock user ", notes = "unlock user", response =
+	// ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> userUnlockMail(@RequestBody VisionUsersVb vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
 		try {
 
-		     if(ValidationUtil.isValid(vObject.getUserNameForUnlock())){
-		       exceptionCode = visionUsersWb.unlockUserAccount(vObject,vObject.getUserNameForUnlock());
-		         if(exceptionCode.getErrorCode()==Constants.SUCCESSFUL_OPERATION){
-		        	 vObject.setEmailStatus("S");
-		        	 vObject.setErrorMessage("Vision account has been unlocked.");
-		        	 exceptionCode.setErrorMsg("Vision account has been unlocked.");
+			if (ValidationUtil.isValid(vObject.getUserNameForUnlock())) {
+				exceptionCode = visionUsersWb.unlockUserAccount(vObject, vObject.getUserNameForUnlock());
+				if (exceptionCode.getErrorCode() == Constants.SUCCESSFUL_OPERATION) {
+					vObject.setEmailStatus("S");
+					vObject.setErrorMessage("Vision account has been unlocked.");
+					exceptionCode.setErrorMsg("Vision account has been unlocked.");
 
-		         }else{
-		        	 vObject.setEmailStatus("E");
-		         }
-		      }
+				} else {
+					vObject.setEmailStatus("E");
+				}
+			}
 			if (exceptionCode.getErrorCode() == Constants.SUCCESSFUL_OPERATION) {
 				jsonExceptionCode = new JSONExceptionCode(Constants.SUCCESSFUL_OPERATION, exceptionCode.getErrorMsg(),
 						exceptionCode.getOtherInfo());
@@ -65,19 +69,22 @@ public class VisionUsersController {
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.EXPECTATION_FAILED);
 		}
 	}
-	
+
 	/*-------------------------------------Unlock Vision User------------------------------------------*/
 	@RequestMapping(path = "/changePassword", method = RequestMethod.POST)
-	//@ApiOperation(value = "Unlock user ", notes = "unlock user", response = ResponseEntity.class)
+	// @ApiOperation(value = "Unlock user ", notes = "unlock user", response =
+	// ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> changePassword(@RequestBody VisionUsersVb vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
 		try {
 			exceptionCode = visionUsersWb.changePassword(vObject);
 			if (exceptionCode.getErrorCode() == Constants.SUCCESSFUL_OPERATION) {
-				jsonExceptionCode = new JSONExceptionCode(Constants.SUCCESSFUL_OPERATION, exceptionCode.getErrorMsg(),exceptionCode.getOtherInfo());
+				jsonExceptionCode = new JSONExceptionCode(Constants.SUCCESSFUL_OPERATION, exceptionCode.getErrorMsg(),
+						exceptionCode.getOtherInfo());
 			} else {
-				jsonExceptionCode = new JSONExceptionCode(Constants.ERRONEOUS_OPERATION, exceptionCode.getErrorMsg(),exceptionCode.getOtherInfo());
+				jsonExceptionCode = new JSONExceptionCode(Constants.ERRONEOUS_OPERATION, exceptionCode.getErrorMsg(),
+						exceptionCode.getOtherInfo());
 			}
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 		} catch (RuntimeCustomException rex) {
@@ -85,9 +92,11 @@ public class VisionUsersController {
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.EXPECTATION_FAILED);
 		}
 	}
+
 	/*-------------------------------------BRANCH RM TARGET SCREEN PAGE LOAD------------------------------------------*/
 	@RequestMapping(path = "/pageLoadValues", method = RequestMethod.GET)
-	////@ApiOperation(value = "Page Load Values", notes = "Load AT/NT Values on screen load", response = ResponseEntity.class)
+	//// @ApiOperation(value = "Page Load Values", notes = "Load AT/NT Values on
+	//// screen load", response = ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> pageOnLoad() {
 		JSONExceptionCode jsonExceptionCode = null;
 		try {
@@ -104,11 +113,17 @@ public class VisionUsersController {
 
 	/*--------------get Query Results------------------*/
 	@RequestMapping(path = "/getAllQueryResults", method = RequestMethod.POST)
-	////@ApiOperation(value = "Get All the details", notes = "Fetch all the existing records from the table", response = ResponseEntity.class)
+	//// @ApiOperation(value = "Get All the details", notes = "Fetch all the
+	//// existing records from the table", response = ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> getAllQueryResults(@RequestBody VisionUsersVb vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		try {
 			vObject.setActionType("Query");
+			String reportAvailable = commonDao.findVisionVariableValue("USER_REPORT");
+			if (reportAvailable == null) {
+				reportAvailable = "N";
+			}
+			vObject.setReportAvailable(reportAvailable);
 			ExceptionCode exceptionCode = visionUsersWb.getAllQueryPopupResult(vObject);
 			jsonExceptionCode = new JSONExceptionCode(Constants.SUCCESSFUL_OPERATION, "Query Results",
 					exceptionCode.getResponse(), exceptionCode.getOtherInfo());
@@ -121,7 +136,8 @@ public class VisionUsersController {
 
 	/*--------------get Query Results------------------*/
 	@RequestMapping(path = "/getQueryDetails", method = RequestMethod.POST)
-	////@ApiOperation(value = "Get All the details", notes = "Fetch all the existing records from the table", response = ResponseEntity.class)
+	//// @ApiOperation(value = "Get All the details", notes = "Fetch all the
+	//// existing records from the table", response = ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> getAllQueryDetails(@RequestBody VisionUsersVb vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		try {
@@ -138,7 +154,8 @@ public class VisionUsersController {
 
 	/*-------------------------------------ADD Vision User Setup------------------------------------------*/
 	@RequestMapping(path = "/addVisionUserSetup", method = RequestMethod.POST)
-	////@ApiOperation(value = "Add Vision User Setup", notes = "Add Vision User Setup", response = ResponseEntity.class)
+	//// @ApiOperation(value = "Add Vision User Setup", notes = "Add Vision User
+	//// Setup", response = ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> addVisionUserSetup(@RequestBody VisionUsersVb vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
@@ -164,7 +181,8 @@ public class VisionUsersController {
 
 	/*-------------------------------------Modify Vision User Setup------------------------------------------*/
 	@RequestMapping(path = "/modifyVisionUserSetup", method = RequestMethod.POST)
-	////@ApiOperation(value = "Modify Vision User Setup", notes = "Modify Vision User Setup", response = ResponseEntity.class)
+	//// @ApiOperation(value = "Modify Vision User Setup", notes = "Modify Vision
+	//// User Setup", response = ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> modifyVisionUserSetup(@RequestBody VisionUsersVb vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
@@ -187,7 +205,8 @@ public class VisionUsersController {
 
 	/*-------------------------------------Delete Vision User Setup------------------------------------------*/
 	@RequestMapping(path = "/deleteVisionUserSetup", method = RequestMethod.POST)
-	////@ApiOperation(value = "delete Vision User Setup", notes = "delete Vision User Setup", response = ResponseEntity.class)
+	//// @ApiOperation(value = "delete Vision User Setup", notes = "delete Vision
+	//// User Setup", response = ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> deleteVisionUserSetup(@RequestBody VisionUsersVb vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
@@ -210,7 +229,8 @@ public class VisionUsersController {
 
 	/*-------------------------------------Reject Vision User Setup------------------------------------------*/
 	@RequestMapping(path = "/rejectVisionUserSetup", method = RequestMethod.POST)
-	////@ApiOperation(value = "reject Vision User Setup", notes = "reject Vision User Setup", response = ResponseEntity.class)
+	//// @ApiOperation(value = "reject Vision User Setup", notes = "reject Vision
+	//// User Setup", response = ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> rejectVisionUserSetup(@RequestBody VisionUsersVb vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
@@ -233,7 +253,8 @@ public class VisionUsersController {
 
 	/*-------------------------------------Approve Vision User Setup------------------------------------------*/
 	@RequestMapping(path = "/approveVisionUserSetup", method = RequestMethod.POST)
-	////@ApiOperation(value = "Approve Vision User Setup", notes = "approve Vision User Setup", response = ResponseEntity.class)
+	//// @ApiOperation(value = "Approve Vision User Setup", notes = "approve Vision
+	//// User Setup", response = ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> approveVisionUserSetup(@RequestBody VisionUsersVb vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
@@ -256,7 +277,8 @@ public class VisionUsersController {
 
 	/*-------------------------------------Unlock Vision User------------------------------------------*/
 	@RequestMapping(path = "/unLockUser", method = RequestMethod.POST)
-	////@ApiOperation(value = "Unlock user ", notes = "unlock user", response = ResponseEntity.class)
+	//// @ApiOperation(value = "Unlock user ", notes = "unlock user", response =
+	//// ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> unLockUser(@RequestBody VisionUsersVb vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
@@ -278,30 +300,30 @@ public class VisionUsersController {
 	}
 
 	/*-------------------------------------User Password Change------------------------------------------*/
-	/*@RequestMapping(path = "/passwordChange", method = RequestMethod.POST)
-	////@ApiOperation(value = "Password Change", notes = "password Change", response = ResponseEntity.class)
-	public ResponseEntity<JSONExceptionCode> passwordChange(@RequestBody VisionUsersVb vObject) {
-		JSONExceptionCode jsonExceptionCode = null;
-		ExceptionCode exceptionCode = new ExceptionCode();
-		try {
-
-			exceptionCode = visionUsersWb.passwordChange(vObject);
-			if (exceptionCode.getErrorCode() == Constants.SUCCESSFUL_OPERATION) {
-				jsonExceptionCode = new JSONExceptionCode(Constants.SUCCESSFUL_OPERATION, exceptionCode.getErrorMsg(),
-						exceptionCode.getOtherInfo());
-			} else {
-				jsonExceptionCode = new JSONExceptionCode(Constants.ERRONEOUS_OPERATION, exceptionCode.getErrorMsg(),
-						exceptionCode.getOtherInfo());
-			}
-			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
-		} catch (RuntimeCustomException rex) {
-			jsonExceptionCode = new JSONExceptionCode(Constants.ERRONEOUS_OPERATION, rex.getMessage(), "");
-			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.EXPECTATION_FAILED);
-		}
-	}*/
+	/*
+	 * @RequestMapping(path = "/passwordChange", method = RequestMethod.POST)
+	 * ////@ApiOperation(value = "Password Change", notes = "password Change",
+	 * response = ResponseEntity.class) public ResponseEntity<JSONExceptionCode>
+	 * passwordChange(@RequestBody VisionUsersVb vObject) { JSONExceptionCode
+	 * jsonExceptionCode = null; ExceptionCode exceptionCode = new ExceptionCode();
+	 * try {
+	 * 
+	 * exceptionCode = visionUsersWb.passwordChange(vObject); if
+	 * (exceptionCode.getErrorCode() == Constants.SUCCESSFUL_OPERATION) {
+	 * jsonExceptionCode = new JSONExceptionCode(Constants.SUCCESSFUL_OPERATION,
+	 * exceptionCode.getErrorMsg(), exceptionCode.getOtherInfo()); } else {
+	 * jsonExceptionCode = new JSONExceptionCode(Constants.ERRONEOUS_OPERATION,
+	 * exceptionCode.getErrorMsg(), exceptionCode.getOtherInfo()); } return new
+	 * ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK); } catch
+	 * (RuntimeCustomException rex) { jsonExceptionCode = new
+	 * JSONExceptionCode(Constants.ERRONEOUS_OPERATION, rex.getMessage(), "");
+	 * return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode,
+	 * HttpStatus.EXPECTATION_FAILED); } }
+	 */
 	/*-------------------------------------Unlock Vision User------------------------------------------*/
 	@RequestMapping(path = "/generateVisionId", method = RequestMethod.GET)
-	////@ApiOperation(value = "Generate Vision ID ", notes = "Generate Vision ID", response = ResponseEntity.class)
+	//// @ApiOperation(value = "Generate Vision ID ", notes = "Generate Vision ID",
+	//// response = ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> generateVisionId() {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
@@ -310,7 +332,7 @@ public class VisionUsersController {
 			exceptionCode = visionUsersWb.generateVisionId();
 			if (exceptionCode.getErrorCode() == Constants.SUCCESSFUL_OPERATION) {
 				jsonExceptionCode = new JSONExceptionCode(Constants.SUCCESSFUL_OPERATION, exceptionCode.getErrorMsg(),
-						exceptionCode.getResponse(),exceptionCode.getOtherInfo());
+						exceptionCode.getResponse(), exceptionCode.getOtherInfo());
 			} else {
 				jsonExceptionCode = new JSONExceptionCode(Constants.ERRONEOUS_OPERATION, exceptionCode.getErrorMsg(),
 						exceptionCode.getOtherInfo());
@@ -321,8 +343,10 @@ public class VisionUsersController {
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.EXPECTATION_FAILED);
 		}
 	}
+
 	@RequestMapping(path = "/reviewUserSetup", method = RequestMethod.POST)
-	////@ApiOperation(value = "Review ", notes = "Fetch all the existing records from the table", response = ResponseEntity.class)
+	//// @ApiOperation(value = "Review ", notes = "Fetch all the existing records
+	//// from the table", response = ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> review(@RequestBody VisionUsersVb vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		try {

@@ -1,5 +1,6 @@
 package com.vision.util;
 
+import java.awt.Color;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,7 +30,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 
 import org.apache.commons.net.util.Base64;
-import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.BuiltinFormats;
 import org.apache.poi.ss.usermodel.Cell;
@@ -37,6 +37,7 @@ import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.ClientAnchor;
 import org.apache.poi.ss.usermodel.CreationHelper;
+import org.apache.poi.ss.usermodel.DataFormat;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Drawing;
 import org.apache.poi.ss.usermodel.FillPatternType;
@@ -52,6 +53,8 @@ import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.RegionUtil;
 import org.apache.poi.util.IOUtils;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
+import org.apache.poi.xssf.usermodel.DefaultIndexedColorMap;
+import org.apache.poi.xssf.usermodel.IndexedColorMap;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFClientAnchor;
@@ -126,23 +129,45 @@ public class ExcelExportUtil {
 //		}
 //		return style;
 //	}
-	private static XSSFCellStyle createStyle(Workbook workBook, XSSFColor color, HorizontalAlignment allign, Font font, 
-			String formatString, BorderStyle borderBottom, XSSFColor borderBottomColor){
-		XSSFCellStyle style = (XSSFCellStyle)workBook.createCellStyle();
+	private static XSSFCellStyle createStyle(Workbook workBook, XSSFColor color, HorizontalAlignment allign, Font font,
+			String formatString, BorderStyle borderBottom, XSSFColor borderBottomColor) {
+		XSSFCellStyle style = (XSSFCellStyle) workBook.createCellStyle();
 		style.setFillForegroundColor(color);
 		style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 		style.setAlignment(allign);
-	    style.setFont(font);
-	    if(formatString != null){
-	    	style.setDataFormat((short)BuiltinFormats.getBuiltinFormat(formatString));	
-	    }
-	    if(borderBottom !=BorderStyle.NONE){
-	    	style.setBorderBottom(borderBottom);
-	    	style.setBorderRight(borderBottom);
-	    	style.setBottomBorderColor(borderBottomColor);
-	    	style.setRightBorderColor(borderBottomColor);
-	    }
-	    return style;
+		style.setFont(font);
+		if (formatString != null) {
+			style.setDataFormat((short) BuiltinFormats.getBuiltinFormat(formatString));
+		}
+		if (borderBottom != BorderStyle.NONE) {
+			style.setBorderBottom(borderBottom);
+			style.setBorderRight(borderBottom);
+			style.setBottomBorderColor(borderBottomColor);
+			style.setRightBorderColor(borderBottomColor);
+		}
+		return style;
+	}
+
+	private static XSSFCellStyle createStyle(Workbook workBook, XSSFColor color, VerticalAlignment allign, Font font,
+			String formatString, BorderStyle borderBottom, XSSFColor borderBottomColor) {
+		XSSFCellStyle style = (XSSFCellStyle) workBook.createCellStyle();
+		style.setFillForegroundColor(color);
+		style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+		style.setVerticalAlignment(allign);
+		style.setFont(font);
+		if (formatString != null) {
+			DataFormat format = workBook.createDataFormat();
+			// style.setDataFormat(format.getFormat("#,##0.0000"));
+			style.setDataFormat((short) BuiltinFormats.getBuiltinFormat(formatString));
+
+		}
+		if (borderBottom != BorderStyle.NONE) {
+			style.setBorderBottom(borderBottom);
+			style.setBorderRight(borderBottom);
+			style.setBottomBorderColor(borderBottomColor);
+			style.setRightBorderColor(borderBottomColor);
+		}
+		return style;
 	}
 
 //	private static Font createFont(Workbook workBook, short colorIdx, short fontWeight, String fontName,
@@ -154,15 +179,16 @@ public class ExcelExportUtil {
 //		font.setFontHeightInPoints((short) heightInPoints);
 //		return font;
 //	}
-	private static Font createFont(Workbook workBook, short colorIdx, Boolean fontWeight, String fontName, int heightInPoints){
+	private static Font createFont(Workbook workBook, short colorIdx, Boolean fontWeight, String fontName,
+			int heightInPoints) {
 		Font font = workBook.createFont();
 		font.setColor(colorIdx);
 		font.setBold(fontWeight);
 		font.setFontName(fontName);
-		font.setFontHeightInPoints((short)heightInPoints);
+		font.setFontHeightInPoints((short) heightInPoints);
 		return font;
 	}
-	
+
 //	public static Map<Integer, XSSFCellStyle> createStyles(Workbook workBook) {
 //		Map<Integer, XSSFCellStyle> styles = new HashMap<Integer, XSSFCellStyle>();
 //		Font fontHeader = createFont(workBook, IndexedColors.WHITE.index, Font.BOLDWEIGHT_BOLD, "verdana", 10);
@@ -259,89 +285,102 @@ public class ExcelExportUtil {
 //
 //		return styles;
 //	}
-	public static Map<Integer, XSSFCellStyle> createStyles(Workbook workBook){
-        Map<Integer, XSSFCellStyle> styles = new HashMap<Integer, XSSFCellStyle>();
+	public static Map<Integer, XSSFCellStyle> createStyles(Workbook workBook) {
+		Map<Integer, XSSFCellStyle> styles = new HashMap<Integer, XSSFCellStyle>();
 		Font fontHeader = createFont(workBook, IndexedColors.WHITE.index, true, "verdana", 10);
-		Font fontData  = createFont(workBook, IndexedColors.BLACK.index, false, "verdana", 10);
+		Font fontData = createFont(workBook, IndexedColors.BLACK.index, false, "verdana", 10);
 		Font fontSummary = createFont(workBook, IndexedColors.BLACK.index, true, "verdana", 10);
-		Font fontHeaderTitle = createFont(workBook, IndexedColors.GREEN.index,true, "verdana", 10);
-		
-		/*byte[] greenClr = {(byte) 79, (byte) 98, (byte) 40};*/
-	//	byte[] greenClr = {(byte) 3, (byte) 80, (byte) 122};
-		byte[] greenClr = {(byte) 0, (byte) 92, (byte) 140};
+		Font fontHeaderTitle = createFont(workBook, IndexedColors.GREEN.index, true, "verdana", 10);
+
+		/* byte[] greenClr = {(byte) 79, (byte) 98, (byte) 40}; */
+		// byte[] greenClr = {(byte) 3, (byte) 80, (byte) 122};
+		byte[] greenClr = { (byte) 0, (byte) 92, (byte) 140 };
 		XSSFColor greenXClor = new XSSFColor(greenClr);
-		byte[] pinkClr = {(byte) 230, (byte) 184, (byte) 183};
+		byte[] pinkClr = { (byte) 230, (byte) 184, (byte) 183 };
 		XSSFColor pinkXClor = new XSSFColor(pinkClr);
 		XSSFColor whiteClr = new XSSFColor();
-	    whiteClr.setIndexed(IndexedColors.WHITE.index);
-	    byte[] creemClr = {(byte) 205, (byte) 226, (byte) 236};
+		whiteClr.setIndexed(IndexedColors.WHITE.index);
+		byte[] creemClr = { (byte) 205, (byte) 226, (byte) 236 };
 		XSSFColor creemXClor = new XSSFColor(creemClr);
-		//Dark pink for Summary 
-		byte[] darkPinkClr = {(byte) 177, (byte) 19, (byte) 27};
+		// Dark pink for Summary
+		byte[] darkPinkClr = { (byte) 177, (byte) 19, (byte) 27 };
 		XSSFColor blackClr = new XSSFColor(darkPinkClr);
-		byte[] DgreenClr = {(byte) 54, (byte) 67, (byte) 27};
+		byte[] DgreenClr = { (byte) 54, (byte) 67, (byte) 27 };
 		XSSFColor DgreenXClor = new XSSFColor(DgreenClr);
-		
-		
-		XSSFCellStyle csHeaderCaptionColTop = createStyle(workBook, greenXClor, HorizontalAlignment.CENTER_SELECTION, fontHeader, null, BorderStyle.THIN , whiteClr); //For Multi headers reports
-		XSSFCellStyle csHeaderCaptionCol =  createStyle(workBook, greenXClor, HorizontalAlignment.LEFT, fontHeader, null, BorderStyle.NONE, null);// For header
-		XSSFCellStyle csMidHeaderCaptionCol =  createStyle(workBook, DgreenXClor, HorizontalAlignment.LEFT, fontHeader, null, BorderStyle.NONE , null);// For Mid header
-	    XSSFCellStyle csDataAlt1 = createStyle(workBook, whiteClr, HorizontalAlignment.GENERAL,fontData, BuiltinFormats.getBuiltinFormat(0), BorderStyle.THIN, pinkXClor); //For Caption With background
-	    XSSFCellStyle csDataAlt1Data =  createStyle(workBook, whiteClr, HorizontalAlignment.RIGHT, fontData, BuiltinFormats.getBuiltinFormat(4), BorderStyle.THIN, pinkXClor); //For Data With background
-	    XSSFCellStyle csDataAlt2 =  createStyle(workBook, creemXClor, HorizontalAlignment.GENERAL, fontData, BuiltinFormats.getBuiltinFormat(0), BorderStyle.THIN, pinkXClor);//For Caption With out background
-	    XSSFCellStyle csDataAlt2Data =  createStyle(workBook, creemXClor, HorizontalAlignment.RIGHT, fontData, BuiltinFormats.getBuiltinFormat(4), BorderStyle.THIN, pinkXClor);//For Data With out background
-		XSSFCellStyle csHeaderDataCol = createStyle(workBook, greenXClor, HorizontalAlignment.RIGHT, fontHeader, null, BorderStyle.NONE , null);// For header Right Align
-		XSSFCellStyle csReportTitle =  createStyle(workBook, whiteClr, HorizontalAlignment.CENTER_SELECTION, fontHeaderTitle, null, BorderStyle.NONE , greenXClor); //For Headings
-		
-		XSSFCellStyle csSumary = createStyle(workBook, whiteClr, HorizontalAlignment.GENERAL, fontSummary, null, BorderStyle.THIN, pinkXClor);
+
+		XSSFCellStyle csHeaderCaptionColTop = createStyle(workBook, greenXClor, HorizontalAlignment.CENTER_SELECTION,
+				fontHeader, null, BorderStyle.THIN, whiteClr); // For Multi headers reports
+		XSSFCellStyle csHeaderCaptionCol = createStyle(workBook, greenXClor, HorizontalAlignment.LEFT, fontHeader, null,
+				BorderStyle.NONE, null);// For header
+		XSSFCellStyle csMidHeaderCaptionCol = createStyle(workBook, DgreenXClor, HorizontalAlignment.LEFT, fontHeader,
+				null, BorderStyle.NONE, null);// For Mid header
+		XSSFCellStyle csDataAlt1 = createStyle(workBook, whiteClr, HorizontalAlignment.GENERAL, fontData,
+				BuiltinFormats.getBuiltinFormat(0), BorderStyle.THIN, pinkXClor); // For Caption With background
+		XSSFCellStyle csDataAlt1Data = createStyle(workBook, whiteClr, HorizontalAlignment.RIGHT, fontData,
+				BuiltinFormats.getBuiltinFormat(4), BorderStyle.THIN, pinkXClor); // For Data With background
+		XSSFCellStyle csDataAlt2 = createStyle(workBook, creemXClor, HorizontalAlignment.GENERAL, fontData,
+				BuiltinFormats.getBuiltinFormat(0), BorderStyle.THIN, pinkXClor);// For Caption With out background
+		XSSFCellStyle csDataAlt2Data = createStyle(workBook, creemXClor, HorizontalAlignment.RIGHT, fontData,
+				BuiltinFormats.getBuiltinFormat(4), BorderStyle.THIN, pinkXClor);// For Data With out background
+		XSSFCellStyle csHeaderDataCol = createStyle(workBook, greenXClor, HorizontalAlignment.RIGHT, fontHeader, null,
+				BorderStyle.NONE, null);// For header Right Align
+		XSSFCellStyle csReportTitle = createStyle(workBook, whiteClr, HorizontalAlignment.CENTER_SELECTION,
+				fontHeaderTitle, null, BorderStyle.NONE, greenXClor); // For Headings
+
+		XSSFCellStyle csSumary = createStyle(workBook, whiteClr, HorizontalAlignment.GENERAL, fontSummary, null,
+				BorderStyle.THIN, pinkXClor);
 		csSumary.setBorderTop(BorderStyle.THIN);
 		csSumary.setTopBorderColor(pinkXClor);
-		
-		XSSFCellStyle csSumaryData = createStyle(workBook, whiteClr, HorizontalAlignment.RIGHT, fontSummary, BuiltinFormats.getBuiltinFormat(4), BorderStyle.THIN, pinkXClor); //For Data Summary
+
+		XSSFCellStyle csSumaryData = createStyle(workBook, whiteClr, HorizontalAlignment.RIGHT, fontSummary,
+				BuiltinFormats.getBuiltinFormat(4), BorderStyle.THIN, pinkXClor); // For Data Summary
 		csSumaryData.setBorderTop(BorderStyle.THIN);
 		csSumaryData.setTopBorderColor(pinkXClor);
-		
-		XSSFCellStyle csSumaryAlt2 = createStyle(workBook, creemXClor, HorizontalAlignment.GENERAL, fontSummary, null,BorderStyle.THIN, pinkXClor);
+
+		XSSFCellStyle csSumaryAlt2 = createStyle(workBook, creemXClor, HorizontalAlignment.GENERAL, fontSummary, null,
+				BorderStyle.THIN, pinkXClor);
 		csSumaryAlt2.setBorderTop(BorderStyle.THIN);
 		csSumaryAlt2.setTopBorderColor(pinkXClor);
-	
-		XSSFCellStyle csSumaryDataAlt2 = createStyle(workBook, creemXClor, HorizontalAlignment.RIGHT, fontSummary, BuiltinFormats.getBuiltinFormat(4), BorderStyle.THIN, pinkXClor); //For Data Summary with Alt clr
+
+		XSSFCellStyle csSumaryDataAlt2 = createStyle(workBook, creemXClor, HorizontalAlignment.RIGHT, fontSummary,
+				BuiltinFormats.getBuiltinFormat(4), BorderStyle.THIN, pinkXClor); // For Data Summary with Alt clr
 		csSumaryDataAlt2.setBorderTop(BorderStyle.THIN);
 		csSumaryDataAlt2.setTopBorderColor(pinkXClor);
 
-		
-		XSSFCellStyle csDataAlt1DataForCount =  createStyle(workBook, whiteClr, HorizontalAlignment.RIGHT, fontData, BuiltinFormats.getBuiltinFormat(3), BorderStyle.THIN, pinkXClor); //For Data With background
-		XSSFCellStyle csDataAlt2DataForCount =  createStyle(workBook, creemXClor, HorizontalAlignment.RIGHT, fontData, BuiltinFormats.getBuiltinFormat(3), BorderStyle.MEDIUM, pinkXClor);//For Data With out background
-		XSSFCellStyle csSumaryDataForCount = createStyle(workBook, whiteClr, HorizontalAlignment.RIGHT, fontSummary, BuiltinFormats.getBuiltinFormat(3), BorderStyle.THIN, pinkXClor); //For Data Summary
+		XSSFCellStyle csDataAlt1DataForCount = createStyle(workBook, whiteClr, HorizontalAlignment.RIGHT, fontData,
+				BuiltinFormats.getBuiltinFormat(3), BorderStyle.THIN, pinkXClor); // For Data With background
+		XSSFCellStyle csDataAlt2DataForCount = createStyle(workBook, creemXClor, HorizontalAlignment.RIGHT, fontData,
+				BuiltinFormats.getBuiltinFormat(3), BorderStyle.MEDIUM, pinkXClor);// For Data With out background
+		XSSFCellStyle csSumaryDataForCount = createStyle(workBook, whiteClr, HorizontalAlignment.RIGHT, fontSummary,
+				BuiltinFormats.getBuiltinFormat(3), BorderStyle.THIN, pinkXClor); // For Data Summary
 		csSumaryDataForCount.setBorderTop(BorderStyle.THIN);
 		csSumaryDataForCount.setTopBorderColor(pinkXClor);
-		XSSFCellStyle csSumaryDataAlt2ForCount = createStyle(workBook, creemXClor, HorizontalAlignment.RIGHT, fontSummary, BuiltinFormats.getBuiltinFormat(3), BorderStyle.THIN, pinkXClor); //For Data Summary with Alt clr
+		XSSFCellStyle csSumaryDataAlt2ForCount = createStyle(workBook, creemXClor, HorizontalAlignment.RIGHT,
+				fontSummary, BuiltinFormats.getBuiltinFormat(3), BorderStyle.THIN, pinkXClor); // For Data Summary with
+																								// Alt clr
 		csSumaryDataAlt2ForCount.setBorderTop(BorderStyle.THIN);
 		csSumaryDataAlt2ForCount.setTopBorderColor(pinkXClor);
-		
-		
-	
-		
+
 		styles.put(CELL_STYLE_HEADER_CAP_COL_TOP, csHeaderCaptionColTop);
-		styles.put(CELL_STYLE_HEADER_CAP_COL,csHeaderCaptionCol);
-		styles.put(CELL_STYLE_MID_HEADER_CAP_COL,csMidHeaderCaptionCol);
+		styles.put(CELL_STYLE_HEADER_CAP_COL, csHeaderCaptionCol);
+		styles.put(CELL_STYLE_MID_HEADER_CAP_COL, csMidHeaderCaptionCol);
 		styles.put(CELL_STYLE_HEADER_DATA_COL, csHeaderDataCol);
-		styles.put(CELL_STYLE_DETAILS_CAP_COL,csDataAlt1);
-		styles.put(CELL_STYLE_DETAILS_CAP_COL_ALT,csDataAlt2);
-		styles.put(CELL_STYLE_DETAILS_DATA_COL,csDataAlt1Data);
-		styles.put(CELL_STYLE_DETAILS_DATA_COL_ALT,csDataAlt2Data);
-		styles.put(CELL_STYLE_SUMMERY_CAP_COL,csSumary);
-		styles.put(CELL_STYLE_SUMMERY_DATA_COL,csSumaryData);
-		styles.put(CELL_STYLE_SUMMERY_CAP_COL_ALT,csSumaryAlt2);
-		styles.put(CELL_STYLE_SUMMERY_DATA_COL_ALT,csSumaryDataAlt2);
-		
-		styles.put(CELL_STYLE_DETAILS_DATA_COL_COUNT,csDataAlt1DataForCount);
-		styles.put(CELL_STYLE_DETAILS_DATA_COL_COUNT_ALT,csDataAlt2DataForCount);
-		styles.put(CELL_STYLE_SUMMERY_DATA_COL_COUNT,csSumaryDataForCount);
-		styles.put(CELL_STYLE_SUMMERY_DATA_COL_COUNT_ALT,csSumaryDataAlt2ForCount);
-		styles.put(CELL_STYLE_TITLES,csReportTitle);
-		
-        return styles;
+		styles.put(CELL_STYLE_DETAILS_CAP_COL, csDataAlt1);
+		styles.put(CELL_STYLE_DETAILS_CAP_COL_ALT, csDataAlt2);
+		styles.put(CELL_STYLE_DETAILS_DATA_COL, csDataAlt1Data);
+		styles.put(CELL_STYLE_DETAILS_DATA_COL_ALT, csDataAlt2Data);
+		styles.put(CELL_STYLE_SUMMERY_CAP_COL, csSumary);
+		styles.put(CELL_STYLE_SUMMERY_DATA_COL, csSumaryData);
+		styles.put(CELL_STYLE_SUMMERY_CAP_COL_ALT, csSumaryAlt2);
+		styles.put(CELL_STYLE_SUMMERY_DATA_COL_ALT, csSumaryDataAlt2);
+
+		styles.put(CELL_STYLE_DETAILS_DATA_COL_COUNT, csDataAlt1DataForCount);
+		styles.put(CELL_STYLE_DETAILS_DATA_COL_COUNT_ALT, csDataAlt2DataForCount);
+		styles.put(CELL_STYLE_SUMMERY_DATA_COL_COUNT, csSumaryDataForCount);
+		styles.put(CELL_STYLE_SUMMERY_DATA_COL_COUNT_ALT, csSumaryDataAlt2ForCount);
+		styles.put(CELL_STYLE_TITLES, csReportTitle);
+
+		return styles;
 	}
 
 	public static void createTemplateFile(File lFile) {
@@ -951,39 +990,41 @@ public class ExcelExportUtil {
 //		styles.put(CELL_STYLE_TITLE_CAP, csTitleCaption);
 //		styles.put(CELL_STYLE_PROMPTS, csPrompt);
 //	}
-private static void createStylesForPrompts(Workbook workBook,  Map<Integer, XSSFCellStyle> styles){
-		
-		XSSFCellStyle csTitleCaption = (XSSFCellStyle)  workBook.createCellStyle();
-		XSSFCellStyle csPrompt = (XSSFCellStyle)  workBook.createCellStyle();
-		
+	private static void createStylesForPrompts(Workbook workBook, Map<Integer, XSSFCellStyle> styles) {
+
+		XSSFCellStyle csTitleCaption = (XSSFCellStyle) workBook.createCellStyle();
+		XSSFCellStyle csPrompt = (XSSFCellStyle) workBook.createCellStyle();
+
 		Font fontHeader1 = workBook.createFont();
 		fontHeader1.setColor(IndexedColors.BLACK.index);
 		fontHeader1.setBold(true);
 		fontHeader1.setFontName("verdana");
-		fontHeader1.setFontHeightInPoints((short)10);
-		
+		fontHeader1.setFontHeightInPoints((short) 10);
+
 		Font fontHeader = workBook.createFont();
 		fontHeader.setColor(IndexedColors.BLACK.index);
 		fontHeader.setFontName("verdana");
-		fontHeader.setFontHeightInPoints((short)8);
-		
-/*		XSSFColor creemXClor = new XSSFColor();
-		creemXClor.setIndexed(IndexedColors.WHITE.index);*/
-		//byte[] creemClr = {(byte) 235, (byte) 241, (byte) 222};	
-		byte[] creemClr = {(byte) 205, (byte) 226, (byte) 236};	
-		XSSFColor creemXClor = new XSSFColor(creemClr);		
-	    csTitleCaption.setFillForegroundColor(creemXClor);
-	    csTitleCaption.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-	    csTitleCaption.setAlignment(HorizontalAlignment.CENTER);
-	    csTitleCaption.setFont(fontHeader1);
-	    
-	    csPrompt.setFillForegroundColor(creemXClor);
-	    csPrompt.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-	    csPrompt.setAlignment(HorizontalAlignment.CENTER);
-	    csPrompt.setFont(fontHeader);
-	    
-	    styles.put(CELL_STYLE_TITLE_CAP, csTitleCaption);
-	    styles.put(CELL_STYLE_PROMPTS, csPrompt);
+		fontHeader.setFontHeightInPoints((short) 8);
+
+		/*
+		 * XSSFColor creemXClor = new XSSFColor();
+		 * creemXClor.setIndexed(IndexedColors.WHITE.index);
+		 */
+		// byte[] creemClr = {(byte) 235, (byte) 241, (byte) 222};
+		byte[] creemClr = { (byte) 205, (byte) 226, (byte) 236 };
+		XSSFColor creemXClor = new XSSFColor(creemClr);
+		csTitleCaption.setFillForegroundColor(creemXClor);
+		csTitleCaption.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+		csTitleCaption.setAlignment(HorizontalAlignment.CENTER);
+		csTitleCaption.setFont(fontHeader1);
+
+		csPrompt.setFillForegroundColor(creemXClor);
+		csPrompt.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+		csPrompt.setAlignment(HorizontalAlignment.CENTER);
+		csPrompt.setFont(fontHeader);
+
+		styles.put(CELL_STYLE_TITLE_CAP, csTitleCaption);
+		styles.put(CELL_STYLE_PROMPTS, csPrompt);
 	}
 
 	public static int createPrompts(ReportsWriterVb reportWriterVb, List<PromptIdsVb> prompts, Sheet sheet,
@@ -1907,7 +1948,7 @@ private static void createStylesForPrompts(Workbook workBook,  Map<Integer, XSSF
 		style2.setWrapText(true);
 		style2.setFont(fontTemplateData1);
 //		style2.setAlignment(CellStyle.ALIGN_CENTER);
-		 style2.setAlignment(HorizontalAlignment.CENTER);
+		style2.setAlignment(HorizontalAlignment.CENTER);
 
 		try {
 			int intCol = 0;
@@ -2025,27 +2066,28 @@ private static void createStylesForPrompts(Workbook workBook,  Map<Integer, XSSF
 //		}
 //	}
 
-	private static void frame(CellRangeAddress region,Sheet sheet, Workbook wb,String type){
-	    sheet.addMergedRegion(region);
+	private static void frame(CellRangeAddress region, Sheet sheet, Workbook wb, String type) {
+		sheet.addMergedRegion(region);
 
-	    BorderStyle  borderMediumDashed = BorderStyle.THICK;
+		BorderStyle borderMediumDashed = BorderStyle.THICK;
 
-	    if("logo".equalsIgnoreCase(type)){
-	    	borderMediumDashed = BorderStyle.THIN;
-	    }
-	    
-	    if("text".equalsIgnoreCase(type)){
-	    	borderMediumDashed = BorderStyle.THICK;
-	   	    RegionUtil.setBorderBottom(borderMediumDashed, region, sheet);
-	   	    RegionUtil.setBottomBorderColor(IndexedColors.DARK_BLUE.index,region, sheet);
+		if ("logo".equalsIgnoreCase(type)) {
+			borderMediumDashed = BorderStyle.THIN;
+		}
 
-	    }else{
-	    	RegionUtil.setBorderBottom(borderMediumDashed, region, sheet);
-	   	    RegionUtil.setBorderTop(borderMediumDashed, region, sheet);
-	   	    RegionUtil.setBorderLeft(borderMediumDashed, region, sheet);
-	   	    RegionUtil.setBorderRight(borderMediumDashed, region, sheet);
-	    }
+		if ("text".equalsIgnoreCase(type)) {
+			borderMediumDashed = BorderStyle.THICK;
+			RegionUtil.setBorderBottom(borderMediumDashed, region, sheet);
+			RegionUtil.setBottomBorderColor(IndexedColors.DARK_BLUE.index, region, sheet);
+
+		} else {
+			RegionUtil.setBorderBottom(borderMediumDashed, region, sheet);
+			RegionUtil.setBorderTop(borderMediumDashed, region, sheet);
+			RegionUtil.setBorderLeft(borderMediumDashed, region, sheet);
+			RegionUtil.setBorderRight(borderMediumDashed, region, sheet);
+		}
 	}
+
 	public static int writeBNRTemplateData(TemplateNameVb templateNameVb, ReportsWriterVb reportsWriterVb, Sheet sheet1,
 			Map<Integer, XSSFCellStyle> styles, int rowNum, Workbook workBook) {
 		ResourceBundle rsb = CommonUtils.getResourceManger();
@@ -2058,14 +2100,14 @@ private static void createStylesForPrompts(Workbook workBook,  Map<Integer, XSSF
 
 		CellStyle styleFillColor = workBook.createCellStyle();
 		styleFillColor.setFillForegroundColor(IndexedColors.WHITE.index);
-		   styleFillColor.setFillPattern(FillPatternType.SOLID_FOREGROUND); 
+		styleFillColor.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-		    Font fontTemplateData = createFont(workBook, IndexedColors.BLACK.index, false, "garamond", 12);
+		Font fontTemplateData = createFont(workBook, IndexedColors.BLACK.index, false, "garamond", 12);
 		CellStyle style1 = workBook.createCellStyle();
 		style1.setWrapText(true);
 		style1.setFont(fontTemplateData);
 
-		 Font fontTemplateData1 = createFont(workBook, IndexedColors.BLACK.index, true, "garamond", 12);
+		Font fontTemplateData1 = createFont(workBook, IndexedColors.BLACK.index, true, "garamond", 12);
 		CellStyle style2 = workBook.createCellStyle();
 		style2.setWrapText(true);
 		style2.setFont(fontTemplateData1);
@@ -2715,7 +2757,7 @@ private static void createStylesForPrompts(Workbook workBook,  Map<Integer, XSSF
 		localHeaderStyle.setBorderBottom(BorderStyle.THIN);
 		localHeaderStyle.setBorderTop(BorderStyle.THIN);
 		localHeaderStyle.setBorderRight(BorderStyle.THIN);
-		
+
 		CellStyle style = sheet.getWorkbook().createCellStyle();
 		style.setBorderBottom(BorderStyle.THIN);
 		style.setBorderTop(BorderStyle.THIN);
@@ -2768,10 +2810,10 @@ private static void createStylesForPrompts(Workbook workBook,  Map<Integer, XSSF
 
 	public static void setBorderForCell(Cell cell, CellRangeAddress cellRangeAddress, Sheet sheet, Workbook workbook) {
 		try {
-			  RegionUtil.setBorderTop(cell.getCellStyle().getBorderTop(), cellRangeAddress, sheet);
-		        RegionUtil.setBorderLeft(cell.getCellStyle().getBorderLeft(), cellRangeAddress, sheet);
-		        RegionUtil.setBorderRight(cell.getCellStyle().getBorderRight(), cellRangeAddress, sheet);
-		        RegionUtil.setBorderBottom(cell.getCellStyle().getBorderBottom(), cellRangeAddress, sheet);
+			RegionUtil.setBorderTop(cell.getCellStyle().getBorderTop(), cellRangeAddress, sheet);
+			RegionUtil.setBorderLeft(cell.getCellStyle().getBorderLeft(), cellRangeAddress, sheet);
+			RegionUtil.setBorderRight(cell.getCellStyle().getBorderRight(), cellRangeAddress, sheet);
+			RegionUtil.setBorderBottom(cell.getCellStyle().getBorderBottom(), cellRangeAddress, sheet);
 //			RegionUtil.setBorderTop(cell.getCellStyle().getBorderTop(), cellRangeAddress, sheet, workbook);
 //			RegionUtil.setBorderLeft(cell.getCellStyle().getBorderLeft(), cellRangeAddress, sheet, workbook);
 //			RegionUtil.setBorderRight(cell.getCellStyle().getBorderRight(), cellRangeAddress, sheet, workbook);
@@ -2985,8 +3027,128 @@ private static void createStylesForPrompts(Workbook workBook,  Map<Integer, XSSF
 		return rowNum;
 	}
 
-	public static int createPrompts(ReportsVb reportsVb, Sheet sheet,
-			Workbook workBook, String assetFolderUrl, Map<Integer, XSSFCellStyle> styles, int headerCnt) {
+	public static int createPromptsPage(ReportsVb reportsVb, Sheet sheet, Workbook workBook, String assetFolderUrl,
+			Map<Integer, XSSFCellStyle> styles, int headerCnt) {
+		int intRow = 0;
+		Row row = null;
+		Cell cell = null;
+		createStylesForPrompts(workBook, styles);
+		Color tClr = getRGB(reportsVb.getApplicationTheme(), true);
+		try {
+			IndexedColorMap colorMap = new DefaultIndexedColorMap();
+			XSSFColor sPinkclr = new XSSFColor();
+			// byte[] tClr = {(byte) 177, (byte) 24, (byte) 124};
+			sPinkclr = new XSSFColor(tClr, colorMap);
+
+			XSSFColor greyClr = new XSSFColor();
+			greyClr = new XSSFColor(new Color(242, 244, 242), colorMap);
+
+			String promptLabel[] = null;
+			if (ValidationUtil.isValid(reportsVb.getPromptLabel())) {
+				promptLabel = reportsVb.getPromptLabel().split("!@#");
+			}
+			int intCol = 0;
+			float rowheight = 19.5f;
+			int loopCount = 2;
+			row = sheet.createRow(intRow);
+			for (int i = 0; i <= loopCount; i++) {
+				cell = row.createCell(i);
+				cell.setCellStyle(styles.get(CELL_STYLE_TITLE_CAP));
+			}
+
+			intCol++;
+
+			sheet.setDisplayGridlines(false);
+			Row row1 = sheet.createRow(0);
+			drawImageToSheet(workBook, sheet, "Product_Logo.png", 0, 1, 0, 2, true, assetFolderUrl);
+			drawImageToSheet(workBook, sheet, "Bank_Logo.png", 2, 3, 0, 2, true, assetFolderUrl);
+
+			int cnt = 1;
+			intRow = 4;
+			row = sheet.createRow(intRow);
+			row.setHeightInPoints(rowheight);
+			cell = row.createCell(0);
+			cell.setCellValue("Report Title");
+			styles.get(CELL_STYLE_REPORT_PROMPTS_CAP).setVerticalAlignment(VerticalAlignment.CENTER);
+			cell.setCellStyle(styles.get(CELL_STYLE_REPORT_PROMPTS_CAP));
+			cell = row.createCell(1);
+			cell.setCellValue(reportsVb.getReportTitle());
+			styles.get(CELL_STYLE_REPORT_PROMPTS_CAP).setVerticalAlignment(VerticalAlignment.CENTER);
+			cell.setCellStyle(styles.get(CELL_STYLE_REPORT_PROMPTS_CAP));
+			intRow++;
+			row = sheet.createRow(intRow);
+			row.setHeightInPoints(rowheight);
+			cell = row.createCell(0);
+			cell.setCellValue("Generated on");
+			cell.setCellStyle(styles.get(CELL_STYLE_REPORT_PROMPTS_CAP));
+			cell = row.createCell(1);
+			SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy - hh:mm:ss a");
+			cell.setCellValue(dateFormat.format(new Date()));
+			styles.get(CELL_STYLE_REPORT_PROMPTS).getFont().setColor(sPinkclr);
+			styles.get(CELL_STYLE_REPORT_PROMPTS).setVerticalAlignment(VerticalAlignment.CENTER);
+			cell.setCellStyle(styles.get(CELL_STYLE_REPORT_PROMPTS));
+			intRow++;
+			row = sheet.createRow(intRow);
+			row.setHeightInPoints(rowheight);
+			cell = row.createCell(0);
+			cell.setCellValue("Generated By");
+			cell.setCellStyle(styles.get(CELL_STYLE_REPORT_PROMPTS_CAP));
+			cell = row.createCell(1);
+			cell.setCellValue(reportsVb.getMakerName());
+			cell.setCellStyle(styles.get(CELL_STYLE_REPORT_PROMPTS));
+			intRow = intRow + 2;
+			row = sheet.createRow(intRow);
+			row.setHeightInPoints(rowheight);
+			for (int i = 0; i <= loopCount; i++) {
+				cell = row.createCell(i);
+				if (i == 1) {
+					cell.setCellValue("Powered by Sunoida");
+				}
+				styles.get(CELL_STYLE_TITLE_CAP).getFont().setColor(sPinkclr);
+				styles.get(CELL_STYLE_TITLE_CAP).setVerticalAlignment(VerticalAlignment.CENTER);
+				cell.setCellStyle(styles.get(CELL_STYLE_TITLE_CAP));
+				styles.get(CELL_STYLE_TITLE_CAP).setBorderBottom(BorderStyle.THIN);
+				styles.get(CELL_STYLE_TITLE_CAP).setBorderRight(BorderStyle.NONE);
+				if (i == loopCount) {
+					// styles.get(CELL_STYLE_TITLE_CAP).setBorderRight(HSSFBorderStyle.THIN);
+					cell.setCellStyle(styles.get(CELL_STYLE_TITLE_CAP));
+					XSSFCellStyle style = (XSSFCellStyle) workBook.createCellStyle();
+					style.setBorderRight(BorderStyle.THIN);
+					style.setBorderBottom(BorderStyle.THIN);
+					style.setFillForegroundColor(greyClr);
+					style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+					cell.setCellStyle(style);
+				}
+			}
+			CellRangeAddress cellRangeAddress1 = new CellRangeAddress(0, 2, 0, loopCount);
+			sheet.addMergedRegion(cellRangeAddress1);
+			RegionUtil.setBorderRight(BorderStyle.THIN, cellRangeAddress1, sheet);
+
+			CellRangeAddress cellRangeAddress2 = new CellRangeAddress(3, intRow - 1, loopCount, loopCount);
+			sheet.addMergedRegion(cellRangeAddress2);
+			RegionUtil.setBorderRight(BorderStyle.THIN, cellRangeAddress2, sheet);
+
+			CellRangeAddress cellRangeAddress3 = new CellRangeAddress(3, 3, 0, loopCount - 1);
+			sheet.addMergedRegion(cellRangeAddress3);
+			RegionUtil.setBorderBottom(BorderStyle.NONE, cellRangeAddress3, sheet);
+
+			CellRangeAddress cellRangeAddress9 = new CellRangeAddress(intRow - 1, intRow - 1, 0, 1);
+			sheet.addMergedRegion(cellRangeAddress9);
+			RegionUtil.setBorderBottom(BorderStyle.NONE, cellRangeAddress9, sheet);
+
+			sheet.setColumnWidth(0, 20 * 256);
+			sheet.setColumnWidth(1, 56 * 256);
+			sheet.setColumnWidth(2, 20 * 256);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return intRow;
+	}
+
+	public static int createPromptsold(ReportsVb reportsVb, Sheet sheet, Workbook workBook, String assetFolderUrl,
+			Map<Integer, XSSFCellStyle> styles, int headerCnt) {
 		int intRow = 0;
 		Row row = null;
 		Cell cell = null;
@@ -3157,11 +3319,17 @@ private static void createStylesForPrompts(Workbook workBook,  Map<Integer, XSSF
 		cellH.setCellStyle(styls.get(CELL_STYLE_SUMMERY_CAP_COL));
 		cellH1.setCellStyle(styls.get(CELL_STYLE_SUMMERY_CAP_COL));
 		cellH2.setCellStyle(styls.get(CELL_STYLE_SUMMERY_CAP_COL));
+
 		if (ValidationUtil.isValid(reportsVb.getScreenName())) {
 			row = sheet.createRow(rowNum);
 			cell = row.createCell(0);
 			cell.setCellValue(reportsVb.getScreenName());
+			/*
+			 * if(reportsVb.isChecked())
+			 * cell.setCellStyle(styls.get(CELL_STYLE_SUMMERY_CAP_COL_ALT)); else
+			 */
 			cell.setCellStyle(styls.get(CELL_STYLE_SUMMERY_CAP_COL));
+
 			ArrayList<ColumnHeadersVb> columnHeadersFinallst = new ArrayList<ColumnHeadersVb>();
 			columnHeaders.forEach(colHeadersVb -> {
 				if (colHeadersVb.getColspan() <= 1) {
@@ -3173,7 +3341,8 @@ private static void createStylesForPrompts(Workbook workBook,  Map<Integer, XSSF
 			int colSize = columnHeadersFinallst.size();
 			if (columnHeadersFinallst.size() == 0)
 				colSize = 6;
-			sheet.addMergedRegion(new CellRangeAddress(rowNum, rowNum, 0, (colSize - 1)));
+			// sheet.addMergedRegion(new CellRangeAddress(rowNum, rowNum, 0,
+			// (colTypes.size()-1)));
 			rowNum++;
 			reportsVb.setScreenName("");
 		}
@@ -3271,6 +3440,7 @@ private static void createStylesForPrompts(Workbook workBook,  Map<Integer, XSSF
 				sheet.addMergedRegion(new CellRangeAddress(rowStart, rowEnd, columnStart, end));
 			}
 			cell.setCellStyle(styls.get(CELL_STYLE_HEADER_CAP_COL_TOP));
+
 			cell.setCellValue(columnHeadersVb.getCaption());
 			if (columnHeadersVb.getCaption().contains("<br/>")) {
 				columnHeadersVb.setCaption(columnHeadersVb.getCaption().replaceAll("<br/>", "\n"));
@@ -3740,9 +3910,26 @@ private static void createStylesForPrompts(Workbook workBook,  Map<Integer, XSSF
 		}
 		return intRow;
 	}
-	
-	public static int createPromptsPage(ReportsVb reportsVb, Sheet sheet,
-			Workbook workBook, String assetFolderUrl, Map<Integer, XSSFCellStyle> styles, int headerCnt) {
+
+	public static java.awt.Color getRGB(final String rgb, Boolean promptPage) {
+		Color sunoidaClr = null;
+		if (!promptPage)
+			sunoidaClr = new java.awt.Color(66, 133, 244);
+
+		if (!ValidationUtil.isValid(rgb)) {
+			sunoidaClr = new java.awt.Color(66, 133, 244);
+		} else {
+			final int[] ret = new int[3];
+			for (int i = 0; i < 3; i++) {
+				ret[i] = Integer.parseInt(rgb.substring(i * 2, i * 2 + 2), 16);
+			}
+			sunoidaClr = new java.awt.Color(ret[0], ret[1], ret[2]);
+		}
+		return sunoidaClr;
+	}
+
+	public static int createPromptsPage1(ReportsVb reportsVb, Sheet sheet, Workbook workBook, String assetFolderUrl,
+			Map<Integer, XSSFCellStyle> styles, int headerCnt) {
 		int intRow = 0;
 		Row row = null;
 		Cell cell = null;
@@ -3754,22 +3941,22 @@ private static void createStylesForPrompts(Workbook workBook,  Map<Integer, XSSF
 			sPinkclr = new XSSFColor(tClr);
 
 			XSSFColor greyClr = new XSSFColor();
-			byte[] greyXclr = {(byte) 242, (byte) 244, (byte) 242};
+			byte[] greyXclr = { (byte) 242, (byte) 244, (byte) 242 };
 			greyClr = new XSSFColor(greyXclr);
 
 			String promptLabel[] = null;
-			if(ValidationUtil.isValid(reportsVb.getPromptLabel())) {
+			if (ValidationUtil.isValid(reportsVb.getPromptLabel())) {
 				promptLabel = reportsVb.getPromptLabel().split("!@#");
 			}
 			int intCol = 0;
 			float rowheight = 19.5f;
 			int loopCount = 2;
 			row = sheet.createRow(intRow);
-			for(int i=0; i<=loopCount; i++) {
+			for (int i = 0; i <= loopCount; i++) {
 				cell = row.createCell(i);
 				cell.setCellStyle(styles.get(CELL_STYLE_TITLE_CAP));
 			}
-			
+
 			intCol++;
 
 			sheet.setDisplayGridlines(false);
@@ -3783,15 +3970,15 @@ private static void createStylesForPrompts(Workbook workBook,  Map<Integer, XSSF
 			row.setHeightInPoints(rowheight);
 			cell = row.createCell(0);
 			cell.setCellValue("Report Title");
-			styles.get(CELL_STYLE_REPORT_PROMPTS_CAP).setVerticalAlignment(VerticalAlignment.CENTER);
+			// styles.get(CELL_STYLE_REPORT_PROMPTS_CAP).setVerticalAlignment(VerticalAlignment.CENTER);
 			cell.setCellStyle(styles.get(CELL_STYLE_REPORT_PROMPTS_CAP));
 			cell = row.createCell(1);
 			cell.setCellValue(reportsVb.getReportTitle());
-			styles.get(CELL_STYLE_REPORT_PROMPTS_CAP).setVerticalAlignment(VerticalAlignment.CENTER);
+			// styles.get(CELL_STYLE_REPORT_PROMPTS_CAP).setVerticalAlignment(VerticalAlignment.CENTER);
 			cell.setCellStyle(styles.get(CELL_STYLE_REPORT_PROMPTS_CAP));
 			intRow++;
-			if(promptLabel != null && promptLabel.length>0) {
-				for(int i=0; i<promptLabel.length; i++) {
+			if (promptLabel != null && promptLabel.length > 0) {
+				for (int i = 0; i < promptLabel.length; i++) {
 					String[] promptArr = null;
 					String[] val = null;
 					promptArr = promptLabel[i].split(":");
@@ -3799,17 +3986,17 @@ private static void createStylesForPrompts(Workbook workBook,  Map<Integer, XSSF
 					row = sheet.createRow(intRow);
 					row.setHeightInPoints(rowheight);
 					cell = row.createCell(0);
-					if(val.length>2) {
-						promptArr[1] = val[0]+","+val[1]+" (+) "+(val.length-2);
-					}else if(val.length == 2){
-						promptArr[1] = val[0]+","+val[1];
+					if (val.length > 2) {
+						promptArr[1] = val[0] + "," + val[1] + " (+) " + (val.length - 2);
+					} else if (val.length == 2) {
+						promptArr[1] = val[0] + "," + val[1];
 					}
 					cell.setCellValue(promptArr[0]);
 					cell.setCellStyle(styles.get(CELL_STYLE_REPORT_PROMPTS_CAP));
 					cell = row.createCell(1);
 					cell.setCellValue(promptArr[1]);
-					styles.get(CELL_STYLE_REPORT_PROMPTS).getFont().setColor(sPinkclr);
-					styles.get(CELL_STYLE_REPORT_PROMPTS).setVerticalAlignment(VerticalAlignment.CENTER);
+					// styles.get(CELL_STYLE_REPORT_PROMPTS).getFont().setColor(sPinkclr);
+					// styles.get(CELL_STYLE_REPORT_PROMPTS).setVerticalAlignment(VerticalAlignment.CENTER);
 					cell.setCellStyle(styles.get(CELL_STYLE_REPORT_PROMPTS));
 					intRow++;
 				}
@@ -3822,8 +4009,8 @@ private static void createStylesForPrompts(Workbook workBook,  Map<Integer, XSSF
 			cell = row.createCell(1);
 			SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy - hh:mm:ss a");
 			cell.setCellValue(dateFormat.format(new Date()));
-			styles.get(CELL_STYLE_REPORT_PROMPTS).getFont().setColor(sPinkclr);
-			styles.get(CELL_STYLE_REPORT_PROMPTS).setVerticalAlignment(VerticalAlignment.CENTER);
+			// styles.get(CELL_STYLE_REPORT_PROMPTS).getFont().setColor(sPinkclr);
+			// styles.get(CELL_STYLE_REPORT_PROMPTS).setVerticalAlignment(VerticalAlignment.CENTER);
 			cell.setCellStyle(styles.get(CELL_STYLE_REPORT_PROMPTS));
 			intRow++;
 			row = sheet.createRow(intRow);
@@ -3834,23 +4021,23 @@ private static void createStylesForPrompts(Workbook workBook,  Map<Integer, XSSF
 			cell = row.createCell(1);
 			cell.setCellValue(reportsVb.getMakerName());
 			cell.setCellStyle(styles.get(CELL_STYLE_REPORT_PROMPTS));
-			intRow = intRow+2;
+			intRow = intRow + 2;
 			row = sheet.createRow(intRow);
 			row.setHeightInPoints(rowheight);
-			for(int i=0; i<=loopCount; i++) {
+			for (int i = 0; i <= loopCount; i++) {
 				cell = row.createCell(i);
-				if(i==1) {
+				if (i == 1) {
 					cell.setCellValue("Powered by Sunoida");
 				}
 				styles.get(CELL_STYLE_TITLE_CAP).getFont().setColor(sPinkclr);
 				styles.get(CELL_STYLE_TITLE_CAP).setVerticalAlignment(VerticalAlignment.CENTER);
-			    cell.setCellStyle(styles.get(CELL_STYLE_TITLE_CAP));
-			    styles.get(CELL_STYLE_TITLE_CAP).setBorderBottom(BorderStyle.THIN);
-			    styles.get(CELL_STYLE_TITLE_CAP).setBorderRight(BorderStyle.NONE);
-			    if(i==loopCount) {
-			   	//styles.get(CELL_STYLE_TITLE_CAP).setBorderRight(HSSFBorderStyle.THIN);
+				cell.setCellStyle(styles.get(CELL_STYLE_TITLE_CAP));
+				styles.get(CELL_STYLE_TITLE_CAP).setBorderBottom(BorderStyle.THIN);
+				styles.get(CELL_STYLE_TITLE_CAP).setBorderRight(BorderStyle.NONE);
+				if (i == loopCount) {
+					// styles.get(CELL_STYLE_TITLE_CAP).setBorderRight(HSSFBorderStyle.THIN);
 					cell.setCellStyle(styles.get(CELL_STYLE_TITLE_CAP));
-			    	XSSFCellStyle style = (XSSFCellStyle) workBook.createCellStyle();
+					XSSFCellStyle style = (XSSFCellStyle) workBook.createCellStyle();
 					style.setBorderRight(BorderStyle.THIN);
 					style.setBorderBottom(BorderStyle.THIN);
 					style.setFillForegroundColor(greyClr);
@@ -3861,17 +4048,16 @@ private static void createStylesForPrompts(Workbook workBook,  Map<Integer, XSSF
 			CellRangeAddress cellRangeAddress1 = new CellRangeAddress(0, 2, 0, loopCount);
 			sheet.addMergedRegion(cellRangeAddress1);
 			RegionUtil.setBorderRight(BorderStyle.THIN, cellRangeAddress1, sheet);
-			
-			CellRangeAddress cellRangeAddress2 = new CellRangeAddress(3, intRow-1, loopCount, loopCount);
+
+			CellRangeAddress cellRangeAddress2 = new CellRangeAddress(3, intRow - 1, loopCount, loopCount);
 			sheet.addMergedRegion(cellRangeAddress2);
 			RegionUtil.setBorderRight(BorderStyle.THIN, cellRangeAddress2, sheet);
-			
-			
-			CellRangeAddress cellRangeAddress3 = new CellRangeAddress(3, 3, 0, loopCount-1);
+
+			CellRangeAddress cellRangeAddress3 = new CellRangeAddress(3, 3, 0, loopCount - 1);
 			sheet.addMergedRegion(cellRangeAddress3);
 			RegionUtil.setBorderBottom(BorderStyle.NONE, cellRangeAddress3, sheet);
 
-			CellRangeAddress cellRangeAddress9 = new CellRangeAddress(intRow-1, intRow-1, 0, 1);
+			CellRangeAddress cellRangeAddress9 = new CellRangeAddress(intRow - 1, intRow - 1, 0, 1);
 			sheet.addMergedRegion(cellRangeAddress9);
 			RegionUtil.setBorderBottom(BorderStyle.NONE, cellRangeAddress9, sheet);
 
@@ -4052,11 +4238,12 @@ private static void createStylesForPrompts(Workbook workBook,  Map<Integer, XSSF
 	public static Map<Integer, XSSFCellStyle> createStyles1(Workbook workBook, String applicationTheme) {
 		Map<Integer, XSSFCellStyle> styles = new HashMap<Integer, XSSFCellStyle>();
 		Font fontHeader = createFont(workBook, IndexedColors.WHITE.index, true, "Calibri", 10);
-		Font fontData  = createFont(workBook, IndexedColors.BLACK.index, false, "Calibri", 10);
+		Font fontData = createFont(workBook, IndexedColors.BLACK.index, false, "Calibri", 10);
 		Font fontSummary = createFont(workBook, IndexedColors.BLACK.index, true, "Calibri", 10);
 		Font fontHeaderTitle = createFont(workBook, IndexedColors.GREEN.index, true, "Calibri", 10);
-		Font fontDetails  = createFont(workBook, IndexedColors.WHITE.index, true, "Calibri", 10);
-		Font fontPrompts  = createNewFont(workBook, true, "Calibri", 10);
+		Font fontDetails = createFont(workBook, IndexedColors.WHITE.index, true, "Calibri", 10);
+		Font fontPrompts = createFont(workBook, IndexedColors.BLUE.index, true, "Calibri", 10);
+		// Font fontPrompts = createNewFont(workBook, true, "Calibri", 10);
 
 		/* byte[] greenClr = {(byte) 79, (byte) 98, (byte) 40}; */
 		// byte[] greenClr = {(byte) 3, (byte) 80, (byte) 122};
@@ -4084,21 +4271,34 @@ private static void createStylesForPrompts(Workbook workBook,  Map<Integer, XSSF
 		XSSFColor blackcolor = new XSSFColor();
 		blackcolor.setIndexed(IndexedColors.BLACK.index);
 
-		XSSFCellStyle csHeaderCaptionColTop = createStyle(workBook, sunoidaPinkXClr, HorizontalAlignment.CENTER_SELECTION, fontHeader, null, BorderStyle.THIN , whiteClr); //For Multi headers reports
-		XSSFCellStyle csHeaderCaptionCol =  createStyle(workBook, greenXClor,HorizontalAlignment.LEFT, fontHeader, null, BorderStyle.NONE , null);// For header
-		XSSFCellStyle csMidHeaderCaptionCol =  createStyle(workBook, DgreenXClor, HorizontalAlignment.LEFT, fontHeader, null, BorderStyle.NONE , null);// For Mid header
-	    XSSFCellStyle csDataAlt1 = createStyle(workBook, whiteClr, HorizontalAlignment.GENERAL,fontData, BuiltinFormats.getBuiltinFormat(0), BorderStyle.THIN, pinkXClor); //For Caption With background
-	    XSSFCellStyle csDataAlt1Data =  createStyle(workBook, whiteClr, HorizontalAlignment.RIGHT, fontData, BuiltinFormats.getBuiltinFormat(4), BorderStyle.THIN, pinkXClor); //For Data With background
-	    XSSFCellStyle csDataAlt2 =  createStyle(workBook, creemXClor, HorizontalAlignment.GENERAL, fontData, BuiltinFormats.getBuiltinFormat(0), BorderStyle.THIN, pinkXClor);//For Caption With out background
-	    XSSFCellStyle csDataAlt2Data =  createStyle(workBook, creemXClor, HorizontalAlignment.RIGHT, fontData, BuiltinFormats.getBuiltinFormat(4), BorderStyle.THIN, pinkXClor);//For Data With out background
-		XSSFCellStyle csHeaderDataCol = createStyle(workBook, greenXClor, HorizontalAlignment.RIGHT, fontHeader, null, BorderStyle.NONE , null);// For header Right Align
-		XSSFCellStyle csReportTitle =  createStyle(workBook, whiteClr, HorizontalAlignment.CENTER_SELECTION, fontHeaderTitle, null, BorderStyle.NONE , greenXClor); //For Headings
-		
-		XSSFCellStyle csSumary = createStyle(workBook, whiteClr, HorizontalAlignment.GENERAL, fontSummary, null, BorderStyle.THIN, pinkXClor);
+		XSSFCellStyle csHeaderCaptionColTop = createStyle(workBook, sunoidaPinkXClr,
+				HorizontalAlignment.CENTER_SELECTION, fontHeader, null, BorderStyle.THIN, whiteClr); // For Multi
+																										// headers
+																										// reports
+		XSSFCellStyle csHeaderCaptionCol = createStyle(workBook, greenXClor, HorizontalAlignment.LEFT, fontHeader, null,
+				BorderStyle.NONE, null);// For header
+		XSSFCellStyle csMidHeaderCaptionCol = createStyle(workBook, DgreenXClor, HorizontalAlignment.LEFT, fontHeader,
+				null, BorderStyle.NONE, null);// For Mid header
+		XSSFCellStyle csDataAlt1 = createStyle(workBook, whiteClr, HorizontalAlignment.GENERAL, fontData,
+				BuiltinFormats.getBuiltinFormat(0), BorderStyle.THIN, pinkXClor); // For Caption With background
+		XSSFCellStyle csDataAlt1Data = createStyle(workBook, whiteClr, HorizontalAlignment.RIGHT, fontData,
+				BuiltinFormats.getBuiltinFormat(4), BorderStyle.THIN, pinkXClor); // For Data With background
+		XSSFCellStyle csDataAlt2 = createStyle(workBook, creemXClor, HorizontalAlignment.GENERAL, fontData,
+				BuiltinFormats.getBuiltinFormat(0), BorderStyle.THIN, pinkXClor);// For Caption With out background
+		XSSFCellStyle csDataAlt2Data = createStyle(workBook, creemXClor, HorizontalAlignment.RIGHT, fontData,
+				BuiltinFormats.getBuiltinFormat(4), BorderStyle.THIN, pinkXClor);// For Data With out background
+		XSSFCellStyle csHeaderDataCol = createStyle(workBook, greenXClor, HorizontalAlignment.RIGHT, fontHeader, null,
+				BorderStyle.NONE, null);// For header Right Align
+		XSSFCellStyle csReportTitle = createStyle(workBook, whiteClr, HorizontalAlignment.CENTER_SELECTION,
+				fontHeaderTitle, null, BorderStyle.NONE, greenXClor); // For Headings
+
+		XSSFCellStyle csSumary = createStyle(workBook, whiteClr, HorizontalAlignment.GENERAL, fontSummary, null,
+				BorderStyle.THIN, pinkXClor);
 		csSumary.setBorderTop(BorderStyle.THIN);
 		csSumary.setTopBorderColor(pinkXClor);
-		
-		XSSFCellStyle csSumaryData = createStyle(workBook, whiteClr, HorizontalAlignment.RIGHT, fontSummary, BuiltinFormats.getBuiltinFormat(4), BorderStyle.THIN, pinkXClor); //For Data Summary
+
+		XSSFCellStyle csSumaryData = createStyle(workBook, whiteClr, HorizontalAlignment.RIGHT, fontSummary,
+				BuiltinFormats.getBuiltinFormat(4), BorderStyle.THIN, pinkXClor); // For Data Summary
 		csSumaryData.setBorderTop(BorderStyle.THIN);
 		/*
 		 * XSSFCellStyle csSumaryAlt2 = createStyle(workBook, creemXClor,
@@ -4107,27 +4307,50 @@ private static void createStylesForPrompts(Workbook workBook,  Map<Integer, XSSF
 		 * csSumaryAlt2.setTopBorderColor(pinkXClor);
 		 */
 
-		XSSFCellStyle csSumaryAlt2 = createStyle(workBook, lightGreyXColor, HorizontalAlignment.GENERAL, fontPrompts, null,BorderStyle.THIN, pinkXClor);
+		XSSFCellStyle csSumaryAlt2 = createStyle(workBook, lightGreyXColor, HorizontalAlignment.GENERAL, fontPrompts,
+				null, BorderStyle.THIN, pinkXClor);
 		csSumaryAlt2.setBorderTop(BorderStyle.THIN);
 		csSumaryAlt2.setTopBorderColor(pinkXClor);
 
-		XSSFCellStyle csSumaryDataAlt2 = createStyle(workBook, lightGreyXColor, HorizontalAlignment.RIGHT, fontPrompts, BuiltinFormats.getBuiltinFormat(4), BorderStyle.THIN, pinkXClor); //For Data Summary with Alt clr
+		XSSFCellStyle csSumaryDataAlt2 = createStyle(workBook, lightGreyXColor, HorizontalAlignment.RIGHT, fontPrompts,
+				BuiltinFormats.getBuiltinFormat(4), BorderStyle.THIN, pinkXClor); // For Data Summary with Alt clr
 		csSumaryDataAlt2.setBorderTop(BorderStyle.THIN);
 		csSumaryDataAlt2.setTopBorderColor(pinkXClor);
-		
-		XSSFCellStyle csPromptsCaption = createStyle(workBook, sunoidaPinkXClr, HorizontalAlignment.CENTER, fontDetails, null, BorderStyle.THIN, whiteClr);
-		csPromptsCaption.setBorderBottom(BorderStyle.THIN);
+
+		/*
+		 * XSSFCellStyle csPromptsCaption = createStyle(workBook, sunoidaPinkXClr,
+		 * HorizontalAlignment.CENTER, fontDetails, null, BorderStyle.THIN, whiteClr);
+		 * csPromptsCaption.setBorderBottom(BorderStyle.THIN);
+		 */
 		// csSumary.setBorderRight(CellStyle.BORDER_THICK);
 
-		XSSFCellStyle csReportPrompt = createStyle(workBook, lightGreyXColor, HorizontalAlignment.CENTER, fontPrompts, null, BorderStyle.THIN, blackcolor);
+		XSSFCellStyle csPromptsCaption = createStyle(workBook, sunoidaPinkXClr, VerticalAlignment.CENTER, fontDetails,
+				null, BorderStyle.THIN, whiteClr);
+		csPromptsCaption.setBorderBottom(BorderStyle.THIN);
+
+		/*
+		 * XSSFCellStyle csReportPrompt = createStyle(workBook, lightGreyXColor,
+		 * HorizontalAlignment.CENTER, fontPrompts, null, BorderStyle.THIN, blackcolor);
+		 * csReportPrompt.setBorderBottom(BorderStyle.THIN);
+		 */
+
+		XSSFCellStyle csReportPrompt = createStyle(workBook, lightGreyXColor, VerticalAlignment.CENTER, fontPrompts,
+				null, BorderStyle.THIN, blackcolor);
 		csReportPrompt.setBorderBottom(BorderStyle.THIN);
-		XSSFCellStyle csDataAlt1DataForCount =  createStyle(workBook, whiteClr, HorizontalAlignment.RIGHT, fontData, BuiltinFormats.getBuiltinFormat(3), BorderStyle.THIN, pinkXClor); //For Data With background
-		XSSFCellStyle csDataAlt2DataForCount =  createStyle(workBook, lightGreyXColor, HorizontalAlignment.RIGHT, fontPrompts, BuiltinFormats.getBuiltinFormat(3), BorderStyle.MEDIUM, pinkXClor);//For Data With out background
-		XSSFCellStyle csSumaryDataForCount = createStyle(workBook, whiteClr, HorizontalAlignment.RIGHT, fontSummary, BuiltinFormats.getBuiltinFormat(3), BorderStyle.THIN, pinkXClor); //For Data Summary
+
+		XSSFCellStyle csDataAlt1DataForCount = createStyle(workBook, whiteClr, HorizontalAlignment.RIGHT, fontData,
+				BuiltinFormats.getBuiltinFormat(3), BorderStyle.THIN, pinkXClor); // For Data With background
+		XSSFCellStyle csDataAlt2DataForCount = createStyle(workBook, lightGreyXColor, HorizontalAlignment.RIGHT,
+				fontPrompts, BuiltinFormats.getBuiltinFormat(3), BorderStyle.MEDIUM, pinkXClor);// For Data With out
+																								// background
+		XSSFCellStyle csSumaryDataForCount = createStyle(workBook, whiteClr, HorizontalAlignment.RIGHT, fontSummary,
+				BuiltinFormats.getBuiltinFormat(3), BorderStyle.THIN, pinkXClor); // For Data Summary
 		csSumaryDataForCount.setBorderTop(BorderStyle.THIN);
 		csSumaryDataForCount.setTopBorderColor(pinkXClor);
-		XSSFCellStyle csSumaryDataAlt2ForCount = createStyle(workBook, lightGreyXColor, HorizontalAlignment.RIGHT, fontPrompts, BuiltinFormats.getBuiltinFormat(3), BorderStyle.THIN, pinkXClor); //For Data Summary with Alt clr
-		
+		XSSFCellStyle csSumaryDataAlt2ForCount = createStyle(workBook, lightGreyXColor, HorizontalAlignment.RIGHT,
+				fontPrompts, BuiltinFormats.getBuiltinFormat(3), BorderStyle.THIN, pinkXClor); // For Data Summary with
+																								// Alt clr
+
 		csSumaryDataAlt2ForCount.setBorderTop(BorderStyle.THIN);
 		csSumaryDataAlt2ForCount.setTopBorderColor(pinkXClor);
 
@@ -4165,16 +4388,17 @@ private static void createStylesForPrompts(Workbook workBook,  Map<Integer, XSSF
 //		font.setFontHeightInPoints((short) heightInPoints);
 //		return font;
 //	}
-	private static Font createNewFont(Workbook workBook, boolean fontWeight, String fontName, int heightInPoints){
+	private static Font createNewFont(Workbook workBook, boolean fontWeight, String fontName, int heightInPoints) {
 		Font font = workBook.createFont();
-		byte[] greenClr = {(byte) 177, (byte) 24, (byte) 124};
+		byte[] greenClr = { (byte) 177, (byte) 24, (byte) 124 };
 		XSSFColor rowClr = new XSSFColor(greenClr);
 		font.setColor(rowClr.getIndexed());
 		font.setBold(fontWeight);
 		font.setFontName(fontName);
-		font.setFontHeightInPoints((short)heightInPoints);
+		font.setFontHeightInPoints((short) heightInPoints);
 		return font;
 	}
+
 	public static int writeReportDataRA(Workbook workBook, ReportsVb reportVb, List<ColumnHeadersVb> colHeaderslst,
 			List<HashMap<String, String>> dataLst, SXSSFSheet sheet, int rowNum, Map<Integer, XSSFCellStyle> styls,
 			List<String> columnTypes, Map<Integer, Integer> columnWidths, Boolean totalRow, String assetFolderUrl) {

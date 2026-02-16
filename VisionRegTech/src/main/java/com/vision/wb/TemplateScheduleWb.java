@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PushbackInputStream;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,7 +39,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.hc.client5.http.classic.methods.HttpPost;
-import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.entity.mime.FileBody;
 import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
 import org.apache.hc.client5.http.entity.mime.StringBody;
@@ -49,7 +49,7 @@ import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
-import org.apache.hc.core5.util.Timeout;
+import org.apache.hc.core5.net.URIBuilder;
 import org.apache.poi.poifs.filesystem.FileMagic;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -636,8 +636,7 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 				}
 
 			}
-		} 
-		catch (Exception e) {
+		} catch (Exception e) {
 			exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
 			exceptionCode.setErrorMsg(e.getMessage());
 			exceptionCode.setOtherInfo(vObject);
@@ -1138,6 +1137,9 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 				conn = CommonUtils.getDBConnection(varScript);
 				if (conn != null) {
 					insertAuditTrialData(vObject, "DB Connection Success", "DB Connection Success");
+					logger.info("query" + query);
+//					logger.error("query" + query);
+					System.out.println("query" + query);
 					pstmt = conn.prepareStatement(query);
 					ResultSet rs = pstmt.executeQuery();
 					ResultSetMetaData metaData = rs.getMetaData();
@@ -1726,7 +1728,8 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 
 		try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
 
-			HttpPost httpPost = new HttpPost(TOKEN_URL);
+			URI uri = new URIBuilder(TOKEN_URL.trim()).build();
+			HttpPost httpPost = new HttpPost(uri);
 			httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded");
 
 			// Prepare form data
@@ -1787,7 +1790,9 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 		try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
 
 			// Create HttpPost request
-			HttpPost httpPost = new HttpPost(TOKEN_URL);
+//			HttpPost httpPost = new HttpPost(TOKEN_URL);
+			URI uri = new URIBuilder(TOKEN_URL.trim()).build();
+			HttpPost httpPost = new HttpPost(uri);
 			httpPost.setHeader("Authorization", "Bearer " + authToken);
 
 			SimpleDateFormat inputFormat = new SimpleDateFormat("dd-MMM-yyyy");
@@ -1835,7 +1840,7 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 						jsonObject1.put("IS_ATTACHED", "Y");
 						jsonObject1.put("REPORTING_DATE", formattedDate);
 						jsonObject1.put(dataList, new JSONArray());
-						logger.info("jsonObject1 :" +jsonObject1.toString());
+						logger.info("jsonObject1 :" + jsonObject1.toString());
 						FileBody csvFileBody = new FileBody(csvFile, ContentType.DEFAULT_BINARY);
 						StringBody jsonDataPart = new StringBody(jsonObject1.toString(), ContentType.APPLICATION_JSON);
 						multipartEntity = MultipartEntityBuilder.create().setBoundary(boundary)
@@ -1858,8 +1863,8 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 				jsonObject1.put("IS_ATTACHED", "Y");
 				jsonObject1.put("REPORTING_DATE", formattedDate);
 				jsonObject1.put(dataList, new JSONArray());
-				 System.out.println(jsonObject1.toString());
-				 logger.info("jsonObject1 :" +jsonObject1.toString());
+				System.out.println(jsonObject1.toString());
+				logger.info("jsonObject1 :" + jsonObject1.toString());
 				String zipFilePath = (String) exceptionCodeNew.getCsvPath();
 				File zipFile = new File(zipFilePath);
 				System.out.println("PAth" + zipFilePath);
@@ -1900,51 +1905,50 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 
 			}
 			httpPost.setEntity(multipartEntity);
-			
 
 //			 Execute request
 			try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
 
-			    int statusCode = response.getCode();
-			    responseBody = EntityUtils.toString(response.getEntity());
+				int statusCode = response.getCode();
+				responseBody = EntityUtils.toString(response.getEntity());
 
-			    logger.info("HTTP Status Code: {}", statusCode);
-			    logger.info("Response Body: {}", responseBody);
-			    
-			    logger.error("HTTP Status Code: {}", statusCode);
-			    logger.error("Response Body: {}", responseBody);
+				logger.info("HTTP Status Code: {}", statusCode);
+				logger.info("Response Body: {}", responseBody);
 
-			    if (statusCode == 200) {
+				logger.error("HTTP Status Code: {}", statusCode);
+				logger.error("Response Body: {}", responseBody);
 
-			        exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
-			        exceptionCode.setErrorMsg(responseBody);
+				if (statusCode == 200) {
 
-			        if (responseBody != null && responseBody.trim().startsWith("{")) {
-			            JSONObject jsonResponse = new JSONObject(responseBody);
+					exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
+					exceptionCode.setErrorMsg(responseBody);
 
-			            requestNo = jsonResponse.optString("RequestNo", "");
-			            cbStatus  = jsonResponse.optString("Status", "SUCCESS");
-			        } else {
-			            cbStatus = responseBody;
-			        }
+					if (responseBody != null && responseBody.trim().startsWith("{")) {
+						JSONObject jsonResponse = new JSONObject(responseBody);
 
-			    } else {
+						requestNo = jsonResponse.optString("RequestNo", "");
+						cbStatus = jsonResponse.optString("Status", "SUCCESS");
+					} else {
+						cbStatus = responseBody;
+					}
 
-			        exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
-			        exceptionCode.setErrorMsg(responseBody);
+				} else {
 
-			        if (responseBody != null && responseBody.trim().startsWith("{")) {
-			            JSONObject jsonResponse = new JSONObject(responseBody);
+					exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
+					exceptionCode.setErrorMsg(responseBody);
 
-			            requestNo = jsonResponse.optString("RequestNo", "");
-			            cbStatus  = jsonResponse.optString("httpMessage", "FAILED");
-			        } else {
-			            cbStatus = responseBody;
-			        }
-			    }
+					if (responseBody != null && responseBody.trim().startsWith("{")) {
+						JSONObject jsonResponse = new JSONObject(responseBody);
 
-			    exceptionCode.setResponse1(requestNo);
-			    exceptionCode.setResponse2(cbStatus);
+						requestNo = jsonResponse.optString("RequestNo", "");
+						cbStatus = jsonResponse.optString("httpMessage", "FAILED");
+					} else {
+						cbStatus = responseBody;
+					}
+				}
+
+				exceptionCode.setResponse1(requestNo);
+				exceptionCode.setResponse2(cbStatus);
 			}
 
 			if (responseBody == null || responseBody.isEmpty()) {
@@ -2116,155 +2120,144 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 //		}
 //	}
 	public void alertMail(TemplateScheduleVb templateScheduleVb) {
-	    try {
-	        // Fetch mail configuration from Vision variables
-	        final String hostName = commonDao.findVisionVariableValue("RG_MAIL_HOST");
-	        final String mailPort = commonDao.findVisionVariableValue("RG_MAIL_PORT");
-	        final String authFlag = commonDao.findVisionVariableValue("RG_MAIL_SMTP_AUTH"); // "true" or "false"
-	        final String username = commonDao.findVisionVariableValue("RG_MAIL_ID");
-	        final String password = commonDao.findVisionVariableValue("RG_MAIL_PWD");
-	        final String tlsEnable = commonDao.findVisionVariableValue("RG_TLS_ENABLE");
-	        
-	        System.out.println("Host Name"+hostName);
-	        System.out.println("Mail Port"+mailPort);
-	        System.out.println("Auth Flag"+authFlag);
-	        System.out.println("User Name"+username);
-	        System.out.println("Password "+password);
-	        
-	        logger.info("Host Name"+hostName);
-	        logger.info("Mail Port"+mailPort);
-	        logger.info("Auth Flag"+authFlag);
-	        logger.info("User Name"+username);
-	        logger.info("Password "+password);
-	        logger.info("tlsEnable "+tlsEnable);
+		try {
+			// Fetch mail configuration from Vision variables
+			final String hostName = commonDao.findVisionVariableValue("RG_MAIL_HOST");
+			final String mailPort = commonDao.findVisionVariableValue("RG_MAIL_PORT");
+			final String authFlag = commonDao.findVisionVariableValue("RG_MAIL_SMTP_AUTH"); // "true" or "false"
+			final String username = commonDao.findVisionVariableValue("RG_MAIL_ID");
+			final String password = commonDao.findVisionVariableValue("RG_MAIL_PWD");
+			final String tlsEnable = commonDao.findVisionVariableValue("RG_TLS_ENABLE");
 
-	        boolean useAuth = Boolean.parseBoolean(authFlag);
+			System.out.println("Host Name" + hostName);
+			System.out.println("Mail Port" + mailPort);
+			System.out.println("Auth Flag" + authFlag);
+			System.out.println("User Name" + username);
+			System.out.println("Password " + password);
 
-	        // Mail properties
-	        Properties props = new Properties();
-	        props.put("mail.smtp.host", hostName);
-	        props.put("mail.smtp.port", mailPort);
-	        props.put("mail.smtp.starttls.enable", tlsEnable);
-	        props.put("mail.smtp.auth", String.valueOf(useAuth));
+			logger.info("Host Name" + hostName);
+			logger.info("Mail Port" + mailPort);
+			logger.info("Auth Flag" + authFlag);
+			logger.info("User Name" + username);
+			logger.info("Password " + password);
+			logger.info("tlsEnable " + tlsEnable);
 
-	        Session session = Session.getInstance(props, new jakarta.mail.Authenticator() {
-	            @Override
-	            protected PasswordAuthentication getPasswordAuthentication() {
-	                return new PasswordAuthentication(username, password);
-	            }
-	        });
+			boolean useAuth = Boolean.parseBoolean(authFlag);
 
-	        // Fetch mail details from DB
-	        TemplateScheduleVb mailDetails = templateScheduleDao.fetchTemplatemailSchedule(templateScheduleVb);
-	        if(mailDetails == null && !ValidationUtil.isValid(mailDetails)) {
-	        	return;
-	        }
-	        String data = emailData(mailDetails);
+			// Mail properties
+			Properties props = new Properties();
+			props.put("mail.smtp.host", hostName);
+			props.put("mail.smtp.port", mailPort);
+			props.put("mail.smtp.starttls.enable", tlsEnable);
+			props.put("mail.smtp.auth", String.valueOf(useAuth));
 
-	        // Collect recipients
-	        List<String> recipients = new ArrayList<>();
-	        if (ValidationUtil.isValid(mailDetails.getMakerMailId())) {
-	        	System.out.println("Maker Mail "+mailDetails.getMakerMailId());
-	        	logger.info("Maker Mail "+mailDetails.getMakerMailId());
-	            recipients.add(mailDetails.getMakerMailId());
-	        }
-	        if (ValidationUtil.isValid(mailDetails.getSubmitterMailId())) {
-	            recipients.add(mailDetails.getSubmitterMailId());
-	            System.out.println("Submitter Mail "+mailDetails.getSubmitterMailId());
-	            logger.info("Submitter Mail "+mailDetails.getSubmitterMailId());
-	        }
+			Session session = Session.getInstance(props, new jakarta.mail.Authenticator() {
+				@Override
+				protected PasswordAuthentication getPasswordAuthentication() {
+					return new PasswordAuthentication(username, password);
+				}
+			});
 
-	        if (recipients.isEmpty()) {
-	            System.out.println("⚠ No valid recipients found. Skipping mail.");
-	            logger.info("⚠ No valid recipients found. Skipping mail.");
-	            return;
-	        }
+			// Fetch mail details from DB
+			TemplateScheduleVb mailDetails = templateScheduleDao.fetchTemplatemailSchedule(templateScheduleVb);
+			if (mailDetails == null && !ValidationUtil.isValid(mailDetails)) {
+				return;
+			}
+			String data = emailData(mailDetails);
 
-	        // Build message
-	        Message message = new MimeMessage(session);
-	        message.setFrom(new InternetAddress(username));
-	        message.setRecipients(Message.RecipientType.TO,
-	                InternetAddress.parse(String.join(",", recipients)));
-	        message.setSubject("RegTech - Submission Status");
+			// Collect recipients
+			List<String> recipients = new ArrayList<>();
+			if (ValidationUtil.isValid(mailDetails.getMakerMailId())) {
+				System.out.println("Maker Mail " + mailDetails.getMakerMailId());
+				logger.info("Maker Mail " + mailDetails.getMakerMailId());
+				recipients.add(mailDetails.getMakerMailId());
+			}
+			if (ValidationUtil.isValid(mailDetails.getSubmitterMailId())) {
+				recipients.add(mailDetails.getSubmitterMailId());
+				System.out.println("Submitter Mail " + mailDetails.getSubmitterMailId());
+				logger.info("Submitter Mail " + mailDetails.getSubmitterMailId());
+			}
 
-	        StringBuilder content = new StringBuilder();
-	        content.append("<html><body>")
-	               .append("<p>Dear Team, Good day.</p>")
-	               .append("<p>Please find the templates attached below.</p>")
-	               .append("<br>").append(data).append("<br>")
-	               .append("<hr>")
-	               .append("<p style='color:gray;font-size:12px;'>")
-	               .append("This is a system generated mail, Please do not reply.")
-	               .append("</p>")
-	               .append("</body></html>");
+			if (recipients.isEmpty()) {
+				System.out.println("⚠ No valid recipients found. Skipping mail.");
+				logger.info("⚠ No valid recipients found. Skipping mail.");
+				return;
+			}
 
-	        message.setContent(content.toString(), "text/html; charset=UTF-8");
+			// Build message
+			Message message = new MimeMessage(session);
+			message.setFrom(new InternetAddress(username));
+			message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(String.join(",", recipients)));
+			message.setSubject("RegTech - Submission Status");
 
-	        Transport.send(message);
-	        System.out.println("✅ Mail sent successfully to: " + recipients);
-	        logger.info("✅ Mail sent successfully to: " + recipients);
+			StringBuilder content = new StringBuilder();
+			content.append("<html><body>").append("<p>Dear Team, Good day.</p>")
+					.append("<p>Please find the templates attached below.</p>").append("<br>").append(data)
+					.append("<br>").append("<hr>").append("<p style='color:gray;font-size:12px;'>")
+					.append("This is a system generated mail, Please do not reply.").append("</p>")
+					.append("</body></html>");
 
-	    } catch (Exception e) {
-	        e.printStackTrace(); // replace with logger.error("Mail sending failed", e);
-	    }
+			message.setContent(content.toString(), "text/html; charset=UTF-8");
+
+			Transport.send(message);
+			System.out.println("✅ Mail sent successfully to: " + recipients);
+			logger.info("✅ Mail sent successfully to: " + recipients);
+
+		} catch (Exception e) {
+			e.printStackTrace(); // replace with logger.error("Mail sending failed", e);
+		}
 	}
 
-
 	public String emailData(TemplateScheduleVb templateScheduleVb) {
-	    StringBuilder html = new StringBuilder();
+		StringBuilder html = new StringBuilder();
 
-	    // Header wrapper
-	    html.append("<html><body>")
-	        .append("<table width='80%' cellspacing='0' cellpadding='0' align='center' ")
-	        .append("style='font:normal 12px Arial,Helvetica,sans-serif;border:solid 4px #006599;border-top:none;'>")
-	        .append("<tr><td valign='top'>")
+		// Header wrapper
+		html.append("<html><body>").append("<table width='80%' cellspacing='0' cellpadding='0' align='center' ").append(
+				"style='font:normal 12px Arial,Helvetica,sans-serif;border:solid 4px #006599;border-top:none;'>")
+				.append("<tr><td valign='top'>")
 
-	        // Title Bar
-	        .append("<table width='100%' cellspacing='0' cellpadding='0' border='0'>")
-	        .append("<tr>")
-	        .append("<td height='41' style='font:normal 14px Arial,Helvetica,sans-serif;")
-	        .append("color:#FFF;padding:4px;background-color:#006599;'>")
-	        .append("<strong>GDI Submission Status Report</strong>")
-	        .append("</td>")
-	        .append("</tr></table>");
+				// Title Bar
+				.append("<table width='100%' cellspacing='0' cellpadding='0' border='0'>").append("<tr>")
+				.append("<td height='41' style='font:normal 14px Arial,Helvetica,sans-serif;")
+				.append("color:#FFF;padding:4px;background-color:#006599;'>")
+				.append("<strong>GDI Submission Status Report</strong>").append("</td>").append("</tr></table>");
 
-	    // Data Table
-	    html.append("<table width='100%' cellspacing='0' cellpadding='0' border='0' ")
-	        .append("style='font-size:12px;border:1px solid #dfe8f6;'>")
+		// Data Table
+		html.append("<table width='100%' cellspacing='0' cellpadding='0' border='0' ")
+				.append("style='font-size:12px;border:1px solid #dfe8f6;'>")
 
-	        // Table Header Row
-	        .append("<tr style='background-color:#1E8B75;color:white;text-align:center;'>")
-	        .append("<th style='padding:5px;border-right:1px solid #FFF;'>TEMPLATE_ID</th>")
-	        .append("<th style='padding:5px;border-right:1px solid #FFF;'>TEMPLATE_DESCRIPTION</th>")
-	        .append("<th style='padding:5px;border-right:1px solid #FFF;'>SUBMISSION_DATE</th>")
-	        .append("<th style='padding:5px;border-right:1px solid #FFF;'>REPORTING_DATE</th>")
-	        .append("<th style='padding:5px;border-right:1px solid #FFF;'>PROCESS_STATUS</th>")
-	        .append("</tr>");
+				// Table Header Row
+				.append("<tr style='background-color:#1E8B75;color:white;text-align:center;'>")
+				.append("<th style='padding:5px;border-right:1px solid #FFF;'>TEMPLATE_ID</th>")
+				.append("<th style='padding:5px;border-right:1px solid #FFF;'>TEMPLATE_DESCRIPTION</th>")
+				.append("<th style='padding:5px;border-right:1px solid #FFF;'>SUBMISSION_DATE</th>")
+				.append("<th style='padding:5px;border-right:1px solid #FFF;'>REPORTING_DATE</th>")
+				.append("<th style='padding:5px;border-right:1px solid #FFF;'>PROCESS_STATUS</th>").append("</tr>");
 
-	    // Data Row
-	    html.append("<tr style='background-color:#FFF;font-size:11px;'>")
-	        .append("<td style='padding:5px;border-right:1px solid #CCC;'>")
-	        .append(nullSafe(templateScheduleVb.getTemplateId())).append("</td>")
-	        .append("<td style='padding:5px;border-right:1px solid #CCC;'>")
-	        .append(nullSafe(templateScheduleVb.getTemplateName())).append("</td>")
-	        .append("<td style='padding:5px;border-right:1px solid #CCC;'>")
-	        .append(nullSafe(templateScheduleVb.getSubmissionDate())).append("</td>")
-	        .append("<td style='padding:5px;border-right:1px solid #CCC;'>")
-	        .append(nullSafe(templateScheduleVb.getReportingDate())).append("</td>")
-	        .append("<td style='padding:5px;border-right:1px solid #CCC;'>")
-	        .append(nullSafe(templateScheduleVb.getProcessStatusDesc())).append("</td>")
-	        .append("</tr>");
+		// Data Row
+		html.append("<tr style='background-color:#FFF;font-size:11px;'>")
+				.append("<td style='padding:5px;border-right:1px solid #CCC;'>")
+				.append(nullSafe(templateScheduleVb.getTemplateId())).append("</td>")
+				.append("<td style='padding:5px;border-right:1px solid #CCC;'>")
+				.append(nullSafe(templateScheduleVb.getTemplateName())).append("</td>")
+				.append("<td style='padding:5px;border-right:1px solid #CCC;'>")
+				.append(nullSafe(templateScheduleVb.getSubmissionDate())).append("</td>")
+				.append("<td style='padding:5px;border-right:1px solid #CCC;'>")
+				.append(nullSafe(templateScheduleVb.getReportingDate())).append("</td>")
+				.append("<td style='padding:5px;border-right:1px solid #CCC;'>")
+				.append(nullSafe(templateScheduleVb.getProcessStatusDesc())).append("</td>").append("</tr>");
 
-	    // Close
-	    html.append("</table></td></tr></table></body></html>");
+		// Close
+		html.append("</table></td></tr></table></body></html>");
 
-	    return html.toString();
+		return html.toString();
 	}
 
 	// Helper to avoid null values showing as "null"
 	private String nullSafe(Object value) {
-	    return value != null ? value.toString() : "";
+		return value != null ? value.toString() : "";
 	}
+
 	public ExceptionCode reviewCrsfatcaDetails(TemplateScheduleVb vObject, String fileName) throws IOException {
 		ExceptionCode exceptionCode = null;
 		ByteArrayOutputStream out = null;
@@ -2309,8 +2302,9 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 			String uploadDir = "";
 			uploadDir = getUploadDir();
 			exceptionCode = templateScheduleDao.reviewDbData(vObject);
-			TemplateScheduleVb templateSchedule = (TemplateScheduleVb)exceptionCode.getResponse();
-			exceptionCode =templateScheduleDao.writeXlsData(uploadDir,templateSchedule.getColumnHeaderLst(), templateSchedule.getDataLst(),vObject.getTemplateName());
+			TemplateScheduleVb templateSchedule = (TemplateScheduleVb) exceptionCode.getResponse();
+			exceptionCode = templateScheduleDao.writeXlsData(uploadDir, templateSchedule.getColumnHeaderLst(),
+					templateSchedule.getDataLst(), vObject.getTemplateName());
 		}
 		return exceptionCode;
 	}

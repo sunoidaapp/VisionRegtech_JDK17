@@ -66,6 +66,7 @@ import jakarta.mail.internet.MimeBodyPart;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 import jakarta.servlet.ServletContext;
+
 /**
  * @author kiran-kumar.karra
  *
@@ -101,69 +102,68 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		servletContext = arg0;
 	}
 
-	@Autowired 
+	@Autowired
 	CommonDao commonDao;
+
 	@Override
-	protected RowMapper getMapper(){
+	protected RowMapper getMapper() {
 		RowMapper mapper = new RowMapper() {
 			@Override
 			public Object mapRow(ResultSet rs, int rowNum) throws SQLException {
 				VisionUsersVb visionUsersVb = new VisionUsersVb();
 				visionUsersVb.setVisionId(rs.getInt("VISION_ID"));
-				if(ValidationUtil.isValid(rs.getString("USER_NAME")))
+				if (ValidationUtil.isValid(rs.getString("USER_NAME")))
 					visionUsersVb.setUserName(rs.getString("USER_NAME"));
-				if(ValidationUtil.isValid(rs.getString("USER_LOGIN_ID")))				
+				if (ValidationUtil.isValid(rs.getString("USER_LOGIN_ID")))
 					visionUsersVb.setUserLoginId(rs.getString("USER_LOGIN_ID"));
-				if(ValidationUtil.isValid(rs.getString("STF_LE_BOOK")))
+				if (ValidationUtil.isValid(rs.getString("STF_LE_BOOK")))
 					visionUsersVb.setStfleBook(rs.getString("STF_LE_BOOK").trim());
-				if(ValidationUtil.isValid(rs.getString("STF_COUNTRY")))
+				if (ValidationUtil.isValid(rs.getString("STF_COUNTRY")))
 					visionUsersVb.setStfcountry(rs.getString("STF_COUNTRY").trim());
-				if(ValidationUtil.isValid(rs.getString("STAFF_ID")))
+				if (ValidationUtil.isValid(rs.getString("STAFF_ID")))
 					visionUsersVb.setStaffId(rs.getString("STAFF_ID"));
-				/*if(ValidationUtil.isValid(rs.getString("STAFF_NAME")))
-					visionUsersVb.setStaffName(rs.getString("STAFF_NAME"));*/
-				
-				if(ValidationUtil.isValid(rs.getString("USER_EMAIL_ID")))
+
+				if (ValidationUtil.isValid(rs.getString("USER_EMAIL_ID")))
 					visionUsersVb.setUserEmailId(rs.getString("USER_EMAIL_ID"));
-				if(ValidationUtil.isValid(rs.getString("USER_STATUS_DATE")))
+				if (ValidationUtil.isValid(rs.getString("USER_STATUS_DATE")))
 					visionUsersVb.setUserStatusDate(rs.getString("USER_STATUS_DATE"));
 				visionUsersVb.setUserStatusNt(rs.getInt("USER_STATUS_NT"));
 				visionUsersVb.setUserStatus(rs.getInt("USER_STATUS"));
 				visionUsersVb.setUserStatusDesc(rs.getString("USER_STATUS_DESC"));
 				visionUsersVb.setUserProfileAt(rs.getInt("USER_PROFILE_AT"));
-				if(ValidationUtil.isValid(rs.getString("USER_PROFILE")))
+				if (ValidationUtil.isValid(rs.getString("USER_PROFILE")))
 					visionUsersVb.setUserProfile(rs.getString("USER_PROFILE").trim());
 				visionUsersVb.setUserGroupAt(rs.getInt("USER_GROUP_AT"));
-				if(ValidationUtil.isValid(rs.getString("USER_GROUP")))
+				if (ValidationUtil.isValid(rs.getString("USER_GROUP")))
 					visionUsersVb.setUserGroup(rs.getString("USER_GROUP").trim());
-				if(ValidationUtil.isValid(rs.getString("LAST_ACTIVITY_DATE")))
+				if (ValidationUtil.isValid(rs.getString("LAST_ACTIVITY_DATE")))
 					visionUsersVb.setLastActivityDate(rs.getString("LAST_ACTIVITY_DATE").trim());
-				if(ValidationUtil.isValid(rs.getString("UPDATE_RESTRICTION")))
+				if (ValidationUtil.isValid(rs.getString("UPDATE_RESTRICTION")))
 					visionUsersVb.setUpdateRestriction(rs.getString("UPDATE_RESTRICTION").trim());
-				if(ValidationUtil.isValid(rs.getString("LE_BOOK")))
+				if (ValidationUtil.isValid(rs.getString("LE_BOOK")))
 					visionUsersVb.setLeBook(rs.getString("LE_BOOK").trim());
-				if(ValidationUtil.isValid(rs.getString("COUNTRY")))
+				if (ValidationUtil.isValid(rs.getString("COUNTRY")))
 					visionUsersVb.setCountry(rs.getString("COUNTRY").trim());
-				if(ValidationUtil.isValid(rs.getString("LEGAL_VEHICLE")))
+				if (ValidationUtil.isValid(rs.getString("LEGAL_VEHICLE")))
 					visionUsersVb.setLegalVehicle(rs.getString("LEGAL_VEHICLE").trim());
 //				if(ValidationUtil.isValid(rs.getString("LegalVehicleDesc")))
 //					visionUsersVb.setLegalVehicleDesc(rs.getString("LegalVehicleDesc").trim());
-				if(ValidationUtil.isValid(rs.getString("PRODUCT_ATTRIBUTE")))
+				if (ValidationUtil.isValid(rs.getString("PRODUCT_ATTRIBUTE")))
 					visionUsersVb.setProductAttribute(rs.getString("PRODUCT_ATTRIBUTE").trim());
-				if(ValidationUtil.isValid(rs.getString("SBU_CODE")))
+				if (ValidationUtil.isValid(rs.getString("SBU_CODE")))
 					visionUsersVb.setSbuCode(rs.getString("SBU_CODE").trim());
 				visionUsersVb.setSbuCodeAt(rs.getInt("SBU_CODE_AT"));
-				if(ValidationUtil.isValid(rs.getString("OUC_ATTRIBUTE")))
+				if (ValidationUtil.isValid(rs.getString("OUC_ATTRIBUTE")))
 					visionUsersVb.setOucAttribute(rs.getString("OUC_ATTRIBUTE").trim());
-				if(ValidationUtil.isValid(rs.getString("PRODUCT_SUPER_GROUP")))
+				if (ValidationUtil.isValid(rs.getString("PRODUCT_SUPER_GROUP")))
 					visionUsersVb.setProductSuperGroup(rs.getString("PRODUCT_SUPER_GROUP").trim());
-				if(ValidationUtil.isValid(rs.getString("BUSINESS_GROUP")))
+				if (ValidationUtil.isValid(rs.getString("BUSINESS_GROUP")))
 					visionUsersVb.setBusinessGroup(rs.getString("BUSINESS_GROUP").trim());
-				if(ValidationUtil.isValid(rs.getString("ACCOUNT_OFFICER")))
+				if (ValidationUtil.isValid(rs.getString("ACCOUNT_OFFICER")))
 					visionUsersVb.setAccountOfficer(rs.getString("ACCOUNT_OFFICER").trim());
-				if(ValidationUtil.isValid(rs.getString("REGION_PROVINCE")))
+				if (ValidationUtil.isValid(rs.getString("REGION_PROVINCE")))
 					visionUsersVb.setRegionProvince(rs.getString("REGION_PROVINCE").trim());
-				if(ValidationUtil.isValid(rs.getString("GCID_ACCESS"))){
+				if (ValidationUtil.isValid(rs.getString("GCID_ACCESS"))) {
 					visionUsersVb.setGcidAccess(rs.getString("GCID_ACCESS").trim());
 				}
 				visionUsersVb.setRecordIndicatorNt(rs.getInt("RECORD_INDICATOR_NT"));
@@ -174,17 +174,17 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 				visionUsersVb.setVerifier(rs.getLong("VERIFIER"));
 				visionUsersVb.setVerifierName(rs.getString("VERIFIER_NAME"));
 				visionUsersVb.setInternalStatus(rs.getInt("INTERNAL_STATUS"));
-				if(ValidationUtil.isValid(rs.getString("DATE_CREATION")))
+				if (ValidationUtil.isValid(rs.getString("DATE_CREATION")))
 					visionUsersVb.setDateCreation(rs.getString("DATE_CREATION"));
-				if(ValidationUtil.isValid(rs.getString("DATE_LAST_MODIFIED")))
+				if (ValidationUtil.isValid(rs.getString("DATE_LAST_MODIFIED")))
 					visionUsersVb.setDateLastModified(rs.getString("DATE_LAST_MODIFIED"));
-				if(ValidationUtil.isValid(rs.getString("LAST_UNSUCCESSFUL_LOGIN_DATE")))
+				if (ValidationUtil.isValid(rs.getString("LAST_UNSUCCESSFUL_LOGIN_DATE")))
 					visionUsersVb.setLastUnsuccessfulLoginDate(rs.getString("LAST_UNSUCCESSFUL_LOGIN_DATE"));
-				if(ValidationUtil.isValid(rs.getString("UNSUCCESSFUL_LOGIN_ATTEMPTS")))
+				if (ValidationUtil.isValid(rs.getString("UNSUCCESSFUL_LOGIN_ATTEMPTS")))
 					visionUsersVb.setLastUnsuccessfulLoginAttempts(rs.getString("UNSUCCESSFUL_LOGIN_ATTEMPTS"));
-				if(ValidationUtil.isValid(rs.getString("ENABLE_WIDGETS")))
+				if (ValidationUtil.isValid(rs.getString("ENABLE_WIDGETS")))
 					visionUsersVb.setEnableWidgets(rs.getString("ENABLE_WIDGETS"));
-				if(ValidationUtil.isValid(rs.getString("APPLICATION_ID")))
+				if (ValidationUtil.isValid(rs.getString("APPLICATION_ID")))
 					visionUsersVb.setApplication_Id(rs.getString("APPLICATION_ID"));
 				return visionUsersVb;
 			}
@@ -267,20 +267,20 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 					visionUsersVb.setEnableWidgets(rs.getString("ENABLE_WIDGETS"));
 				if (ValidationUtil.isValid(rs.getString("APP_THEME"))) {
 					visionUsersVb.setAppTheme(rs.getString("APP_THEME"));
-				}else {
+				} else {
 					visionUsersVb.setAppTheme("BLUE");
 				}
 				if (ValidationUtil.isValid(rs.getString("Report_Slide_Theme"))) {
 					visionUsersVb.setReportSliderTheme(rs.getString("Report_Slide_Theme"));
-				}else {
+				} else {
 					visionUsersVb.setReportSliderTheme("BLUE");
 				}
 				if (ValidationUtil.isValid(rs.getString("Language"))) {
 					visionUsersVb.setLanguage(rs.getString("Language"));
-				}else {
+				} else {
 					visionUsersVb.setLanguage("EN");
 				}
-				if(ValidationUtil.isValid(rs.getString("APPLICATION_ACCESS")))
+				if (ValidationUtil.isValid(rs.getString("APPLICATION_ACCESS")))
 					visionUsersVb.setApplicationAccess(rs.getString("APPLICATION_ACCESS"));
 				return visionUsersVb;
 			}
@@ -288,64 +288,65 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		};
 		return mapper;
 	}
-	private RowMapper getQueryResultsMapper(){
+
+	private RowMapper getQueryResultsMapper() {
 		RowMapper mapper = new RowMapper() {
 			@Override
 			public Object mapRow(ResultSet rs, int rowNum) throws SQLException {
 				VisionUsersVb visionUsersVb = new VisionUsersVb();
 				visionUsersVb.setVisionId(rs.getInt("VISION_ID"));
-				if(ValidationUtil.isValid(rs.getString("USER_NAME")))
+				if (ValidationUtil.isValid(rs.getString("USER_NAME")))
 					visionUsersVb.setUserName(rs.getString("USER_NAME"));
-				if(ValidationUtil.isValid(rs.getString("USER_LOGIN_ID")))				
+				if (ValidationUtil.isValid(rs.getString("USER_LOGIN_ID")))
 					visionUsersVb.setUserLoginId(rs.getString("USER_LOGIN_ID"));
-				if(ValidationUtil.isValid(rs.getString("STF_LE_BOOK")))
+				if (ValidationUtil.isValid(rs.getString("STF_LE_BOOK")))
 					visionUsersVb.setStfleBook(rs.getString("STF_LE_BOOK").trim());
-				if(ValidationUtil.isValid(rs.getString("STF_COUNTRY")))
+				if (ValidationUtil.isValid(rs.getString("STF_COUNTRY")))
 					visionUsersVb.setStfcountry(rs.getString("STF_COUNTRY").trim());
-				if(ValidationUtil.isValid(rs.getString("STAFF_ID")))
+				if (ValidationUtil.isValid(rs.getString("STAFF_ID")))
 					visionUsersVb.setStaffId(rs.getString("STAFF_ID"));
-				if(ValidationUtil.isValid(rs.getString("STAFF_NAME")))
+				if (ValidationUtil.isValid(rs.getString("STAFF_NAME")))
 					visionUsersVb.setStaffName(rs.getString("STAFF_NAME"));
-				if(ValidationUtil.isValid(rs.getString("USER_EMAIL_ID")))
+				if (ValidationUtil.isValid(rs.getString("USER_EMAIL_ID")))
 					visionUsersVb.setUserEmailId(rs.getString("USER_EMAIL_ID"));
-				if(ValidationUtil.isValid(rs.getString("USER_STATUS_DATE")))
+				if (ValidationUtil.isValid(rs.getString("USER_STATUS_DATE")))
 					visionUsersVb.setUserStatusDate(rs.getString("USER_STATUS_DATE"));
 				visionUsersVb.setUserStatusNt(rs.getInt("USER_STATUS_NT"));
 				visionUsersVb.setUserStatus(rs.getInt("USER_STATUS"));
 				visionUsersVb.setUserProfileAt(rs.getInt("USER_PROFILE_AT"));
-				if(ValidationUtil.isValid(rs.getString("USER_PROFILE")))
+				if (ValidationUtil.isValid(rs.getString("USER_PROFILE")))
 					visionUsersVb.setUserProfile(rs.getString("USER_PROFILE").trim());
 				visionUsersVb.setUserGroupAt(rs.getInt("USER_GROUP_AT"));
-				if(ValidationUtil.isValid(rs.getString("USER_GROUP")))
+				if (ValidationUtil.isValid(rs.getString("USER_GROUP")))
 					visionUsersVb.setUserGroup(rs.getString("USER_GROUP").trim());
-				if(ValidationUtil.isValid(rs.getString("LAST_ACTIVITY_DATE")))
+				if (ValidationUtil.isValid(rs.getString("LAST_ACTIVITY_DATE")))
 					visionUsersVb.setLastActivityDate(rs.getString("LAST_ACTIVITY_DATE").trim());
-				if(ValidationUtil.isValid(rs.getString("UPDATE_RESTRICTION")))
+				if (ValidationUtil.isValid(rs.getString("UPDATE_RESTRICTION")))
 					visionUsersVb.setUpdateRestriction(rs.getString("UPDATE_RESTRICTION").trim());
-				if(ValidationUtil.isValid(rs.getString("LE_BOOK")))
+				if (ValidationUtil.isValid(rs.getString("LE_BOOK")))
 					visionUsersVb.setLeBook(rs.getString("LE_BOOK").trim());
-				if(ValidationUtil.isValid(rs.getString("COUNTRY")))
+				if (ValidationUtil.isValid(rs.getString("COUNTRY")))
 					visionUsersVb.setCountry(rs.getString("COUNTRY").trim());
-				if(ValidationUtil.isValid(rs.getString("LEGAL_VEHICLE")))
+				if (ValidationUtil.isValid(rs.getString("LEGAL_VEHICLE")))
 					visionUsersVb.setLegalVehicle(rs.getString("LEGAL_VEHICLE").trim());
 //				if(ValidationUtil.isValid(rs.getString("LegalVehicleDesc")))
 //					visionUsersVb.setLegalVehicleDesc(rs.getString("LegalVehicleDesc").trim());
-				if(ValidationUtil.isValid(rs.getString("PRODUCT_ATTRIBUTE")))
+				if (ValidationUtil.isValid(rs.getString("PRODUCT_ATTRIBUTE")))
 					visionUsersVb.setProductAttribute(rs.getString("PRODUCT_ATTRIBUTE").trim());
-				if(ValidationUtil.isValid(rs.getString("SBU_CODE")))
+				if (ValidationUtil.isValid(rs.getString("SBU_CODE")))
 					visionUsersVb.setSbuCode(rs.getString("SBU_CODE").trim());
 				visionUsersVb.setSbuCodeAt(rs.getInt("SBU_CODE_AT"));
-				if(ValidationUtil.isValid(rs.getString("OUC_ATTRIBUTE")))
+				if (ValidationUtil.isValid(rs.getString("OUC_ATTRIBUTE")))
 					visionUsersVb.setOucAttribute(rs.getString("OUC_ATTRIBUTE").trim());
-				if(ValidationUtil.isValid(rs.getString("PRODUCT_SUPER_GROUP")))
+				if (ValidationUtil.isValid(rs.getString("PRODUCT_SUPER_GROUP")))
 					visionUsersVb.setProductSuperGroup(rs.getString("PRODUCT_SUPER_GROUP").trim());
-				if(ValidationUtil.isValid(rs.getString("BUSINESS_GROUP")))
+				if (ValidationUtil.isValid(rs.getString("BUSINESS_GROUP")))
 					visionUsersVb.setBusinessGroup(rs.getString("BUSINESS_GROUP").trim());
-				if(ValidationUtil.isValid(rs.getString("ACCOUNT_OFFICER")))
+				if (ValidationUtil.isValid(rs.getString("ACCOUNT_OFFICER")))
 					visionUsersVb.setAccountOfficer(rs.getString("ACCOUNT_OFFICER").trim());
-				if(ValidationUtil.isValid(rs.getString("REGION_PROVINCE")))
+				if (ValidationUtil.isValid(rs.getString("REGION_PROVINCE")))
 					visionUsersVb.setRegionProvince(rs.getString("REGION_PROVINCE").trim());
-				if(ValidationUtil.isValid(rs.getString("GCID_ACCESS"))){
+				if (ValidationUtil.isValid(rs.getString("GCID_ACCESS"))) {
 					visionUsersVb.setGcidAccess(rs.getString("GCID_ACCESS").trim());
 				}
 				visionUsersVb.setRecordIndicatorNt(rs.getInt("RECORD_INDICATOR_NT"));
@@ -356,51 +357,50 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 				visionUsersVb.setVerifier(rs.getLong("VERIFIER"));
 				visionUsersVb.setVerifierName(rs.getString("VERIFIER_NAME"));
 				visionUsersVb.setInternalStatus(rs.getInt("INTERNAL_STATUS"));
-				if(ValidationUtil.isValid(rs.getString("DATE_CREATION")))
+				if (ValidationUtil.isValid(rs.getString("DATE_CREATION")))
 					visionUsersVb.setDateCreation(rs.getString("DATE_CREATION"));
-				if(ValidationUtil.isValid(rs.getString("DATE_LAST_MODIFIED")))
+				if (ValidationUtil.isValid(rs.getString("DATE_LAST_MODIFIED")))
 					visionUsersVb.setDateLastModified(rs.getString("DATE_LAST_MODIFIED"));
-				if(ValidationUtil.isValid(rs.getString("LAST_UNSUCCESSFUL_LOGIN_DATE")))
+				if (ValidationUtil.isValid(rs.getString("LAST_UNSUCCESSFUL_LOGIN_DATE")))
 					visionUsersVb.setLastUnsuccessfulLoginDate(rs.getString("LAST_UNSUCCESSFUL_LOGIN_DATE"));
-				if(ValidationUtil.isValid(rs.getString("UNSUCCESSFUL_LOGIN_ATTEMPTS")))
+				if (ValidationUtil.isValid(rs.getString("UNSUCCESSFUL_LOGIN_ATTEMPTS")))
 					visionUsersVb.setLastUnsuccessfulLoginAttempts(rs.getString("UNSUCCESSFUL_LOGIN_ATTEMPTS"));
-				if(ValidationUtil.isValid(rs.getString("FILE_NAME"))){
+				if (ValidationUtil.isValid(rs.getString("FILE_NAME"))) {
 					visionUsersVb.setFileNmae(rs.getString("FILE_NAME"));
-					if(rs.getBlob("USER_PHOTO") !=null){
+					if (rs.getBlob("USER_PHOTO") != null) {
 						createImage(visionUsersVb.getFileNmae(), rs);
 					}
 				}
-				if(ValidationUtil.isValid(rs.getString("ENABLE_WIDGETS")))
+				if (ValidationUtil.isValid(rs.getString("ENABLE_WIDGETS")))
 					visionUsersVb.setEnableWidgets(rs.getString("ENABLE_WIDGETS"));
-				if(ValidationUtil.isValid(rs.getString("APPLICATION_ACCESS")))
+				if (ValidationUtil.isValid(rs.getString("APPLICATION_ACCESS")))
 					visionUsersVb.setApplicationAccess(rs.getString("APPLICATION_ACCESS"));
-				if(ValidationUtil.isValid(rs.getString("RA_SOC")))
+				if (ValidationUtil.isValid(rs.getString("RA_SOC")))
 					visionUsersVb.setRaSoc(rs.getString("RA_SOC"));
-				if(ValidationUtil.isValid(rs.getString("OTHER_ATTR")))
+				if (ValidationUtil.isValid(rs.getString("OTHER_ATTR")))
 					visionUsersVb.setOtherAttr(rs.getString("OTHER_ATTR"));
-				if(ValidationUtil.isValid(rs.getString("PWD_RESET_FLAG")))
+				if (ValidationUtil.isValid(rs.getString("PWD_RESET_FLAG")))
 					visionUsersVb.setPasswordResetFlag(rs.getString("PWD_RESET_FLAG"));
-				if(ValidationUtil.isValid(rs.getString("APPLICATION_ID"))) {
+				if (ValidationUtil.isValid(rs.getString("APPLICATION_ID"))) {
 					visionUsersVb.setApplication_Id(rs.getString("APPLICATION_ID"));
 					visionUsersVb.setApplicationAccess(rs.getString("APPLICATION_ID"));
 				}
-					
-					
-				
+
 				return visionUsersVb;
 			}
-			
+
 		};
 		return mapper;
 	}
+
 	private RowMapper getPasswordApprMapper() {
 		RowMapper mapper = new RowMapper() {
 			@Override
 			public Object mapRow(ResultSet rs, int rowNum) throws SQLException {
 				VisionUsersVb visionUsersVb = new VisionUsersVb();
-				if(ValidationUtil.isValid(rs.getString("PWD_RESET_FLAG")))
+				if (ValidationUtil.isValid(rs.getString("PWD_RESET_FLAG")))
 					visionUsersVb.setPasswordResetFlag(rs.getString("PWD_RESET_FLAG"));
-				if(ValidationUtil.isValid(rs.getString("PASSWORD")))
+				if (ValidationUtil.isValid(rs.getString("PASSWORD")))
 					visionUsersVb.setPassword(rs.getString("PASSWORD"));
 				return visionUsersVb;
 			}
@@ -408,6 +408,7 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		};
 		return mapper;
 	}
+
 	private RowMapper<AlphaSubTabVb> getMapperRestriction() {
 		RowMapper<AlphaSubTabVb> mapper = new RowMapper<AlphaSubTabVb>() {
 			@Override
@@ -421,24 +422,24 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 	}
 
 	private void createImage(String fileName, ResultSet rs) {
-		try{
+		try {
 			String filePath = commonDao.findVisionVariableValue("RA_IMAGE_PATH");
-		    Blob ph = rs.getBlob("USER_PHOTO");
-		    InputStream in = ph.getBinaryStream();
-		    ByteArrayOutputStream out = new ByteArrayOutputStream();  
-		    OutputStream outputStream = new FileOutputStream(filePath+"\\"+fileName);  
-		    int length = (int) ph.length();  
-		    int bufferSize = 1024;  
-		    byte[] buffer = new byte[bufferSize];  
-		    while ((length = in.read(buffer)) != -1) {  
-		        out.write(buffer, 0, length);     
-		    }
-		    out.writeTo(outputStream);
-		    outputStream.flush();
-		    out.flush();
-		    in.close();
-		}catch(Exception ex){
-			logger.error("Create User Profile Image Errror : "+ex.getMessage());
+			Blob ph = rs.getBlob("USER_PHOTO");
+			InputStream in = ph.getBinaryStream();
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			OutputStream outputStream = new FileOutputStream(filePath + "\\" + fileName);
+			int length = (int) ph.length();
+			int bufferSize = 1024;
+			byte[] buffer = new byte[bufferSize];
+			while ((length = in.read(buffer)) != -1) {
+				out.write(buffer, 0, length);
+			}
+			out.writeTo(outputStream);
+			outputStream.flush();
+			out.flush();
+			in.close();
+		} catch (Exception ex) {
+			logger.error("Create User Profile Image Errror : " + ex.getMessage());
 		}
 	}
 
@@ -450,108 +451,125 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		StringBuffer strBufPending = null;
 
 		strBufApprove = new StringBuffer("Select * from ( Select TAppr.VISION_ID,"
-					+ "TAppr.USER_NAME, TAppr.USER_LOGIN_ID, TAppr.USER_EMAIL_ID,TAppr.STF_COUNTRY,TAppr.STF_LE_BOOK,TAppr.STAFF_ID,"
-				 	+ getDbFunction("DATEFUNC")+"(TAppr.LAST_ACTIVITY_DATE, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') LAST_ACTIVITY_DATE, TAppr.USER_GROUP_AT,"
-					+ "TAppr.USER_GROUP, TAppr.USER_PROFILE_AT, TAppr.USER_PROFILE,"
-					+ "TAppr.UPDATE_RESTRICTION, TAppr.LEGAL_VEHICLE, "
-					+ "TAppr.COUNTRY, TAppr.LE_BOOK,"
-					+ "TAppr.REGION_PROVINCE, TAppr.BUSINESS_GROUP, TAppr.PRODUCT_SUPER_GROUP,"
-					+ "TAppr.OUC_ATTRIBUTE, TAppr.SBU_CODE, TAppr.SBU_CODE_AT, TAppr.PRODUCT_ATTRIBUTE,"
-					+ "TAppr.ACCOUNT_OFFICER, TAppr.GCID_ACCESS, TAppr.USER_STATUS_NT, TAppr.USER_STATUS,"
-					+ "T2.NUM_SUBTAB_DESCRIPTION USER_STATUS_DESC,"
-					+ getDbFunction("DATEFUNC")+"(TAppr.USER_STATUS_DATE, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') USER_STATUS_DATE, TAppr.MAKER,"
-					+ "(SELECT MIN(USER_NAME) FROM VISION_USERS WHERE VISION_ID = " + getDbFunction("NVL")
-					+ "(TAppr.MAKER,0) ) MAKER_NAME, "
-					+ "TAppr.VERIFIER, (SELECT MIN(USER_NAME) FROM VISION_USERS WHERE VISION_ID = "
-					+ getDbFunction("NVL") + "(TAppr.VERIFIER,0) ) VERIFIER_NAME,"
-					+ "TAppr.INTERNAL_STATUS, TAppr.RECORD_INDICATOR_NT,"
-					+ "TAppr.RECORD_INDICATOR,T1.NUM_SUBTAB_DESCRIPTION RECORD_INDICATOR_DESC,"
-					+ getDbFunction("DATEFUNC")+"(TAppr.DATE_LAST_MODIFIED, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') DATE_LAST_MODIFIED,TAppr.DATE_LAST_MODIFIED DATE_LAST_MODIFIED_1,"
-					+ getDbFunction("DATEFUNC")+"(TAppr.DATE_CREATION, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') DATE_CREATION,"
-					+ getDbFunction("DATEFUNC")+"(TAppr.LAST_UNSUCCESSFUL_LOGIN_DATE, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') LAST_UNSUCCESSFUL_LOGIN_DATE, TAppr.UNSUCCESSFUL_LOGIN_ATTEMPTS,  TAppr.ENABLE_WIDGETS,TAppr.APPLICATION_ID "
-					+ " From VISION_USERS TAppr,NUM_SUB_TAB T1,NUM_SUB_TAB T2"
-					+ " where  T1.NUM_tab = TAppr.RECORD_INDICATOR_NT   "
-					+ " and T1.NUM_sub_tab = TAppr.RECORD_INDICATOR  " + "and T2.NUM_tab = TAppr.USER_STATUS_NT "
-					+ " and T2.NUM_sub_tab = TAppr.USER_STATUS  " + ")TAPPR");
+				+ "TAppr.USER_NAME, TAppr.USER_LOGIN_ID, TAppr.USER_EMAIL_ID,TAppr.STF_COUNTRY,TAppr.STF_LE_BOOK,TAppr.STAFF_ID,"
+				+ getDbFunction("DATEFUNC") + "(TAppr.LAST_ACTIVITY_DATE, '" + getDbFunction("DATEFORMAT") + " "
+				+ getDbFunction("TIME") + "') LAST_ACTIVITY_DATE, TAppr.USER_GROUP_AT,"
+				+ "TAppr.USER_GROUP, TAppr.USER_PROFILE_AT, TAppr.USER_PROFILE,"
+				+ "TAppr.UPDATE_RESTRICTION, TAppr.LEGAL_VEHICLE, " + "TAppr.COUNTRY, TAppr.LE_BOOK,"
+				+ "TAppr.REGION_PROVINCE, TAppr.BUSINESS_GROUP, TAppr.PRODUCT_SUPER_GROUP,"
+				+ "TAppr.OUC_ATTRIBUTE, TAppr.SBU_CODE, TAppr.SBU_CODE_AT, TAppr.PRODUCT_ATTRIBUTE,"
+				+ "TAppr.ACCOUNT_OFFICER, TAppr.GCID_ACCESS, TAppr.USER_STATUS_NT, TAppr.USER_STATUS,"
+				+ "T2.NUM_SUBTAB_DESCRIPTION USER_STATUS_DESC," + getDbFunction("DATEFUNC")
+				+ "(TAppr.USER_STATUS_DATE, '" + getDbFunction("DATEFORMAT") + " " + getDbFunction("TIME")
+				+ "') USER_STATUS_DATE, TAppr.MAKER," + "(SELECT MIN(USER_NAME) FROM VISION_USERS WHERE VISION_ID = "
+				+ getDbFunction("NVL") + "(TAppr.MAKER,0) ) MAKER_NAME, "
+				+ "TAppr.VERIFIER, (SELECT MIN(USER_NAME) FROM VISION_USERS WHERE VISION_ID = " + getDbFunction("NVL")
+				+ "(TAppr.VERIFIER,0) ) VERIFIER_NAME," + "TAppr.INTERNAL_STATUS, TAppr.RECORD_INDICATOR_NT,"
+				+ "TAppr.RECORD_INDICATOR,T1.NUM_SUBTAB_DESCRIPTION RECORD_INDICATOR_DESC," + getDbFunction("DATEFUNC")
+				+ "(TAppr.DATE_LAST_MODIFIED, '" + getDbFunction("DATEFORMAT") + " " + getDbFunction("TIME")
+				+ "') DATE_LAST_MODIFIED,TAppr.DATE_LAST_MODIFIED DATE_LAST_MODIFIED_1," + getDbFunction("DATEFUNC")
+				+ "(TAppr.DATE_CREATION, '" + getDbFunction("DATEFORMAT") + " " + getDbFunction("TIME")
+				+ "') DATE_CREATION," + getDbFunction("DATEFUNC") + "(TAppr.LAST_UNSUCCESSFUL_LOGIN_DATE, '"
+				+ getDbFunction("DATEFORMAT") + " " + getDbFunction("TIME")
+				+ "') LAST_UNSUCCESSFUL_LOGIN_DATE, TAppr.UNSUCCESSFUL_LOGIN_ATTEMPTS,  TAppr.ENABLE_WIDGETS,TAppr.APPLICATION_ID "
+				+ " From VISION_USERS TAppr,NUM_SUB_TAB T1,NUM_SUB_TAB T2"
+				+ " where  T1.NUM_tab = TAppr.RECORD_INDICATOR_NT   " + " and T1.NUM_sub_tab = TAppr.RECORD_INDICATOR  "
+				+ "and T2.NUM_tab = TAppr.USER_STATUS_NT " + " and T2.NUM_sub_tab = TAppr.USER_STATUS  " + ")TAPPR");
 		strWhereNotExists = new String(
 				" Not Exists (Select 'X' From VISION_USERS_PEND TPend Where TPend.VISION_ID = TAppr.VISION_ID )");
 		strBufPending = new StringBuffer("Select * from ( Select TPend.VISION_ID,"
 				+ "TPend.USER_NAME, TPend.USER_LOGIN_ID, TPend.USER_EMAIL_ID,TPend.STF_COUNTRY,TPend.STF_LE_BOOK,TPend.STAFF_ID,"
-				+ getDbFunction("DATEFUNC")+"(TPend.LAST_ACTIVITY_DATE, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') LAST_ACTIVITY_DATE, TPend.USER_GROUP_AT,"
+				+ getDbFunction("DATEFUNC") + "(TPend.LAST_ACTIVITY_DATE, '" + getDbFunction("DATEFORMAT") + " "
+				+ getDbFunction("TIME") + "') LAST_ACTIVITY_DATE, TPend.USER_GROUP_AT,"
 				+ "TPend.USER_GROUP, TPend.USER_PROFILE_AT, TPend.USER_PROFILE,"
-				+ "TPend.UPDATE_RESTRICTION, TPend.LEGAL_VEHICLE,"
-				+ "TPend.COUNTRY, TPend.LE_BOOK,"
+				+ "TPend.UPDATE_RESTRICTION, TPend.LEGAL_VEHICLE," + "TPend.COUNTRY, TPend.LE_BOOK,"
 				+ "TPend.REGION_PROVINCE, TPend.BUSINESS_GROUP, TPend.PRODUCT_SUPER_GROUP,"
 				+ "TPend.OUC_ATTRIBUTE, TPend.SBU_CODE, TPend.SBU_CODE_AT, TPend.PRODUCT_ATTRIBUTE,"
 				+ "TPend.ACCOUNT_OFFICER, TPend.GCID_ACCESS, TPend.USER_STATUS_NT, TPend.USER_STATUS,"
-				+ "T2.NUM_SUBTAB_DESCRIPTION USER_STATUS_DESC,"
-				+ getDbFunction("DATEFUNC")+"(TPend.USER_STATUS_DATE, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') USER_STATUS_DATE, TPend.MAKER,"
-				+ "(SELECT MIN(USER_NAME) FROM VISION_USERS WHERE VISION_ID = " + getDbFunction("NVL")
-				+ "(TPend.MAKER,0) ) MAKER_NAME, "
-				+ "TPend.VERIFIER, (SELECT MIN(USER_NAME) FROM VISION_USERS WHERE VISION_ID = "
-				+ getDbFunction("NVL") + "(TPend.VERIFIER,0) ) VERIFIER_NAME,"
-				+ "TPend.INTERNAL_STATUS, TPend.RECORD_INDICATOR_NT,"
-				+ "TPend.RECORD_INDICATOR, T1.NUM_SUBTAB_DESCRIPTION RECORD_INDICATOR_DESC,"
-				+ getDbFunction("DATEFUNC")+"(TPend.DATE_LAST_MODIFIED, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') DATE_LAST_MODIFIED,TPend.DATE_LAST_MODIFIED DATE_LAST_MODIFIED_1,"
-				+ getDbFunction("DATEFUNC")+"(TPend.DATE_CREATION, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') DATE_CREATION, "
-				+ getDbFunction("DATEFUNC")+"(TPend.LAST_UNSUCCESSFUL_LOGIN_DATE, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') LAST_UNSUCCESSFUL_LOGIN_DATE, TPend.UNSUCCESSFUL_LOGIN_ATTEMPTS,  TPend.ENABLE_WIDGETS ,TPend.APPLICATION_ID "
+				+ "T2.NUM_SUBTAB_DESCRIPTION USER_STATUS_DESC," + getDbFunction("DATEFUNC")
+				+ "(TPend.USER_STATUS_DATE, '" + getDbFunction("DATEFORMAT") + " " + getDbFunction("TIME")
+				+ "') USER_STATUS_DATE, TPend.MAKER," + "(SELECT MIN(USER_NAME) FROM VISION_USERS WHERE VISION_ID = "
+				+ getDbFunction("NVL") + "(TPend.MAKER,0) ) MAKER_NAME, "
+				+ "TPend.VERIFIER, (SELECT MIN(USER_NAME) FROM VISION_USERS WHERE VISION_ID = " + getDbFunction("NVL")
+				+ "(TPend.VERIFIER,0) ) VERIFIER_NAME," + "TPend.INTERNAL_STATUS, TPend.RECORD_INDICATOR_NT,"
+				+ "TPend.RECORD_INDICATOR, T1.NUM_SUBTAB_DESCRIPTION RECORD_INDICATOR_DESC," + getDbFunction("DATEFUNC")
+				+ "(TPend.DATE_LAST_MODIFIED, '" + getDbFunction("DATEFORMAT") + " " + getDbFunction("TIME")
+				+ "') DATE_LAST_MODIFIED,TPend.DATE_LAST_MODIFIED DATE_LAST_MODIFIED_1," + getDbFunction("DATEFUNC")
+				+ "(TPend.DATE_CREATION, '" + getDbFunction("DATEFORMAT") + " " + getDbFunction("TIME")
+				+ "') DATE_CREATION, " + getDbFunction("DATEFUNC") + "(TPend.LAST_UNSUCCESSFUL_LOGIN_DATE, '"
+				+ getDbFunction("DATEFORMAT") + " " + getDbFunction("TIME")
+				+ "') LAST_UNSUCCESSFUL_LOGIN_DATE, TPend.UNSUCCESSFUL_LOGIN_ATTEMPTS,  TPend.ENABLE_WIDGETS ,TPend.APPLICATION_ID "
 				+ " From VISION_USERS_PEND TPend, NUM_SUB_TAB T1,NUM_SUB_TAB T2 "
-				+ " where  t1.NUM_tab = TPend.RECORD_INDICATOR_NT   "
-				+ " and t1.NUM_sub_tab = TPend.RECORD_INDICATOR  " + "and t2.NUM_tab = TPend.USER_STATUS_NT "
-				+ " and t2.NUM_sub_tab = TPend.USER_STATUS  " + ")TPend");
+				+ " where  t1.NUM_tab = TPend.RECORD_INDICATOR_NT   " + " and t1.NUM_sub_tab = TPend.RECORD_INDICATOR  "
+				+ "and t2.NUM_tab = TPend.USER_STATUS_NT " + " and t2.NUM_sub_tab = TPend.USER_STATUS  " + ")TPend");
 		try {
 			if (dObj.getSmartSearchOpt() != null && dObj.getSmartSearchOpt().size() > 0) {
 				int count = 1;
-				for (SmartSearchVb data: dObj.getSmartSearchOpt()){
-					if(count == dObj.getSmartSearchOpt().size()) {
+				for (SmartSearchVb data : dObj.getSmartSearchOpt()) {
+					if (count == dObj.getSmartSearchOpt().size()) {
 						data.setJoinType("");
 					} else {
-						if(!ValidationUtil.isValid(data.getJoinType()) && !("AND".equalsIgnoreCase(data.getJoinType()) || "OR".equalsIgnoreCase(data.getJoinType()))) {
+						if (!ValidationUtil.isValid(data.getJoinType()) && !("AND".equalsIgnoreCase(data.getJoinType())
+								|| "OR".equalsIgnoreCase(data.getJoinType()))) {
 							data.setJoinType("AND");
 						}
 					}
 					String val = CommonUtils.criteriaBasedVal(data.getCriteria(), data.getValue());
 					switch (data.getObject()) {
 					case "visionId":
-						CommonUtils.addToQuerySearch(" upper(TAPPR.VISION_ID) "+ val, strBufApprove, data.getJoinType());
-						CommonUtils.addToQuerySearch(" upper(TPEND.VISION_ID) "+ val, strBufPending, data.getJoinType());
+						CommonUtils.addToQuerySearch(" upper(TAPPR.VISION_ID) " + val, strBufApprove,
+								data.getJoinType());
+						CommonUtils.addToQuerySearch(" upper(TPEND.VISION_ID) " + val, strBufPending,
+								data.getJoinType());
 						break;
 
 					case "userLoginId":
-						CommonUtils.addToQuerySearch(" upper(TAPPR.USER_LOGIN_ID) "+ val, strBufApprove, data.getJoinType());
-						CommonUtils.addToQuerySearch(" upper(TPEND.USER_LOGIN_ID) "+ val, strBufPending, data.getJoinType());
+						CommonUtils.addToQuerySearch(" upper(TAPPR.USER_LOGIN_ID) " + val, strBufApprove,
+								data.getJoinType());
+						CommonUtils.addToQuerySearch(" upper(TPEND.USER_LOGIN_ID) " + val, strBufPending,
+								data.getJoinType());
 						break;
-						
+
 					case "userName":
-						CommonUtils.addToQuerySearch(" upper(TAPPR.USER_NAME) "+ val, strBufApprove, data.getJoinType());
-						CommonUtils.addToQuerySearch(" upper(TPEND.USER_NAME) "+ val, strBufPending, data.getJoinType());
+						CommonUtils.addToQuerySearch(" upper(TAPPR.USER_NAME) " + val, strBufApprove,
+								data.getJoinType());
+						CommonUtils.addToQuerySearch(" upper(TPEND.USER_NAME) " + val, strBufPending,
+								data.getJoinType());
 						break;
 
 					case "userGroup":
-						CommonUtils.addToQuerySearch(" upper(TAPPR.USER_GROUP) "+ val, strBufApprove, data.getJoinType());
-						CommonUtils.addToQuerySearch(" upper(TPEND.USER_GROUP) "+ val, strBufPending, data.getJoinType());
+						CommonUtils.addToQuerySearch(" upper(TAPPR.USER_GROUP) " + val, strBufApprove,
+								data.getJoinType());
+						CommonUtils.addToQuerySearch(" upper(TPEND.USER_GROUP) " + val, strBufPending,
+								data.getJoinType());
 						break;
-						
+
 					case "userProfile":
-						CommonUtils.addToQuerySearch(" upper(TAPPR.USER_PROFILE) "+ val, strBufApprove, data.getJoinType());
-						CommonUtils.addToQuerySearch(" upper(TPEND.USER_PROFILE) "+ val, strBufPending, data.getJoinType());
+						CommonUtils.addToQuerySearch(" upper(TAPPR.USER_PROFILE) " + val, strBufApprove,
+								data.getJoinType());
+						CommonUtils.addToQuerySearch(" upper(TPEND.USER_PROFILE) " + val, strBufPending,
+								data.getJoinType());
 						break;
-						
+
 					case "userStatusDesc":
-						CommonUtils.addToQuerySearch(" upper(TAPPR.USER_STATUS_DESC) "+ val, strBufApprove, data.getJoinType());
-						CommonUtils.addToQuerySearch(" upper(TPEND.USER_STATUS_DESC) "+ val, strBufPending, data.getJoinType());
+						CommonUtils.addToQuerySearch(" upper(TAPPR.USER_STATUS_DESC) " + val, strBufApprove,
+								data.getJoinType());
+						CommonUtils.addToQuerySearch(" upper(TPEND.USER_STATUS_DESC) " + val, strBufPending,
+								data.getJoinType());
 						break;
-					
+
 					case "recordIndicatorDesc":
-						CommonUtils.addToQuerySearch(" upper(TAPPR.RECORD_INDICATOR_DESC) "+ val, strBufApprove, data.getJoinType());
-						CommonUtils.addToQuerySearch(" upper(TPEND.RECORD_INDICATOR_DESC) "+ val, strBufPending, data.getJoinType());
+						CommonUtils.addToQuerySearch(" upper(TAPPR.RECORD_INDICATOR_DESC) " + val, strBufApprove,
+								data.getJoinType());
+						CommonUtils.addToQuerySearch(" upper(TPEND.RECORD_INDICATOR_DESC) " + val, strBufPending,
+								data.getJoinType());
 						break;
 					default:
 					}
 					count++;
 				}
 			}
-				
+
 		} catch (Exception ex) {
 			ex.printStackTrace();
 			/*
@@ -575,8 +593,8 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		params[0] = visionUsersVb.getVisionId();
 		int count = 0;
 		String sql = "";
-		sql = "Update VISION_USERS SET LAST_ACTIVITY_DATE = "+commonDao.getDbFunction("SYSDATE")+","
-				+ "LAST_UNSUCCESSFUL_LOGIN_DATE = null, UNSUCCESSFUL_LOGIN_ATTEMPTS = null  WHERE VISION_ID = ?";
+		sql = "Update VISION_USERS SET LAST_ACTIVITY_DATE = " + commonDao.getDbFunction("SYSDATE") + ","
+				+ "LAST_UNSUCCESSFUL_LOGIN_DATE = null, UNSUCCESSFUL_LOGIN_ATTEMPTS = 0  WHERE VISION_ID = ?";
 		count = getJdbcTemplate().update(sql, params);
 		return count == 1;
 
@@ -586,144 +604,147 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		Object[] params = new Object[1];
 		params[0] = userId.toUpperCase();
 		String sql = "";
-		sql = "Update VISION_USERS SET LAST_UNSUCCESSFUL_LOGIN_DATE = "+commonDao.getDbFunction("SYSDATE")+","
-				+ "UNSUCCESSFUL_LOGIN_ATTEMPTS = "+commonDao.getDbFunction("NVL")+"(UNSUCCESSFUL_LOGIN_ATTEMPTS,(UNSUCCESSFUL_LOGIN_ATTEMPTS+1),1) WHERE UPPER(USER_LOGIN_ID) = ?";
+		sql = "Update VISION_USERS SET LAST_UNSUCCESSFUL_LOGIN_DATE = " + commonDao.getDbFunction("SYSDATE") + ","
+				+ "UNSUCCESSFUL_LOGIN_ATTEMPTS = " + commonDao.getDbFunction("NVL")
+				+ "(UNSUCCESSFUL_LOGIN_ATTEMPTS,(UNSUCCESSFUL_LOGIN_ATTEMPTS+1),1) WHERE UPPER(USER_LOGIN_ID) = ?";
 		getJdbcTemplate().update(sql, params);
 
 	}
 
-
 	public List<VisionUsersVb> getActiveUserByUserLoginId(VisionUsersVb dObj) {
-	    if (dObj == null || dObj.getUserLoginId() == null || dObj.getUserLoginId().isBlank()) {
-	        logger.warn("getActiveUserByUserLoginId called with null/blank userLoginId");
-	        return Collections.emptyList();
-	    }
+		if (dObj == null || dObj.getUserLoginId() == null || dObj.getUserLoginId().isBlank()) {
+			logger.warn("getActiveUserByUserLoginId called with null/blank userLoginId");
+			return Collections.emptyList();
+		}
 
-	    final String df = getDbFunction("DATEFORMAT");
-	    final String tm = getDbFunction("TIME");
-	    final String db = databaseType == null ? "" : databaseType.toUpperCase(Locale.ROOT);
+		final String df = getDbFunction("DATEFORMAT");
+		final String tm = getDbFunction("TIME");
+		final String db = databaseType == null ? "" : databaseType.toUpperCase(Locale.ROOT);
 
-	    final String sql = switch (db) {
-	        case "ORACLE" -> """
-	            SELECT
-	                TAppr.VISION_ID,
-	                TAppr.USER_NAME,
-	                TAppr.USER_LOGIN_ID,
-	                TAppr.USER_EMAIL_ID,
-	                TO_CHAR(TAppr.LAST_ACTIVITY_DATE, '%s %s') AS LAST_ACTIVITY_DATE,
-	                TAppr.USER_GROUP_AT,
-	                TAppr.USER_GROUP,
-	                TAppr.USER_PROFILE_AT,
-	                TAppr.USER_PROFILE,
-	                TAppr.UPDATE_RESTRICTION,
-	                TAppr.LEGAL_VEHICLE,
-	                TAppr.COUNTRY,
-	                TAppr.LE_BOOK,
-	                TAppr.REGION_PROVINCE,
-	                TAppr.BUSINESS_GROUP,
-	                TAppr.PRODUCT_SUPER_GROUP,
-	                TAppr.OUC_ATTRIBUTE,
-	                TAppr.SBU_CODE,
-	                TAppr.PRODUCT_ATTRIBUTE,
-	                TAppr.ACCOUNT_OFFICER,
-	                TAppr.GCID_ACCESS,
-	                TAppr.USER_STATUS_NT,
-	                TAppr.USER_STATUS,
-	                TO_CHAR(TAppr.USER_STATUS_DATE, '%s %s') AS USER_STATUS_DATE,
-	                TAppr.MAKER,
-	                TAppr.VERIFIER,
-	                TAppr.INTERNAL_STATUS,
-	                TAppr.RECORD_INDICATOR_NT,
-	                TAppr.RECORD_INDICATOR,
-	                TO_CHAR(TAppr.DATE_LAST_MODIFIED, '%s %s') AS DATE_LAST_MODIFIED,
-	                TO_CHAR(TAppr.DATE_CREATION, '%s %s') AS DATE_CREATION,
-	                TO_CHAR(TAppr.LAST_UNSUCCESSFUL_LOGIN_DATE, '%s %s') AS LAST_UNSUCCESSFUL_LOGIN_DATE,
-	                TAppr.UNSUCCESSFUL_LOGIN_ATTEMPTS,
-	                TAppr.FILE_NAME,
-	                TAppr.USER_PHOTO,
-	                TAppr.ENABLE_WIDGETS,
-	                (SELECT App_Theme FROM PRD_APP_THEME S1 WHERE S1.VISION_ID = TAppr.VISION_ID AND APPLICATION_ID = ?) AS APP_THEME,
-	                (SELECT Report_Slide_Theme FROM PRD_APP_THEME S1 WHERE S1.VISION_ID = TAppr.VISION_ID AND APPLICATION_ID = ?) AS Report_Slide_Theme,
-	                (SELECT Language FROM PRD_APP_THEME S1 WHERE S1.VISION_ID = TAppr.VISION_ID AND APPLICATION_ID = ?) AS Language,TAppr.APPLICATION_ACCESS
-	            FROM VISION_USERS_VW TAppr
-	            WHERE USER_STATUS = 0
-	              AND RECORD_INDICATOR = 0
-	              AND UPPER(USER_LOGIN_ID) = UPPER(?)
-	              AND (UNSUCCESSFUL_LOGIN_ATTEMPTS IS NULL OR UNSUCCESSFUL_LOGIN_ATTEMPTS <= 3)
-	            """.formatted(df, tm, df, tm, df, tm, df, tm, df, tm);
+		final String sql = switch (db) {
+		case "ORACLE" ->
+			"""
+					SELECT
+					    TAppr.VISION_ID,
+					    TAppr.USER_NAME,
+					    TAppr.USER_LOGIN_ID,
+					    TAppr.USER_EMAIL_ID,
+					    TO_CHAR(TAppr.LAST_ACTIVITY_DATE, '%s %s') AS LAST_ACTIVITY_DATE,
+					    TAppr.USER_GROUP_AT,
+					    TAppr.USER_GROUP,
+					    TAppr.USER_PROFILE_AT,
+					    TAppr.USER_PROFILE,
+					    TAppr.UPDATE_RESTRICTION,
+					    TAppr.LEGAL_VEHICLE,
+					    TAppr.COUNTRY,
+					    TAppr.LE_BOOK,
+					    TAppr.REGION_PROVINCE,
+					    TAppr.BUSINESS_GROUP,
+					    TAppr.PRODUCT_SUPER_GROUP,
+					    TAppr.OUC_ATTRIBUTE,
+					    TAppr.SBU_CODE,
+					    TAppr.PRODUCT_ATTRIBUTE,
+					    TAppr.ACCOUNT_OFFICER,
+					    TAppr.GCID_ACCESS,
+					    TAppr.USER_STATUS_NT,
+					    TAppr.USER_STATUS,
+					    TO_CHAR(TAppr.USER_STATUS_DATE, '%s %s') AS USER_STATUS_DATE,
+					    TAppr.MAKER,
+					    TAppr.VERIFIER,
+					    TAppr.INTERNAL_STATUS,
+					    TAppr.RECORD_INDICATOR_NT,
+					    TAppr.RECORD_INDICATOR,
+					    TO_CHAR(TAppr.DATE_LAST_MODIFIED, '%s %s') AS DATE_LAST_MODIFIED,
+					    TO_CHAR(TAppr.DATE_CREATION, '%s %s') AS DATE_CREATION,
+					    TO_CHAR(TAppr.LAST_UNSUCCESSFUL_LOGIN_DATE, '%s %s') AS LAST_UNSUCCESSFUL_LOGIN_DATE,
+					    TAppr.UNSUCCESSFUL_LOGIN_ATTEMPTS,
+					    TAppr.FILE_NAME,
+					    TAppr.USER_PHOTO,
+					    TAppr.ENABLE_WIDGETS,
+					    (SELECT App_Theme FROM PRD_APP_THEME S1 WHERE S1.VISION_ID = TAppr.VISION_ID AND APPLICATION_ID = ?) AS APP_THEME,
+					    (SELECT Report_Slide_Theme FROM PRD_APP_THEME S1 WHERE S1.VISION_ID = TAppr.VISION_ID AND APPLICATION_ID = ?) AS Report_Slide_Theme,
+					    (SELECT Language FROM PRD_APP_THEME S1 WHERE S1.VISION_ID = TAppr.VISION_ID AND APPLICATION_ID = ?) AS Language,TAppr.APPLICATION_ACCESS
+					FROM VISION_USERS_VW TAppr
+					WHERE USER_STATUS = 0
+					  AND RECORD_INDICATOR = 0
+					  AND UPPER(USER_LOGIN_ID) = UPPER(?)
+					  AND (UNSUCCESSFUL_LOGIN_ATTEMPTS IS NULL OR UNSUCCESSFUL_LOGIN_ATTEMPTS <= 3)
+					"""
+					.formatted(df, tm, df, tm, df, tm, df, tm, df, tm);
 
-	        case "MSSQL" -> """
-	            SELECT
-	                TAppr.VISION_ID,
-	                TAppr.USER_NAME,
-	                TAppr.USER_LOGIN_ID,
-	                TAppr.USER_EMAIL_ID,
-	                FORMAT(TAppr.LAST_ACTIVITY_DATE, '%s %s') AS LAST_ACTIVITY_DATE,
-	                TAppr.USER_GROUP_AT,
-	                TAppr.USER_GROUP,
-	                TAppr.USER_PROFILE_AT,
-	                TAppr.USER_PROFILE,
-	                TAppr.UPDATE_RESTRICTION,
-	                TAppr.LEGAL_VEHICLE,
-	                TAppr.COUNTRY,
-	                TAppr.LE_BOOK,
-	                TAppr.REGION_PROVINCE,
-	                TAppr.BUSINESS_GROUP,
-	                TAppr.PRODUCT_SUPER_GROUP,
-	                TAppr.OUC_ATTRIBUTE,
-	                TAppr.SBU_CODE,
-	                TAppr.SBU_CODE_AT,
-	                TAppr.PRODUCT_ATTRIBUTE,
-	                TAppr.ACCOUNT_OFFICER,
-	                TAppr.GCID_ACCESS,
-	                TAppr.USER_STATUS_NT,
-	                TAppr.USER_STATUS,
-	                FORMAT(TAppr.USER_STATUS_DATE, '%s %s') AS USER_STATUS_DATE,
-	                TAppr.MAKER,
-	                TAppr.VERIFIER,
-	                TAppr.INTERNAL_STATUS,
-	                TAppr.RECORD_INDICATOR_NT,
-	                TAppr.RECORD_INDICATOR,
-	                FORMAT(TAppr.DATE_LAST_MODIFIED, 'dd-MM-yyyy HH:mm:ss') AS DATE_LAST_MODIFIED,
-	                FORMAT(TAppr.DATE_CREATION, '%s %s') AS DATE_CREATION,
-	                FORMAT(TAppr.LAST_UNSUCCESSFUL_LOGIN_DATE, 'dd-MM-yyyy HH:mm:ss') AS LAST_UNSUCCESSFUL_LOGIN_DATE,
-	                TAppr.UNSUCCESSFUL_LOGIN_ATTEMPTS,
-	                TAppr.FILE_NAME,
-	                TAppr.USER_PHOTO,
-	                TAppr.ENABLE_WIDGETS,
-	                (SELECT App_Theme FROM PRD_APP_THEME S1 WHERE S1.VISION_ID = TAppr.VISION_ID AND APPLICATION_ID = ?) AS APP_THEME,
-	                (SELECT Report_Slide_Theme FROM PRD_APP_THEME S1 WHERE S1.VISION_ID = TAppr.VISION_ID AND APPLICATION_ID = ?) AS Report_Slide_Theme,
-	                (SELECT Language FROM PRD_APP_THEME S1 WHERE S1.VISION_ID = TAppr.VISION_ID AND APPLICATION_ID = ?) AS Language,TAppr.APPLICATION_ACCESS
-	            FROM VISION_USERS TAppr
-	            WHERE USER_STATUS = 0
-	              AND RECORD_INDICATOR = 0
-	              AND UPPER(USER_LOGIN_ID) = UPPER(?)
-	              AND (UNSUCCESSFUL_LOGIN_ATTEMPTS IS NULL OR UNSUCCESSFUL_LOGIN_ATTEMPTS <= 3)
-	            """.formatted(df, tm, df, tm, df, tm);
+		case "MSSQL" ->
+			"""
+					SELECT
+					    TAppr.VISION_ID,
+					    TAppr.USER_NAME,
+					    TAppr.USER_LOGIN_ID,
+					    TAppr.USER_EMAIL_ID,
+					    FORMAT(TAppr.LAST_ACTIVITY_DATE, '%s %s') AS LAST_ACTIVITY_DATE,
+					    TAppr.USER_GROUP_AT,
+					    TAppr.USER_GROUP,
+					    TAppr.USER_PROFILE_AT,
+					    TAppr.USER_PROFILE,
+					    TAppr.UPDATE_RESTRICTION,
+					    TAppr.LEGAL_VEHICLE,
+					    TAppr.COUNTRY,
+					    TAppr.LE_BOOK,
+					    TAppr.REGION_PROVINCE,
+					    TAppr.BUSINESS_GROUP,
+					    TAppr.PRODUCT_SUPER_GROUP,
+					    TAppr.OUC_ATTRIBUTE,
+					    TAppr.SBU_CODE,
+					    TAppr.SBU_CODE_AT,
+					    TAppr.PRODUCT_ATTRIBUTE,
+					    TAppr.ACCOUNT_OFFICER,
+					    TAppr.GCID_ACCESS,
+					    TAppr.USER_STATUS_NT,
+					    TAppr.USER_STATUS,
+					    FORMAT(TAppr.USER_STATUS_DATE, '%s %s') AS USER_STATUS_DATE,
+					    TAppr.MAKER,
+					    TAppr.VERIFIER,
+					    TAppr.INTERNAL_STATUS,
+					    TAppr.RECORD_INDICATOR_NT,
+					    TAppr.RECORD_INDICATOR,
+					    FORMAT(TAppr.DATE_LAST_MODIFIED, 'dd-MM-yyyy HH:mm:ss') AS DATE_LAST_MODIFIED,
+					    FORMAT(TAppr.DATE_CREATION, '%s %s') AS DATE_CREATION,
+					    FORMAT(TAppr.LAST_UNSUCCESSFUL_LOGIN_DATE, 'dd-MM-yyyy HH:mm:ss') AS LAST_UNSUCCESSFUL_LOGIN_DATE,
+					    TAppr.UNSUCCESSFUL_LOGIN_ATTEMPTS,
+					    TAppr.FILE_NAME,
+					    TAppr.USER_PHOTO,
+					    TAppr.ENABLE_WIDGETS,
+					    (SELECT App_Theme FROM PRD_APP_THEME S1 WHERE S1.VISION_ID = TAppr.VISION_ID AND APPLICATION_ID = ?) AS APP_THEME,
+					    (SELECT Report_Slide_Theme FROM PRD_APP_THEME S1 WHERE S1.VISION_ID = TAppr.VISION_ID AND APPLICATION_ID = ?) AS Report_Slide_Theme,
+					    (SELECT Language FROM PRD_APP_THEME S1 WHERE S1.VISION_ID = TAppr.VISION_ID AND APPLICATION_ID = ?) AS Language,TAppr.APPLICATION_ACCESS
+					FROM VISION_USERS TAppr
+					WHERE USER_STATUS = 0
+					  AND RECORD_INDICATOR = 0
+					  AND UPPER(USER_LOGIN_ID) = UPPER(?)
+					  AND (UNSUCCESSFUL_LOGIN_ATTEMPTS IS NULL OR UNSUCCESSFUL_LOGIN_ATTEMPTS <= 3)
+					"""
+					.formatted(df, tm, df, tm, df, tm);
 
-	        default -> {
-	            logger.error("Unsupported databaseType: {}", databaseType);
-	            yield null;
-	        }
-	    };
+		default -> {
+			logger.error("Unsupported databaseType: {}", databaseType);
+			yield null;
+		}
+		};
 
-	    if (sql == null) return Collections.emptyList();
+		if (sql == null)
+			return Collections.emptyList();
 
-	    final Object[] params = {
-	        productName,           // APP_THEME
-	        productName,           // Report_Slide_Theme
-	        productName,           // Language
-	        dObj.getUserLoginId()  // predicate
-	    };
+		final Object[] params = { productName, // APP_THEME
+				productName, // Report_Slide_Theme
+				productName, // Language
+				dObj.getUserLoginId() // predicate
+		};
 
-	    try {
-	        return getJdbcTemplate().query(sql, params, getMapper1());
-	    } catch (Exception ex) {
-	        logger.error("getActiveUserByUserLoginId failed for loginId={}", dObj.getUserLoginId(), ex);
-	        return Collections.emptyList();
-	    }
+		try {
+			return getJdbcTemplate().query(sql, params, getMapper1());
+		} catch (Exception ex) {
+			logger.error("getActiveUserByUserLoginId failed for loginId={}", dObj.getUserLoginId(), ex);
+			return Collections.emptyList();
+		}
 	}
-
 
 	@Override
 	public List<VisionUsersVb> getQueryResults(VisionUsersVb dObj, int intStatus) {
@@ -733,54 +754,64 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		String strQueryAppr = "";
 		String strQueryPend = "";
 
-			strQueryAppr = new String("Select TAppr.VISION_ID,"
-					+ "TAppr.USER_NAME, TAppr.USER_LOGIN_ID, TAppr.USER_EMAIL_ID,TAppr.STF_COUNTRY,TAppr.STF_LE_BOOK, TAppr.STAFF_ID,(Select STAFF_NAME FROM STAFF_ID WHERE STAFF_ID=TAppr.STAFF_ID AND COUNTRY=TAppr.STF_COUNTRY AND LE_BOOK=TAppr.STF_LE_BOOK)AS STAFF_NAME, "
-					+ getDbFunction("DATEFUNC")+"(TAppr.LAST_ACTIVITY_DATE, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') LAST_ACTIVITY_DATE, TAppr.USER_GROUP_AT,"
-					+ "TAppr.USER_GROUP, TAppr.USER_PROFILE_AT, TAppr.USER_PROFILE,"
-					+ "TAppr.UPDATE_RESTRICTION, TAppr.LEGAL_VEHICLE,"
-					+ "TAppr.COUNTRY, TAppr.LE_BOOK,"
-					+ "TAppr.REGION_PROVINCE, TAppr.BUSINESS_GROUP, TAppr.PRODUCT_SUPER_GROUP,"
-					+ "TAppr.OUC_ATTRIBUTE, TAppr.SBU_CODE_AT,TAppr.SBU_CODE, TAppr.PRODUCT_ATTRIBUTE,"
-					+ "TAppr.ACCOUNT_OFFICER, TAppr.GCID_ACCESS, TAppr.USER_STATUS_NT, TAppr.USER_STATUS,"
-					+ getDbFunction("DATEFUNC")+"(TAppr.USER_STATUS_DATE, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') USER_STATUS_DATE, TAppr.MAKER,"
-					+ "(SELECT MIN(USER_NAME) FROM VISION_USERS WHERE VISION_ID = " + getDbFunction("NVL")
-					+ "(TAppr.MAKER,0) ) MAKER_NAME, "
-					+ "TAppr.VERIFIER,(SELECT MIN(USER_NAME) FROM VISION_USERS WHERE VISION_ID = "
-					+ getDbFunction("NVL") + "(TAppr.VERIFIER,0) ) VERIFIER_NAME, "
-					+ "TAppr.INTERNAL_STATUS, TAppr.RECORD_INDICATOR_NT,"
-					+ "TAppr.RECORD_INDICATOR,T1.NUM_SUBTAB_DESCRIPTION RECORD_INDICATOR_DESC, "+ getDbFunction("DATEFUNC")+"(TAppr.DATE_LAST_MODIFIED, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') DATE_LAST_MODIFIED,"
-					+ getDbFunction("DATEFUNC")+"(TAppr.DATE_CREATION, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') DATE_CREATION,"
-					+ getDbFunction("DATEFUNC")+"(TAppr.LAST_UNSUCCESSFUL_LOGIN_DATE, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') LAST_UNSUCCESSFUL_LOGIN_DATE, TAppr.UNSUCCESSFUL_LOGIN_ATTEMPTS, TAppr.FILE_NAME, TAppr.USER_PHOTO, TAppr.ENABLE_WIDGETS, "
-					+ "TAppr.APPLICATION_ACCESS,TAppr.RA_SOC,TAppr.OTHER_ATTR,TAppr.PWD_RESET_FLAG,TAppr.APPLICATION_ID  From VISION_USERS TAppr,NUM_SUB_TAB T1 "
-					+ "Where TAppr.VISION_ID = ? and T1.NUM_tab = TAppr.RECORD_INDICATOR_NT"
-					+ " and T1.NUM_sub_tab = TAppr.RECORD_INDICATOR");
-			strQueryPend = new String("Select TPend.VISION_ID,"
-					+ "TPend.USER_NAME, TPend.USER_LOGIN_ID, TPend.USER_EMAIL_ID,TPend.STF_COUNTRY,TPend.STF_LE_BOOK, TPend.STAFF_ID,(Select STAFF_NAME FROM STAFF_ID WHERE STAFF_ID=TPend.STAFF_ID AND COUNTRY=TPend.STF_COUNTRY AND LE_BOOK=TPend.STF_LE_BOOK)AS STAFF_NAME, "
-					+ getDbFunction("DATEFUNC")+"(TPend.LAST_ACTIVITY_DATE, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') LAST_ACTIVITY_DATE, TPend.USER_GROUP_AT,"
-					+ "TPend.USER_GROUP, TPend.USER_PROFILE_AT, TPend.USER_PROFILE,"
-					+ "TPend.UPDATE_RESTRICTION, TPend.LEGAL_VEHICLE,"
-					+ "TPend.COUNTRY, TPend.LE_BOOK,"
-					+ "TPend.REGION_PROVINCE, TPend.BUSINESS_GROUP, TPend.PRODUCT_SUPER_GROUP,"
-					+ "TPend.OUC_ATTRIBUTE, TPend.SBU_CODE_AT,TPend.SBU_CODE, TPend.PRODUCT_ATTRIBUTE,"
-					+ "TPend.ACCOUNT_OFFICER, TPend.GCID_ACCESS, TPend.USER_STATUS_NT, TPend.USER_STATUS,"
-					+ getDbFunction("DATEFUNC")+"(TPend.USER_STATUS_DATE, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') USER_STATUS_DATE, TPend.MAKER,"
-					+ " (SELECT MIN(USER_NAME) FROM VISION_USERS WHERE VISION_ID = " + getDbFunction("NVL")
-					+ "(TPend.MAKER,0) ) MAKER_NAME, "
-					+ "TPend.VERIFIER, (SELECT MIN(USER_NAME) FROM VISION_USERS WHERE VISION_ID = "
-					+ getDbFunction("NVL") + "(TPend.VERIFIER,0) ) VERIFIER_NAME,"
-					+ "TPend.INTERNAL_STATUS, TPend.RECORD_INDICATOR_NT,"
-					+ "TPend.RECORD_INDICATOR,T1.NUM_SUBTAB_DESCRIPTION RECORD_INDICATOR_DESC,"+ getDbFunction("DATEFUNC")+"(TPend.DATE_LAST_MODIFIED, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') DATE_LAST_MODIFIED,"
-					+ getDbFunction("DATEFUNC")+"(TPend.DATE_CREATION, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') DATE_CREATION,"
-					+ getDbFunction("DATEFUNC")+"(TPend.LAST_UNSUCCESSFUL_LOGIN_DATE, '"+getDbFunction("DATEFORMAT")+" "+getDbFunction("TIME")+"') LAST_UNSUCCESSFUL_LOGIN_DATE, TPend.UNSUCCESSFUL_LOGIN_ATTEMPTS, TPend.FILE_NAME, TPend.USER_PHOTO, TPend.ENABLE_WIDGETS,"
-					+ "TPend.APPLICATION_ACCESS,TPend.RA_SOC,TPend.OTHER_ATTR,TPend.PWD_RESET_FLAG,TPend.APPLICATION_ID From VISION_USERS_PEND TPend,NUM_SUB_TAB T1 "
-					+ " Where TPend.VISION_ID = ? and T1.NUM_tab = TPend.RECORD_INDICATOR_NT"
-					+ " and T1.NUM_sub_tab = TPend.RECORD_INDICATOR");
-		
+		strQueryAppr = new String("Select TAppr.VISION_ID,"
+				+ "TAppr.USER_NAME, TAppr.USER_LOGIN_ID, TAppr.USER_EMAIL_ID,TAppr.STF_COUNTRY,TAppr.STF_LE_BOOK, TAppr.STAFF_ID,(Select STAFF_NAME FROM STAFF_ID WHERE STAFF_ID=TAppr.STAFF_ID AND COUNTRY=TAppr.STF_COUNTRY AND LE_BOOK=TAppr.STF_LE_BOOK)AS STAFF_NAME, "
+				+ getDbFunction("DATEFUNC") + "(TAppr.LAST_ACTIVITY_DATE, '" + getDbFunction("DATEFORMAT") + " "
+				+ getDbFunction("TIME") + "') LAST_ACTIVITY_DATE, TAppr.USER_GROUP_AT,"
+				+ "TAppr.USER_GROUP, TAppr.USER_PROFILE_AT, TAppr.USER_PROFILE,"
+				+ "TAppr.UPDATE_RESTRICTION, TAppr.LEGAL_VEHICLE," + "TAppr.COUNTRY, TAppr.LE_BOOK,"
+				+ "TAppr.REGION_PROVINCE, TAppr.BUSINESS_GROUP, TAppr.PRODUCT_SUPER_GROUP,"
+				+ "TAppr.OUC_ATTRIBUTE, TAppr.SBU_CODE_AT,TAppr.SBU_CODE, TAppr.PRODUCT_ATTRIBUTE,"
+				+ "TAppr.ACCOUNT_OFFICER, TAppr.GCID_ACCESS, TAppr.USER_STATUS_NT, TAppr.USER_STATUS,"
+				+ getDbFunction("DATEFUNC") + "(TAppr.USER_STATUS_DATE, '" + getDbFunction("DATEFORMAT") + " "
+				+ getDbFunction("TIME") + "') USER_STATUS_DATE, TAppr.MAKER,"
+				+ "(SELECT MIN(USER_NAME) FROM VISION_USERS WHERE VISION_ID = " + getDbFunction("NVL")
+				+ "(TAppr.MAKER,0) ) MAKER_NAME, "
+				+ "TAppr.VERIFIER,(SELECT MIN(USER_NAME) FROM VISION_USERS WHERE VISION_ID = " + getDbFunction("NVL")
+				+ "(TAppr.VERIFIER,0) ) VERIFIER_NAME, " + "TAppr.INTERNAL_STATUS, TAppr.RECORD_INDICATOR_NT,"
+				+ "TAppr.RECORD_INDICATOR,T1.NUM_SUBTAB_DESCRIPTION RECORD_INDICATOR_DESC, " + getDbFunction("DATEFUNC")
+				+ "(TAppr.DATE_LAST_MODIFIED, '" + getDbFunction("DATEFORMAT") + " " + getDbFunction("TIME")
+				+ "') DATE_LAST_MODIFIED," + getDbFunction("DATEFUNC") + "(TAppr.DATE_CREATION, '"
+				+ getDbFunction("DATEFORMAT") + " " + getDbFunction("TIME") + "') DATE_CREATION,"
+				+ getDbFunction("DATEFUNC") + "(TAppr.LAST_UNSUCCESSFUL_LOGIN_DATE, '" + getDbFunction("DATEFORMAT")
+				+ " " + getDbFunction("TIME")
+				+ "') LAST_UNSUCCESSFUL_LOGIN_DATE, TAppr.UNSUCCESSFUL_LOGIN_ATTEMPTS, TAppr.FILE_NAME, TAppr.USER_PHOTO, TAppr.ENABLE_WIDGETS, "
+				+ "TAppr.APPLICATION_ACCESS,TAppr.RA_SOC,TAppr.OTHER_ATTR,TAppr.PWD_RESET_FLAG,TAppr.APPLICATION_ID  From VISION_USERS TAppr,NUM_SUB_TAB T1 "
+				+ "Where TAppr.VISION_ID = ? and T1.NUM_tab = TAppr.RECORD_INDICATOR_NT"
+				+ " and T1.NUM_sub_tab = TAppr.RECORD_INDICATOR");
+		strQueryPend = new String("Select TPend.VISION_ID,"
+				+ "TPend.USER_NAME, TPend.USER_LOGIN_ID, TPend.USER_EMAIL_ID,TPend.STF_COUNTRY,TPend.STF_LE_BOOK, TPend.STAFF_ID,(Select STAFF_NAME FROM STAFF_ID WHERE STAFF_ID=TPend.STAFF_ID AND COUNTRY=TPend.STF_COUNTRY AND LE_BOOK=TPend.STF_LE_BOOK)AS STAFF_NAME, "
+				+ getDbFunction("DATEFUNC") + "(TPend.LAST_ACTIVITY_DATE, '" + getDbFunction("DATEFORMAT") + " "
+				+ getDbFunction("TIME") + "') LAST_ACTIVITY_DATE, TPend.USER_GROUP_AT,"
+				+ "TPend.USER_GROUP, TPend.USER_PROFILE_AT, TPend.USER_PROFILE,"
+				+ "TPend.UPDATE_RESTRICTION, TPend.LEGAL_VEHICLE," + "TPend.COUNTRY, TPend.LE_BOOK,"
+				+ "TPend.REGION_PROVINCE, TPend.BUSINESS_GROUP, TPend.PRODUCT_SUPER_GROUP,"
+				+ "TPend.OUC_ATTRIBUTE, TPend.SBU_CODE_AT,TPend.SBU_CODE, TPend.PRODUCT_ATTRIBUTE,"
+				+ "TPend.ACCOUNT_OFFICER, TPend.GCID_ACCESS, TPend.USER_STATUS_NT, TPend.USER_STATUS,"
+				+ getDbFunction("DATEFUNC") + "(TPend.USER_STATUS_DATE, '" + getDbFunction("DATEFORMAT") + " "
+				+ getDbFunction("TIME") + "') USER_STATUS_DATE, TPend.MAKER,"
+				+ " (SELECT MIN(USER_NAME) FROM VISION_USERS WHERE VISION_ID = " + getDbFunction("NVL")
+				+ "(TPend.MAKER,0) ) MAKER_NAME, "
+				+ "TPend.VERIFIER, (SELECT MIN(USER_NAME) FROM VISION_USERS WHERE VISION_ID = " + getDbFunction("NVL")
+				+ "(TPend.VERIFIER,0) ) VERIFIER_NAME," + "TPend.INTERNAL_STATUS, TPend.RECORD_INDICATOR_NT,"
+				+ "TPend.RECORD_INDICATOR,T1.NUM_SUBTAB_DESCRIPTION RECORD_INDICATOR_DESC," + getDbFunction("DATEFUNC")
+				+ "(TPend.DATE_LAST_MODIFIED, '" + getDbFunction("DATEFORMAT") + " " + getDbFunction("TIME")
+				+ "') DATE_LAST_MODIFIED," + getDbFunction("DATEFUNC") + "(TPend.DATE_CREATION, '"
+				+ getDbFunction("DATEFORMAT") + " " + getDbFunction("TIME") + "') DATE_CREATION,"
+				+ getDbFunction("DATEFUNC") + "(TPend.LAST_UNSUCCESSFUL_LOGIN_DATE, '" + getDbFunction("DATEFORMAT")
+				+ " " + getDbFunction("TIME")
+				+ "') LAST_UNSUCCESSFUL_LOGIN_DATE, TPend.UNSUCCESSFUL_LOGIN_ATTEMPTS, TPend.FILE_NAME, TPend.USER_PHOTO, TPend.ENABLE_WIDGETS,"
+				+ "TPend.APPLICATION_ACCESS,TPend.RA_SOC,TPend.OTHER_ATTR,TPend.PWD_RESET_FLAG,TPend.APPLICATION_ID From VISION_USERS_PEND TPend,NUM_SUB_TAB T1 "
+				+ " Where TPend.VISION_ID = ? and T1.NUM_tab = TPend.RECORD_INDICATOR_NT"
+				+ " and T1.NUM_sub_tab = TPend.RECORD_INDICATOR");
+
 		Object objParams[] = new Object[intKeyFieldsCount];
 		objParams[0] = dObj.getVisionId();// [VISION_ID]
 
-		try 
-			{if(!dObj.isVerificationRequired() || dObj.isReview()){intStatus =0;}
+		try {
+			if (!dObj.isVerificationRequired() || dObj.isReview()) {
+				intStatus = 0;
+			}
 			if (intStatus == 0) {
 				logger.info("Executing approved query");
 				collTemp = getJdbcTemplate().query(strQueryAppr.toString(), objParams, getQueryResultsMapper());
@@ -792,14 +823,15 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		} catch (Exception ex) {
 			ex.printStackTrace();
 			logger.error("Error: getQueryResults Exception :   ");
-			/*if (intStatus == 0)
-				//logger.error(((strQueryAppr == null) ? "strQueryAppr is Null" : strQueryAppr.toString()));
-			else
-				//logger.error(((strQueryPend == null) ? "strQueryPend is Null" : strQueryPend.toString()));
-
-			if (objParams != null)
-				for (int i = 0; i < objParams.length; i++)*/
-					//logger.error("objParams[" + i + "]" + objParams[i].toString());
+			/*
+			 * if (intStatus == 0) //logger.error(((strQueryAppr == null) ?
+			 * "strQueryAppr is Null" : strQueryAppr.toString())); else
+			 * //logger.error(((strQueryPend == null) ? "strQueryPend is Null" :
+			 * strQueryPend.toString()));
+			 * 
+			 * if (objParams != null) for (int i = 0; i < objParams.length; i++)
+			 */
+			// logger.error("objParams[" + i + "]" + objParams[i].toString());
 			return null;
 		}
 	}
@@ -855,8 +887,10 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 				vObject.getAccountOfficer(), vObject.getGcidAccess(), vObject.getUserStatusNt(),
 				vObject.getUserStatus(), vObject.getUserStatusDate(), vObject.getMaker(), vObject.getVerifier(),
 				vObject.getInternalStatus(), vObject.getRecordIndicatorNt(), vObject.getRecordIndicator(),
-				vObject.getFileNmae(), vObject.getEnableWidgets(), vObject.getApplicationAccess(),vObject.getRaSoc(), 
-				vObject.getOtherAttr(),vObject.getPassword(),vObject.getPasswordResetFlag(),vObject.getUserGroupAt(),vObject.getUserProfileAt(),vObject.getSbuCodeAt(),vObject.getApplicationAccessAt(),vObject.getApplicationAccess()};
+				vObject.getFileNmae(), vObject.getEnableWidgets(), vObject.getApplicationAccess(), vObject.getRaSoc(),
+				vObject.getOtherAttr(), vObject.getPassword(), vObject.getPasswordResetFlag(), vObject.getUserGroupAt(),
+				vObject.getUserProfileAt(), vObject.getSbuCodeAt(), vObject.getApplicationAccessAt(),
+				vObject.getApplicationAccess() };
 		return getJdbcTemplate().update(query, args);
 	}
 
@@ -869,7 +903,9 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 					+ "LE_BOOK, REGION_PROVINCE, BUSINESS_GROUP, PRODUCT_SUPER_GROUP, OUC_ATTRIBUTE, SBU_CODE,"
 					+ "PRODUCT_ATTRIBUTE, ACCOUNT_OFFICER, GCID_ACCESS, USER_STATUS_NT, USER_STATUS, USER_STATUS_DATE,"
 					+ "MAKER, VERIFIER, INTERNAL_STATUS, RECORD_INDICATOR_NT, RECORD_INDICATOR, DATE_LAST_MODIFIED, DATE_CREATION,  FILE_NAME, ENABLE_WIDGETS,APPLICATION_ACCESS,RA_SOC,OTHER_ATTR,PASSWORD,PWD_RESET_FLAG,USER_GROUP_AT,USER_PROFILE_AT,SBU_CODE_AT,APPLICATION_ID_AT,APPLICATION_ID)"
-					+ "Values (?, ?, ?, ?, ?,?,?, To_Date(?, 'DD-MM-YYYY HH24:MI:SS'), ?, ?, ?, ?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?,To_Date(?, 'DD-MM-YYYY HH24:MI:SS'),?, ?, ?, ?, ?,"+commonDao.getDbFunction("SYSDATE")+","+commonDao.getDbFunction("SYSDATE")+", ?, ?,?,?,?,?,?,?,?,?,?,?)";
+					+ "Values (?, ?, ?, ?, ?,?,?, To_Date(?, 'DD-MM-YYYY HH24:MI:SS'), ?, ?, ?, ?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?,To_Date(?, 'DD-MM-YYYY HH24:MI:SS'),?, ?, ?, ?, ?,"
+					+ commonDao.getDbFunction("SYSDATE") + "," + commonDao.getDbFunction("SYSDATE")
+					+ ", ?, ?,?,?,?,?,?,?,?,?,?,?)";
 
 		} else if ("MSSQL".equalsIgnoreCase(databaseType)) {
 			query = "Insert Into VISION_USERS_PEND ( VISION_ID, USER_NAME, USER_LOGIN_ID, USER_EMAIL_ID, STF_COUNTRY, STF_LE_BOOK, STAFF_ID, LAST_ACTIVITY_DATE,"
@@ -890,8 +926,10 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 				vObject.getAccountOfficer(), vObject.getGcidAccess(), vObject.getUserStatusNt(),
 				vObject.getUserStatus(), vObject.getUserStatusDate(), vObject.getMaker(), vObject.getVerifier(),
 				vObject.getInternalStatus(), vObject.getRecordIndicatorNt(), vObject.getRecordIndicator(),
-				vObject.getFileNmae(), vObject.getEnableWidgets(), vObject.getApplicationAccess(),vObject.getRaSoc(),
-				vObject.getOtherAttr(),vObject.getPassword(),vObject.getPasswordResetFlag(),vObject.getUserGroupAt(),vObject.getUserProfileAt(),vObject.getSbuCodeAt(),vObject.getApplicationAccessAt(),vObject.getApplicationAccess()};
+				vObject.getFileNmae(), vObject.getEnableWidgets(), vObject.getApplicationAccess(), vObject.getRaSoc(),
+				vObject.getOtherAttr(), vObject.getPassword(), vObject.getPasswordResetFlag(), vObject.getUserGroupAt(),
+				vObject.getUserProfileAt(), vObject.getSbuCodeAt(), vObject.getApplicationAccessAt(),
+				vObject.getApplicationAccess() };
 		return getJdbcTemplate().update(query, args);
 	}
 
@@ -924,32 +962,36 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 				vObject.getUserStatus(), vObject.getUserStatusDate(), vObject.getMaker(), vObject.getVerifier(),
 				vObject.getInternalStatus(), vObject.getRecordIndicatorNt(), vObject.getRecordIndicator(),
 				vObject.getDateCreation(), vObject.getFileNmae(), vObject.getEnableWidgets(),
-				vObject.getApplicationAccess(),vObject.getRaSoc(),vObject.getOtherAttr(),vObject.getPassword(),vObject.getPasswordResetFlag(),vObject.getUserGroupAt(),vObject.getUserProfileAt(),vObject.getSbuCodeAt()
-				,vObject.getApplicationAccessAt(),vObject.getApplicationAccess()};
+				vObject.getApplicationAccess(), vObject.getRaSoc(), vObject.getOtherAttr(), vObject.getPassword(),
+				vObject.getPasswordResetFlag(), vObject.getUserGroupAt(), vObject.getUserProfileAt(),
+				vObject.getSbuCodeAt(), vObject.getApplicationAccessAt(), vObject.getApplicationAccess() };
 		return getJdbcTemplate().update(query, args);
 	}
+
 	private List<VisionUsersVb> getUserPasswordAppr(VisionUsersVb vObject) {
 		List<VisionUsersVb> collTemp = null;
 		try {
 			String query = "Select Password,PWD_RESET_FLAG from Vision_Users where Vision_ID = ?";
-			Object args[] = {vObject.getVisionId()};
+			Object args[] = { vObject.getVisionId() };
 			collTemp = getJdbcTemplate().query(query, args, getPasswordApprMapper());
 			return collTemp;
-		}catch(Exception e) {
+		} catch (Exception e) {
 			return null;
 		}
 	}
+
 	private List<VisionUsersVb> getUserPasswordPend(VisionUsersVb vObject) {
 		List<VisionUsersVb> collTemp = null;
 		try {
 			String query = "Select Password,PWD_RESET_FLAG from Vision_Users_Pend where Vision_ID = ?";
-			Object args[] = {vObject.getVisionId()};
+			Object args[] = { vObject.getVisionId() };
 			collTemp = getJdbcTemplate().query(query, args, getPasswordApprMapper());
 			return collTemp;
-		}catch(Exception e) {
+		} catch (Exception e) {
 			return null;
 		}
 	}
+
 	@Override
 	protected int doUpdateAppr(VisionUsersVb vObject) {
 		String query = "";
@@ -967,8 +1009,8 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 					+ "OUC_ATTRIBUTE = ?, GCID_ACCESS = ?, SBU_CODE = ?, PRODUCT_ATTRIBUTE = ?, ACCOUNT_OFFICER = ?,"
 					+ "USER_STATUS_NT = ?, USER_STATUS = ?, USER_STATUS_DATE = To_Date(?, 'DD-MM-YYYY HH24:MI:SS'),"
 					+ "MAKER = ?, VERIFIER = ?, INTERNAL_STATUS = ?, RECORD_INDICATOR_NT = ?, RECORD_INDICATOR = ?,DATE_LAST_MODIFIED = SysDate, FILE_NAME = ?, ENABLE_WIDGETS = ?, "
-					+ "APPLICATION_ACCESS = ?,RA_SOC = ? , OTHER_ATTR = ?, PWD_RESET_FLAG = ? ,UNSUCCESSFUL_LOGIN_ATTEMPTS = 0 " + passwordresetCols
-					+ " Where VISION_ID = ?";
+					+ "APPLICATION_ACCESS = ?,RA_SOC = ? , OTHER_ATTR = ?, PWD_RESET_FLAG = ? ,UNSUCCESSFUL_LOGIN_ATTEMPTS = 0 "
+					+ passwordresetCols + " Where VISION_ID = ?";
 		} else if ("MSSQL".equalsIgnoreCase(databaseType)) {
 			query = "Update VISION_USERS Set USER_LOGIN_ID = ?, USER_NAME = ?, USER_EMAIL_ID = ?, STF_COUNTRY=?, STF_LE_BOOK=?, STAFF_ID = ?,"
 					+ "LAST_ACTIVITY_DATE = CONVERT(datetime, ?, 103),"
@@ -977,8 +1019,8 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 					+ "OUC_ATTRIBUTE = ?, GCID_ACCESS = ?, SBU_CODE = ?, PRODUCT_ATTRIBUTE = ?, ACCOUNT_OFFICER = ?,"
 					+ "USER_STATUS_NT = ?, USER_STATUS = ?, USER_STATUS_DATE = CONVERT(datetime, ?, 103),"
 					+ "MAKER = ?, VERIFIER = ?, INTERNAL_STATUS = ?, RECORD_INDICATOR_NT = ?, RECORD_INDICATOR = ?,DATE_LAST_MODIFIED = GetDate(), FILE_NAME = ?, ENABLE_WIDGETS = ?, "
-					+ "APPLICATION_ACCESS = ?,RA_SOC = ?, OTHER_ATTR = ?, PWD_RESET_FLAG = ? ,UNSUCCESSFUL_LOGIN_ATTEMPTS = 0 " + passwordresetCols
-					+ " Where VISION_ID = ?";
+					+ "APPLICATION_ACCESS = ?,RA_SOC = ?, OTHER_ATTR = ?, PWD_RESET_FLAG = ? ,UNSUCCESSFUL_LOGIN_ATTEMPTS = 0 "
+					+ passwordresetCols + " Where VISION_ID = ?";
 
 		}
 
@@ -1007,12 +1049,14 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 					vObject.getUserStatus(), vObject.getUserStatusDate(), vObject.getMaker(), vObject.getVerifier(),
 					vObject.getInternalStatus(), vObject.getRecordIndicatorNt(), vObject.getRecordIndicator(),
 					vObject.getFileNmae(), vObject.getEnableWidgets(), vObject.getApplicationAccess(),
-					vObject.getRaSoc(), vObject.getOtherAttr(), vObject.getPasswordResetFlag(), vObject.getPassword(), vObject.getVisionId() };
+					vObject.getRaSoc(), vObject.getOtherAttr(), vObject.getPasswordResetFlag(), vObject.getPassword(),
+					vObject.getVisionId() };
 		}
 
 		return getJdbcTemplate().update(query, args);
 	}
-	//This method used only when Approve
+
+	// This method used only when Approve
 	protected int doUpdateMainTable(VisionUsersVb vObject) {
 		String query = "";
 		String passwordresetCols = "";
@@ -1027,8 +1071,8 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 					+ "OUC_ATTRIBUTE = ?, GCID_ACCESS = ?, SBU_CODE = ?, PRODUCT_ATTRIBUTE = ?, ACCOUNT_OFFICER = ?,"
 					+ "USER_STATUS_NT = ?, USER_STATUS = ?, USER_STATUS_DATE = To_Date(?, 'DD-MM-YYYY HH24:MI:SS'),"
 					+ "MAKER = ?, VERIFIER = ?, INTERNAL_STATUS = ?, RECORD_INDICATOR_NT = ?, RECORD_INDICATOR = ?,DATE_LAST_MODIFIED = SysDate, FILE_NAME = ?, ENABLE_WIDGETS = ?, "
-					+ "APPLICATION_ACCESS = ?,RA_SOC = ? , OTHER_ATTR = ?, PWD_RESET_FLAG = ?"+passwordresetCols+",UNSUCCESSFUL_LOGIN_ATTEMPTS = 0 "
-					+ " Where VISION_ID = ?";
+					+ "APPLICATION_ACCESS = ?,RA_SOC = ? , OTHER_ATTR = ?, PWD_RESET_FLAG = ?" + passwordresetCols
+					+ ",UNSUCCESSFUL_LOGIN_ATTEMPTS = 0 " + " Where VISION_ID = ?";
 		} else if ("MSSQL".equalsIgnoreCase(databaseType)) {
 			query = "Update VISION_USERS Set USER_LOGIN_ID = ?, USER_NAME = ?, USER_EMAIL_ID = ?, STF_COUNTRY=?, STF_LE_BOOK=?, STAFF_ID = ?,"
 					+ "LAST_ACTIVITY_DATE = CONVERT(datetime, ?, 103),"
@@ -1037,8 +1081,8 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 					+ "OUC_ATTRIBUTE = ?, GCID_ACCESS = ?, SBU_CODE = ?, PRODUCT_ATTRIBUTE = ?, ACCOUNT_OFFICER = ?,"
 					+ "USER_STATUS_NT = ?, USER_STATUS = ?, USER_STATUS_DATE = CONVERT(datetime, ?, 103),"
 					+ "MAKER = ?, VERIFIER = ?, INTERNAL_STATUS = ?, RECORD_INDICATOR_NT = ?, RECORD_INDICATOR = ?,DATE_LAST_MODIFIED = GetDate(), FILE_NAME = ?, ENABLE_WIDGETS = ?, "
-					+ "APPLICATION_ACCESS = ?,RA_SOC = ?, OTHER_ATTR = ?, PWD_RESET_FLAG = ?"+passwordresetCols+",UNSUCCESSFUL_LOGIN_ATTEMPTS = 0"
-					+ " Where VISION_ID = ?";
+					+ "APPLICATION_ACCESS = ?,RA_SOC = ?, OTHER_ATTR = ?, PWD_RESET_FLAG = ?" + passwordresetCols
+					+ ",UNSUCCESSFUL_LOGIN_ATTEMPTS = 0" + " Where VISION_ID = ?";
 
 		}
 
@@ -1067,12 +1111,13 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 					vObject.getUserStatus(), vObject.getUserStatusDate(), vObject.getMaker(), vObject.getVerifier(),
 					vObject.getInternalStatus(), vObject.getRecordIndicatorNt(), vObject.getRecordIndicator(),
 					vObject.getFileNmae(), vObject.getEnableWidgets(), vObject.getApplicationAccess(),
-					vObject.getRaSoc(), vObject.getOtherAttr(), vObject.getPasswordResetFlag(), vObject.getPassword(), vObject.getVisionId() };
+					vObject.getRaSoc(), vObject.getOtherAttr(), vObject.getPasswordResetFlag(), vObject.getPassword(),
+					vObject.getVisionId() };
 		}
 
 		return getJdbcTemplate().update(query, args);
 	}
-	
+
 	@Override
 	protected int doUpdatePend(VisionUsersVb vObject) {
 		String query = "";
@@ -1130,7 +1175,8 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 					vObject.getUserStatus(), vObject.getUserStatusDate(), vObject.getMaker(), vObject.getVerifier(),
 					vObject.getInternalStatus(), vObject.getRecordIndicatorNt(), vObject.getRecordIndicator(),
 					vObject.getFileNmae(), vObject.getEnableWidgets(), vObject.getApplicationAccess(),
-					vObject.getRaSoc(), vObject.getOtherAttr(), vObject.getPasswordResetFlag(), vObject.getPassword(), vObject.getVisionId() };
+					vObject.getRaSoc(), vObject.getOtherAttr(), vObject.getPasswordResetFlag(), vObject.getPassword(),
+					vObject.getVisionId() };
 		}
 
 		return getJdbcTemplate().update(query, args);
@@ -1335,7 +1381,7 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		else
 			strAudit.append("DATE_CREATION" + auditDelimiterColVal + "NULL");
 		strAudit.append(auditDelimiter);
-		
+
 		if (ValidationUtil.isValid(vObject.getOtherAttr()))
 			strAudit.append("OTHER_ATTR" + auditDelimiterColVal + vObject.getOtherAttr().trim());
 		else
@@ -1370,7 +1416,7 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 	public String getVisionBusinessDay(String country, String leBook) {
 		Object args[] = { country, leBook };
 		String sql = "";
-		if("CAL".equalsIgnoreCase(clientName)) {
+		if ("CAL".equalsIgnoreCase(clientName)) {
 			sql = "select FORMAT(REPORT_BUSINESS_DATE,'dd-MM-yyyy') from Vision_Business_Day  WHERE COUNTRY = ? and LE_BOOK=?";
 		} else {
 			if ("ORACLE".equalsIgnoreCase(databaseType)) {
@@ -1419,11 +1465,13 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		 * businessGroup = vObject.getBusinessGroup().split(","); for(String s :
 		 * businessGroup) { retVal = doInsertionAppr(vObject); }
 		 */
-		if(ValidationUtil.isValid(vObject.getRaSoc()) && vObject.getRaSoc().startsWith(","))
+		if (ValidationUtil.isValid(vObject.getRaSoc()) && vObject.getRaSoc().startsWith(","))
 			vObject.setRaSoc(vObject.getRaSoc().substring(1));
-		/*if(ValidationUtil.isValid(vObject.getPassword()))
-			vObject.setPassword(ValidationUtil.jasyptEncryption(vObject.getPassword()));*/
-		
+		/*
+		 * if(ValidationUtil.isValid(vObject.getPassword()))
+		 * vObject.setPassword(ValidationUtil.jasyptEncryption(vObject.getPassword()));
+		 */
+
 		retVal = doInsertionAppr(vObject);
 		if (retVal != Constants.SUCCESSFUL_OPERATION) {
 			exceptionCode = getResultObject(retVal);
@@ -1466,59 +1514,59 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		List<VisionUsersVb> collTemp = null;
 		VisionUsersVb vObjectlocal = null;
 		ExceptionCode exceptionCode = null;
-		strApproveOperation =Constants.MODIFY;
-		strErrorDesc  = "";
+		strApproveOperation = Constants.MODIFY;
+		strErrorDesc = "";
 		strCurrentOperation = Constants.MODIFY;
 		setServiceDefaults();
 		vObject.setMaker(getIntCurrentUserId());
-		/*if("RUNNING".equalsIgnoreCase(getBuildStatus(vObject))){
-			exceptionCode = getResultObject(Constants.BUILD_IS_RUNNING);
-			throw buildRuntimeCustomException(exceptionCode);
-		}*/
+		/*
+		 * if("RUNNING".equalsIgnoreCase(getBuildStatus(vObject))){ exceptionCode =
+		 * getResultObject(Constants.BUILD_IS_RUNNING); throw
+		 * buildRuntimeCustomException(exceptionCode); }
+		 */
 		collTemp = selectApprovedRecord(vObject);
-		if (collTemp == null){
+		if (collTemp == null) {
 			exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
 			throw buildRuntimeCustomException(exceptionCode);
 		}
-		vObjectlocal = ((ArrayList<VisionUsersVb>)collTemp).get(0);
+		vObjectlocal = ((ArrayList<VisionUsersVb>) collTemp).get(0);
 		vObject.setDateCreation(vObjectlocal.getDateCreation());
 		// Even if record is not there in Appr. table reject the record
-		if (collTemp.size() == 0){
+		if (collTemp.size() == 0) {
 			exceptionCode = getResultObject(Constants.ATTEMPT_TO_MODIFY_UNEXISTING_RECORD);
 			throw buildRuntimeCustomException(exceptionCode);
 		}
 		vObject.setRecordIndicator(Constants.STATUS_ZERO);
 		vObject.setVerifier(getIntCurrentUserId());
-		if(ValidationUtil.isValid(vObject.getRaSoc()) && vObject.getRaSoc().startsWith(","))
+		if (ValidationUtil.isValid(vObject.getRaSoc()) && vObject.getRaSoc().startsWith(","))
 			vObject.setRaSoc(vObject.getRaSoc().substring(1));
 		retVal = doUpdateAppr(vObject);
-		if (retVal != Constants.SUCCESSFUL_OPERATION){
+		if (retVal != Constants.SUCCESSFUL_OPERATION) {
 			exceptionCode = getResultObject(retVal);
 			throw buildRuntimeCustomException(exceptionCode);
 		}
-		if(vObject.getFile() != null && vObject.isProilePictureChange()){
+		if (vObject.getFile() != null && vObject.isProilePictureChange()) {
 			PreparedStatement pstmt;
-			try
-            {
-					InputStream fis = vObject.getFile().getInputStream();
-                    String query = ("update VISION_USERS set USER_PHOTO =  ?  where VISION_ID=?");
-                    pstmt = getConnection().prepareStatement(query);
-                    // Method used to insert a stream of bytes
-                    pstmt.setBinaryStream(1, fis);
-                    pstmt.setInt(2, vObject.getVisionId());
-                    pstmt.executeUpdate();
+			try {
+				InputStream fis = vObject.getFile().getInputStream();
+				String query = ("update VISION_USERS set USER_PHOTO =  ?  where VISION_ID=?");
+				pstmt = getConnection().prepareStatement(query);
+				// Method used to insert a stream of bytes
+				pstmt.setBinaryStream(1, fis);
+				pstmt.setInt(2, vObject.getVisionId());
+				pstmt.executeUpdate();
 
-			}catch(Exception ex){
+			} catch (Exception ex) {
 				strErrorDesc = ex.getMessage();
-				//strErrorDesc = parseErrorMsg(ex);
+				// strErrorDesc = parseErrorMsg(ex);
 				exceptionCode = getResultObject(Constants.WE_HAVE_ERROR_DESCRIPTION);
-				throw buildRuntimeCustomException(exceptionCode);				
+				throw buildRuntimeCustomException(exceptionCode);
 			}
-		}	
+		}
 		String systemDate = getSystemDate();
 		vObject.setDateLastModified(systemDate);
 		exceptionCode = writeAuditLog(vObject, vObjectlocal);
-		if(exceptionCode.getErrorCode() != Constants.SUCCESSFUL_OPERATION){
+		if (exceptionCode.getErrorCode() != Constants.SUCCESSFUL_OPERATION) {
 			exceptionCode = getResultObject(Constants.AUDIT_TRAIL_ERROR);
 			throw buildRuntimeCustomException(exceptionCode);
 		}
@@ -1529,193 +1577,67 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 	protected ExceptionCode doInsertRecordForNonTrans(VisionUsersVb vObject) throws RuntimeCustomException {
 		List<VisionUsersVb> collTemp = null;
 		ExceptionCode exceptionCode = null;
-		strApproveOperation =Constants.ADD;
-		strErrorDesc  = "";
+		strApproveOperation = Constants.ADD;
+		strErrorDesc = "";
 		strCurrentOperation = Constants.ADD;
 		setServiceDefaults();
 		vObject.setMaker(getIntCurrentUserId());
 		collTemp = selectApprovedRecord(vObject);
-		if (collTemp == null){
+		if (collTemp == null) {
 			logger.error("Collection is null for Select Approved Record");
 			exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
 			throw buildRuntimeCustomException(exceptionCode);
 		}
 		// If record already exists in the approved table, reject the addition
-		if (collTemp.size() > 0 ){
-			int staticDeletionFlag = getStatus(((ArrayList<VisionUsersVb>)collTemp).get(0));
-			if (staticDeletionFlag == Constants.PASSIVATE){
+		if (collTemp.size() > 0) {
+			int staticDeletionFlag = getStatus(((ArrayList<VisionUsersVb>) collTemp).get(0));
+			if (staticDeletionFlag == Constants.PASSIVATE) {
 				logger.info("Collection size is greater than zero - Duplicate record found, but inactive");
 				exceptionCode = getResultObject(Constants.RECORD_ALREADY_PRESENT_BUT_INACTIVE);
 				throw buildRuntimeCustomException(exceptionCode);
-			}
-			else
-			{
+			} else {
 				logger.info("Collection size is greater than zero - Duplicate record found");
 				exceptionCode = getResultObject(Constants.DUPLICATE_KEY_INSERTION);
 				throw buildRuntimeCustomException(exceptionCode);
 			}
 		}
 
-		// Try to see if the record already exists in the pending table, but not in approved table
+		// Try to see if the record already exists in the pending table, but not in
+		// approved table
 		collTemp = null;
 		collTemp = doSelectPendingRecord(vObject);
 
-		// The collTemp variable could not be null.  If so, there is no problem fetching data
+		// The collTemp variable could not be null. If so, there is no problem fetching
+		// data
 		// return back error code to calling routine
-		if (collTemp == null){
+		if (collTemp == null) {
 			exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
 			throw buildRuntimeCustomException(exceptionCode);
 		}
 
 		// if record already exists in pending table, modify the record
-		if (collTemp.size() > 0){
-			VisionUsersVb vObjectLocal = ((ArrayList<VisionUsersVb>)collTemp).get(0);
-			if (vObjectLocal.getRecordIndicator() == Constants.STATUS_INSERT){
+		if (collTemp.size() > 0) {
+			VisionUsersVb vObjectLocal = ((ArrayList<VisionUsersVb>) collTemp).get(0);
+			if (vObjectLocal.getRecordIndicator() == Constants.STATUS_INSERT) {
 				exceptionCode = getResultObject(Constants.PENDING_FOR_ADD_ALREADY);
 				throw buildRuntimeCustomException(exceptionCode);
 			}
 			exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
 			throw buildRuntimeCustomException(exceptionCode);
-		}else{
+		} else {
 			// Try inserting the record
 			vObject.setVerifier(0);
 			vObject.setRecordIndicator(Constants.STATUS_INSERT);
-			if(ValidationUtil.isValid(vObject.getRaSoc()) && vObject.getRaSoc().startsWith(","))
+			if (ValidationUtil.isValid(vObject.getRaSoc()) && vObject.getRaSoc().startsWith(","))
 				vObject.setRaSoc(vObject.getRaSoc().substring(1));
-			
-			
-			/*if(ValidationUtil.isValid(vObject.getPassword()))
-				vObject.setPassword(ValidationUtil.jasyptEncryption(vObject.getPassword()));*/
-			
+
+			/*
+			 * if(ValidationUtil.isValid(vObject.getPassword()))
+			 * vObject.setPassword(ValidationUtil.jasyptEncryption(vObject.getPassword()));
+			 */
+
 			retVal = doInsertionPend(vObject);
-			if (retVal != Constants.SUCCESSFUL_OPERATION){
-				exceptionCode = getResultObject(retVal);
-				throw buildRuntimeCustomException(exceptionCode);
-			}
-			if(vObject.getFile() != null && vObject.isProilePictureChange()){
-				PreparedStatement pstmt;
-				try
-                {
-						InputStream fis = vObject.getFile().getInputStream();
-                        String query = ("update VISION_USERS_PEND set USER_PHOTO =  ?  where VISION_ID=?");
-                        pstmt = getConnection().prepareStatement(query);
-                        // Method used to insert a stream of bytes
-                        pstmt.setBinaryStream(1, fis);
-                        pstmt.setInt(2, vObject.getVisionId());
-                        pstmt.executeUpdate();
- 
-				}catch(Exception ex){
-					strErrorDesc = ex.getMessage();
-					//strErrorDesc = parseErrorMsg(ex);
-					exceptionCode = getResultObject(Constants.WE_HAVE_ERROR_DESCRIPTION);
-					throw buildRuntimeCustomException(exceptionCode);				
-				}
-			}
-			exceptionCode = writeAuditLog(vObject, null);
-			if(exceptionCode.getErrorCode() != Constants.SUCCESSFUL_OPERATION){
-				exceptionCode = getResultObject(Constants.AUDIT_TRAIL_ERROR);
-				throw buildRuntimeCustomException(exceptionCode);
-			}
-			exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
-			return exceptionCode;
-		}
-	}
-
-	@Override
-	protected ExceptionCode doUpdateRecordForNonTrans(VisionUsersVb vObject) throws RuntimeCustomException {
-		List<VisionUsersVb> collTemp = null;
-		VisionUsersVb vObjectlocal = null;
-		ExceptionCode exceptionCode =null;
-		strApproveOperation =Constants.MODIFY;
-		strErrorDesc  = "";
-		strCurrentOperation = Constants.MODIFY;
-		setServiceDefaults();
-		vObject.setMaker(getIntCurrentUserId());
-		// Search if record already exists in pending.  If it already exists, check for status
-		collTemp = doSelectPendingRecord(vObject);
-		if (collTemp == null){
-			exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
-			throw buildRuntimeCustomException(exceptionCode);
-		}
-		if (collTemp.size() > 0){
-			vObjectlocal = ((ArrayList<VisionUsersVb>)collTemp).get(0);
-
-			// Check if the record is pending for deletion. If so return the error
-			if (vObjectlocal.getRecordIndicator() == Constants.STATUS_DELETE){
-				exceptionCode = getResultObject(Constants.RECORD_PENDING_FOR_DELETION);
-				throw buildRuntimeCustomException(exceptionCode);
-			}
-			if (vObjectlocal.getRecordIndicator() == Constants.STATUS_INSERT){
-				vObject.setVerifier(0);
-				vObject.setRecordIndicator(Constants.STATUS_INSERT);
-				vObject.setDateCreation(vObjectlocal.getDateCreation());
-				retVal = doUpdatePend(vObject);
-			}else{
-				vObject.setVerifier(0);
-				vObject.setRecordIndicator(Constants.STATUS_UPDATE);
-				vObject.setDateCreation(vObjectlocal.getDateCreation());
-				if(ValidationUtil.isValid(vObject.getRaSoc()) && vObject.getRaSoc().startsWith(","))
-					vObject.setRaSoc(vObject.getRaSoc().substring(1));
-				retVal = doUpdatePend(vObject);
-			}
-			if (retVal != Constants.SUCCESSFUL_OPERATION){
-				exceptionCode = getResultObject(retVal);
-				throw buildRuntimeCustomException(exceptionCode);
-			}
-			if(vObject.getFile() != null && vObject.isProilePictureChange()){
-				PreparedStatement pstmt;
-				try
-                {
-						InputStream fis = vObject.getFile().getInputStream();
-                        String query = ("update VISION_USERS_PEND set USER_PHOTO =  ?  where VISION_ID=?");
-                        pstmt = getConnection().prepareStatement(query);
-                        // Method used to insert a stream of bytes
-                        pstmt.setBinaryStream(1, fis);
-                        pstmt.setInt(2, vObject.getVisionId());
-                        pstmt.executeUpdate();
- 
-				}catch(Exception ex){
-					strErrorDesc = ex.getMessage();
-					//strErrorDesc = parseErrorMsg(ex);
-					exceptionCode = getResultObject(Constants.WE_HAVE_ERROR_DESCRIPTION);
-					throw buildRuntimeCustomException(exceptionCode);				
-				}
-			}			
-			return getResultObject(Constants.SUCCESSFUL_OPERATION);
-		}else{
-			collTemp = null;
-			collTemp = selectApprovedRecord(vObject);
-
-			if (collTemp == null){
-				exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
-				throw buildRuntimeCustomException(exceptionCode);
-			}
-
-			// Even if record is not there in Appr. table reject the record
-			if (collTemp.size() == 0){
-				exceptionCode = getResultObject(Constants.ATTEMPT_TO_MODIFY_UNEXISTING_RECORD);
-				throw buildRuntimeCustomException(exceptionCode);
-			}
-			//This is required for Audit Trail.
-			if (collTemp.size() > 0){
-				vObjectlocal = ((ArrayList<VisionUsersVb>)collTemp).get(0);
-				vObject.setDateCreation(vObjectlocal.getDateCreation());
-			}
-		    vObject.setDateCreation(vObjectlocal.getDateCreation());
-		 // Record is there in approved, but not in pending.  So add it to pending
-		    vObject.setVerifier(0);
-		    vObject.setRecordIndicator(Constants.STATUS_UPDATE);
-//		    if(!ValidationUtil.isValid(vObject.getPassword())) {
-//		    	List<VisionUsersVb>  userPwdlst = getUserPasswordAppr(vObject);
-//		    	if(userPwdlst != null && userPwdlst.size() > 0) {
-//		    		vObject.setPassword(userPwdlst.get(0).getPassword());
-//			    	vObject.setPasswordResetFlag(userPwdlst.get(0).getPasswordResetFlag());
-//		    	}
-//		    }else {
-//		    	vObject.setPasswordResetFlag("Y");
-//		    }
-		    retVal = doInsertionPendWithDc(vObject);
-			if (retVal != Constants.SUCCESSFUL_OPERATION){
+			if (retVal != Constants.SUCCESSFUL_OPERATION) {
 				exceptionCode = getResultObject(retVal);
 				throw buildRuntimeCustomException(exceptionCode);
 			}
@@ -1736,7 +1658,133 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 					exceptionCode = getResultObject(Constants.WE_HAVE_ERROR_DESCRIPTION);
 					throw buildRuntimeCustomException(exceptionCode);
 				}
-			}	
+			}
+			exceptionCode = writeAuditLog(vObject, null);
+			if (exceptionCode.getErrorCode() != Constants.SUCCESSFUL_OPERATION) {
+				exceptionCode = getResultObject(Constants.AUDIT_TRAIL_ERROR);
+				throw buildRuntimeCustomException(exceptionCode);
+			}
+			exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
+			return exceptionCode;
+		}
+	}
+
+	@Override
+	protected ExceptionCode doUpdateRecordForNonTrans(VisionUsersVb vObject) throws RuntimeCustomException {
+		List<VisionUsersVb> collTemp = null;
+		VisionUsersVb vObjectlocal = null;
+		ExceptionCode exceptionCode = null;
+		strApproveOperation = Constants.MODIFY;
+		strErrorDesc = "";
+		strCurrentOperation = Constants.MODIFY;
+		setServiceDefaults();
+		vObject.setMaker(getIntCurrentUserId());
+		// Search if record already exists in pending. If it already exists, check for
+		// status
+		collTemp = doSelectPendingRecord(vObject);
+		if (collTemp == null) {
+			exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
+			throw buildRuntimeCustomException(exceptionCode);
+		}
+		if (collTemp.size() > 0) {
+			vObjectlocal = ((ArrayList<VisionUsersVb>) collTemp).get(0);
+
+			// Check if the record is pending for deletion. If so return the error
+			if (vObjectlocal.getRecordIndicator() == Constants.STATUS_DELETE) {
+				exceptionCode = getResultObject(Constants.RECORD_PENDING_FOR_DELETION);
+				throw buildRuntimeCustomException(exceptionCode);
+			}
+			if (vObjectlocal.getRecordIndicator() == Constants.STATUS_INSERT) {
+				vObject.setVerifier(0);
+				vObject.setRecordIndicator(Constants.STATUS_INSERT);
+				vObject.setDateCreation(vObjectlocal.getDateCreation());
+				retVal = doUpdatePend(vObject);
+			} else {
+				vObject.setVerifier(0);
+				vObject.setRecordIndicator(Constants.STATUS_UPDATE);
+				vObject.setDateCreation(vObjectlocal.getDateCreation());
+				if (ValidationUtil.isValid(vObject.getRaSoc()) && vObject.getRaSoc().startsWith(","))
+					vObject.setRaSoc(vObject.getRaSoc().substring(1));
+				retVal = doUpdatePend(vObject);
+			}
+			if (retVal != Constants.SUCCESSFUL_OPERATION) {
+				exceptionCode = getResultObject(retVal);
+				throw buildRuntimeCustomException(exceptionCode);
+			}
+			if (vObject.getFile() != null && vObject.isProilePictureChange()) {
+				PreparedStatement pstmt;
+				try {
+					InputStream fis = vObject.getFile().getInputStream();
+					String query = ("update VISION_USERS_PEND set USER_PHOTO =  ?  where VISION_ID=?");
+					pstmt = getConnection().prepareStatement(query);
+					// Method used to insert a stream of bytes
+					pstmt.setBinaryStream(1, fis);
+					pstmt.setInt(2, vObject.getVisionId());
+					pstmt.executeUpdate();
+
+				} catch (Exception ex) {
+					strErrorDesc = ex.getMessage();
+					// strErrorDesc = parseErrorMsg(ex);
+					exceptionCode = getResultObject(Constants.WE_HAVE_ERROR_DESCRIPTION);
+					throw buildRuntimeCustomException(exceptionCode);
+				}
+			}
+			return getResultObject(Constants.SUCCESSFUL_OPERATION);
+		} else {
+			collTemp = null;
+			collTemp = selectApprovedRecord(vObject);
+
+			if (collTemp == null) {
+				exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
+				throw buildRuntimeCustomException(exceptionCode);
+			}
+
+			// Even if record is not there in Appr. table reject the record
+			if (collTemp.size() == 0) {
+				exceptionCode = getResultObject(Constants.ATTEMPT_TO_MODIFY_UNEXISTING_RECORD);
+				throw buildRuntimeCustomException(exceptionCode);
+			}
+			// This is required for Audit Trail.
+			if (collTemp.size() > 0) {
+				vObjectlocal = ((ArrayList<VisionUsersVb>) collTemp).get(0);
+				vObject.setDateCreation(vObjectlocal.getDateCreation());
+			}
+			vObject.setDateCreation(vObjectlocal.getDateCreation());
+			// Record is there in approved, but not in pending. So add it to pending
+			vObject.setVerifier(0);
+			vObject.setRecordIndicator(Constants.STATUS_UPDATE);
+//		    if(!ValidationUtil.isValid(vObject.getPassword())) {
+//		    	List<VisionUsersVb>  userPwdlst = getUserPasswordAppr(vObject);
+//		    	if(userPwdlst != null && userPwdlst.size() > 0) {
+//		    		vObject.setPassword(userPwdlst.get(0).getPassword());
+//			    	vObject.setPasswordResetFlag(userPwdlst.get(0).getPasswordResetFlag());
+//		    	}
+//		    }else {
+//		    	vObject.setPasswordResetFlag("Y");
+//		    }
+			retVal = doInsertionPendWithDc(vObject);
+			if (retVal != Constants.SUCCESSFUL_OPERATION) {
+				exceptionCode = getResultObject(retVal);
+				throw buildRuntimeCustomException(exceptionCode);
+			}
+			if (vObject.getFile() != null && vObject.isProilePictureChange()) {
+				PreparedStatement pstmt;
+				try {
+					InputStream fis = vObject.getFile().getInputStream();
+					String query = ("update VISION_USERS_PEND set USER_PHOTO =  ?  where VISION_ID=?");
+					pstmt = getConnection().prepareStatement(query);
+					// Method used to insert a stream of bytes
+					pstmt.setBinaryStream(1, fis);
+					pstmt.setInt(2, vObject.getVisionId());
+					pstmt.executeUpdate();
+
+				} catch (Exception ex) {
+					strErrorDesc = ex.getMessage();
+					// strErrorDesc = parseErrorMsg(ex);
+					exceptionCode = getResultObject(Constants.WE_HAVE_ERROR_DESCRIPTION);
+					throw buildRuntimeCustomException(exceptionCode);
+				}
+			}
 			exceptionCode = getResultObject(Constants.SUCCESSFUL_OPERATION);
 			return exceptionCode;
 		}
@@ -1755,48 +1803,51 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 			vObject.setVerifier(getIntCurrentUserId());
 			vObject.setRecordIndicator(Constants.STATUS_ZERO);
 			collTemp = doSelectPendingRecord(vObject);
-			if (collTemp == null){
+			if (collTemp == null) {
 				exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
 				throw buildRuntimeCustomException(exceptionCode);
 			}
 
-			if (collTemp.size() == 0){
+			if (collTemp.size() == 0) {
 				exceptionCode = getResultObject(Constants.NO_SUCH_PENDING_RECORD);
 				throw buildRuntimeCustomException(exceptionCode);
 			}
 
-			vObjectlocal = ((ArrayList<VisionUsersVb>)collTemp).get(0);
+			vObjectlocal = ((ArrayList<VisionUsersVb>) collTemp).get(0);
 //			List<VisionUsersVb>  userPwdlst = getUserPasswordPend(vObject);
 //	    	if(userPwdlst != null && userPwdlst.size() > 0) {
 //	    		vObjectlocal.setPassword(userPwdlst.get(0).getPassword());
 //	    		vObjectlocal.setPasswordResetFlag(userPwdlst.get(0).getPasswordResetFlag());
 //	    	}
-			if (vObjectlocal.getMaker() == getIntCurrentUserId()){
+			if (vObjectlocal.getMaker() == getIntCurrentUserId()) {
 				exceptionCode = getResultObject(Constants.MAKER_CANNOT_APPROVE);
 				throw buildRuntimeCustomException(exceptionCode);
 			}
-			
+
 			// If it's NOT addition, collect the existing record contents from the
 			// Approved table and keep it aside, for writing audit information later.
-			if (vObjectlocal.getRecordIndicator() != Constants.STATUS_INSERT){
+			if (vObjectlocal.getRecordIndicator() != Constants.STATUS_INSERT) {
 				collTemp = selectApprovedRecord(vObject);
-				if (collTemp == null || collTemp.isEmpty()){
+				if (collTemp == null || collTemp.isEmpty()) {
 					exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
 					throw buildRuntimeCustomException(exceptionCode);
 				}
-				oldContents = ((ArrayList<VisionUsersVb>)collTemp).get(0);
+				oldContents = ((ArrayList<VisionUsersVb>) collTemp).get(0);
 			}
 
-			if (vObjectlocal.getRecordIndicator() == Constants.STATUS_INSERT){  // Add authorization
+			if (vObjectlocal.getRecordIndicator() == Constants.STATUS_INSERT) { // Add authorization
 				// Write the contents of the Pending table record to the Approved table
 				vObjectlocal.setRecordIndicator(Constants.STATUS_ZERO);
 				vObjectlocal.setVerifier(getIntCurrentUserId());
-				
-				/*if(ValidationUtil.isValid(vObject.getPassword()))
-					vObjectlocal.setPassword(ValidationUtil.jasyptEncryption(vObject.getPassword()));*/
-				
+
+				/*
+				 * if(ValidationUtil.isValid(vObject.getPassword()))
+				 * vObjectlocal.setPassword(ValidationUtil.jasyptEncryption(vObject.getPassword(
+				 * )));
+				 */
+
 				retVal = doInsertionAppr(vObjectlocal);
-				if (retVal != Constants.SUCCESSFUL_OPERATION){
+				if (retVal != Constants.SUCCESSFUL_OPERATION) {
 					exceptionCode = getResultObject(retVal);
 					throw buildRuntimeCustomException(exceptionCode);
 				}
@@ -1804,24 +1855,24 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 				String systemDate = getSystemDate();
 				vObject.setDateLastModified(systemDate);
 				vObject.setDateCreation(systemDate);
-				strApproveOperation =Constants.ADD;
-			}else if (vObjectlocal.getRecordIndicator() == Constants.STATUS_UPDATE){ // Modify authorization
-			
+				strApproveOperation = Constants.ADD;
+			} else if (vObjectlocal.getRecordIndicator() == Constants.STATUS_UPDATE) { // Modify authorization
+
 				collTemp = selectApprovedRecord(vObject);
-				if (collTemp == null || collTemp.isEmpty()){
+				if (collTemp == null || collTemp.isEmpty()) {
 					exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
 					throw buildRuntimeCustomException(exceptionCode);
-				}	
+				}
 
 				// If record already exists in the approved table, reject the addition
-				if (collTemp.size() > 0 ){
-					//retVal = doUpdateAppr(vObjectlocal, MISConstants.ACTIVATE);
+				if (collTemp.size() > 0) {
+					// retVal = doUpdateAppr(vObjectlocal, MISConstants.ACTIVATE);
 					vObjectlocal.setVerifier(getIntCurrentUserId());
 					vObjectlocal.setRecordIndicator(Constants.STATUS_ZERO);
 					retVal = doUpdateMainTable(vObjectlocal);
 				}
 				// Modify the existing contents of the record in Approved table
-				if (retVal != Constants.SUCCESSFUL_OPERATION){
+				if (retVal != Constants.SUCCESSFUL_OPERATION) {
 					exceptionCode = getResultObject(retVal);
 					throw buildRuntimeCustomException(exceptionCode);
 				}
@@ -1830,15 +1881,14 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 				vObject.setDateLastModified(systemDate);
 				// Set the current operation to write to audit log
 				strApproveOperation = Constants.MODIFY;
-			}
-			else if (vObjectlocal.getRecordIndicator() == Constants.STATUS_DELETE){ // Delete authorization
-				if(staticDelete){
-					// Update the existing record status in the Approved table to delete 
+			} else if (vObjectlocal.getRecordIndicator() == Constants.STATUS_DELETE) { // Delete authorization
+				if (staticDelete) {
+					// Update the existing record status in the Approved table to delete
 					setStatus(vObjectlocal, Constants.PASSIVATE);
 					vObjectlocal.setRecordIndicator(Constants.STATUS_ZERO);
 					vObjectlocal.setVerifier(getIntCurrentUserId());
 					retVal = doUpdateMainTable(vObjectlocal);
-					if (retVal != Constants.SUCCESSFUL_OPERATION){
+					if (retVal != Constants.SUCCESSFUL_OPERATION) {
 						exceptionCode = getResultObject(retVal);
 						throw buildRuntimeCustomException(exceptionCode);
 					}
@@ -1846,10 +1896,10 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 					String systemDate = getSystemDate();
 					vObject.setDateLastModified(systemDate);
 
-				}else{
-					// Delete the existing record from the Approved table 
+				} else {
+					// Delete the existing record from the Approved table
 					retVal = doDeleteAppr(vObjectlocal);
-					if (retVal != Constants.SUCCESSFUL_OPERATION){
+					if (retVal != Constants.SUCCESSFUL_OPERATION) {
 						exceptionCode = getResultObject(retVal);
 						throw buildRuntimeCustomException(exceptionCode);
 					}
@@ -1858,16 +1908,15 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 				}
 				// Set the current operation to write to audit log
 				strApproveOperation = Constants.DELETE;
-			}
-			else{
+			} else {
 				exceptionCode = getResultObject(Constants.INVALID_STATUS_FLAG_IN_DATABASE);
 				throw buildRuntimeCustomException(exceptionCode);
-			}	     
+			}
 
 			// Delete the record from the Pending table
 			retVal = deletePendingRecord(vObjectlocal);
 
-			if (retVal != Constants.SUCCESSFUL_OPERATION){
+			if (retVal != Constants.SUCCESSFUL_OPERATION) {
 				exceptionCode = getResultObject(retVal);
 				throw buildRuntimeCustomException(exceptionCode);
 			}
@@ -1875,37 +1924,35 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 			// Set the internal status to Approved
 			vObject.setInternalStatus(0);
 			vObject.setRecordIndicator(Constants.STATUS_ZERO);
-			if (vObjectlocal.getRecordIndicator() == Constants.STATUS_DELETE && !staticDelete){
+			if (vObjectlocal.getRecordIndicator() == Constants.STATUS_DELETE && !staticDelete) {
 				exceptionCode = writeAuditLog(null, oldContents);
 				vObject.setRecordIndicator(-1);
-			}
-			else
+			} else
 				exceptionCode = writeAuditLog(vObjectlocal, oldContents);
 
-			if(exceptionCode.getErrorCode() != Constants.SUCCESSFUL_OPERATION){
+			if (exceptionCode.getErrorCode() != Constants.SUCCESSFUL_OPERATION) {
 				exceptionCode = getResultObject(Constants.AUDIT_TRAIL_ERROR);
 				throw buildRuntimeCustomException(exceptionCode);
 			}
 			exceptionCode = getResultObject(Constants.SUCCESSFUL_OPERATION);
 			return exceptionCode;
-		}catch (UncategorizedSQLException uSQLEcxception) {
+		} catch (UncategorizedSQLException uSQLEcxception) {
 			strErrorDesc = parseErrorMsg(uSQLEcxception);
 			exceptionCode = getResultObject(Constants.WE_HAVE_ERROR_DESCRIPTION);
 			throw buildRuntimeCustomException(exceptionCode);
-		}catch(Exception ex){
-			logger.error("Error in Approve.",ex);
-			//logger.error( ((vObject==null)? "vObject is Null":vObject.toString()));
+		} catch (Exception ex) {
+			logger.error("Error in Approve.", ex);
+			// logger.error( ((vObject==null)? "vObject is Null":vObject.toString()));
 			strErrorDesc = ex.getMessage();
-			//strErrorDesc = parseErrorMsg(ex);
+			// strErrorDesc = parseErrorMsg(ex);
 			exceptionCode = getResultObject(Constants.WE_HAVE_ERROR_DESCRIPTION);
 			throw buildRuntimeCustomException(exceptionCode);
 		}
 	}
 
 	public String getDefaultLegalVehicle(String countryLeBook) {
-		return getJdbcTemplate().queryForObject(
-				"SELECT LEGAL_VEHICLE FROM LE_BOOK WHERE COUNTRY"+pipeLine+"'-'"+pipeLine+"LE_BOOK = '" + countryLeBook + "'",
-				String.class);
+		return getJdbcTemplate().queryForObject("SELECT LEGAL_VEHICLE FROM LE_BOOK WHERE COUNTRY" + pipeLine + "'-'"
+				+ pipeLine + "LE_BOOK = '" + countryLeBook + "'", String.class);
 	}
 
 	public String getUnsuccessfulLoginAttempts(String userId) {
@@ -1964,10 +2011,10 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		} catch (Exception ex) {
 			ex.printStackTrace();
 			logger.error("Error: getQueryResults Exception :   ");
-			/*if (objParams != null)
-				for (int i = 0; i < objParams.length; i++)
-					//logger.error("objParams[" + i + "]" + objParams[i].toString());
-*/			return null;
+			/*
+			 * if (objParams != null) for (int i = 0; i < objParams.length; i++)
+			 * //logger.error("objParams[" + i + "]" + objParams[i].toString());
+			 */ return null;
 		}
 	}
 
@@ -1995,7 +2042,7 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 	public VisionUsersVb getUserByLoginId(VisionUsersVb vObj) {
 		String sql = "";
 		if ("ORACLE".equalsIgnoreCase(databaseType)) {
-			sql  = new String("Select TAppr.VISION_ID," + "TAppr.USER_NAME, TAppr.USER_LOGIN_ID, TAppr.USER_EMAIL_ID,"
+			sql = new String("Select TAppr.VISION_ID," + "TAppr.USER_NAME, TAppr.USER_LOGIN_ID, TAppr.USER_EMAIL_ID,"
 					+ "To_Char(TAppr.LAST_ACTIVITY_DATE, 'DD-MM-YYYY HH24:MI:SS') LAST_ACTIVITY_DATE, TAppr.USER_GROUP_AT,"
 					+ "TAppr.USER_GROUP, TAppr.USER_PROFILE_AT, TAppr.USER_PROFILE,"
 					+ "TAppr.UPDATE_RESTRICTION, TAppr.LEGAL_VEHICLE, (Select LV_DESCRIPTION From LEGAL_VEHICLES Where LEGAL_VEHICLE = TAppr.LEGAL_VEHICLE) AS LegalVehicleDesc,"
@@ -2025,8 +2072,7 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 					+ "Format(TAppr.LAST_UNSUCCESSFUL_LOGIN_DATE, 'dd-MM-yyyy HH:mm:ss') LAST_UNSUCCESSFUL_LOGIN_DATE, TAppr.UNSUCCESSFUL_LOGIN_ATTEMPTS, TAppr.FILE_NAME, TAppr.USER_PHOTO, TAppr.ENABLE_WIDGETS "
 					+ " From VISION_USERS TAppr Where TAppr.USER_LOGIN_ID = ? ");
 		}
-		 
-		
+
 		Object arr[] = { vObj.getUserLoginId() };
 		ResultSetExtractor<VisionUsersVb> rse = new ResultSetExtractor<VisionUsersVb>() {
 			@Override
@@ -2252,19 +2298,19 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		} else if ("MSSQL".equalsIgnoreCase(databaseType)) {
 			strQueryAppr = new StringBuffer(
 					"SELECT TAppr.VISION_ID,Substring (LINK_CLEB_STAFFID, 0, 2) STF_COUNTRY,Substring (LINK_CLEB_STAFFID,CharIndex ('-',LINK_CLEB_STAFFID,1)+ 1,2)STF_LE_BOOK,Substring (LINK_CLEB_STAFFID,"
-					+ " CharIndex('-',LINK_CLEB_STAFFID, CharIndex ('-',LINK_CLEB_STAFFID,1)+1)+1, Len(LINK_CLEB_STAFFID)) STAFF_ID, "
-					+ " TAppr.USER_NAME, TAppr.USER_LOGIN_ID,"
-					+ " TAppr.USER_EMAIL_ID, Format (TAppr.LAST_ACTIVITY_DATE, 'dd-MM-yyyy HH:mm:ss') LAST_ACTIVITY_DATE, TAppr.UPDATE_RESTRICTION,TAppr.AUTO_UPDATE_RESTRICTION,TAppr.LEGAL_VEHICLE,"
-					+ " (SELECT LV_DESCRIPTION FROM LEGAL_VEHICLES WHERE LEGAL_VEHICLE = TAppr.LEGAL_VEHICLE) AS LegalVehicleDesc,TAppr.GCID_ACCEss,TAppr.USER_STATUS_NT,TAppr.USER_STATUS,"
-					+ " Format (TAppr.USER_STATUS_DATE, 'dd-MM-yyyy HH:mm:ss') USER_STATUS_DATE,TAppr.MAKER,TAppr.VERIFIER,TAppr.INTERNAL_STATUS,TAppr.RECORD_INDICATOR_NT,TAppr.RECORD_INDICATOR,"
-					+ " Format (TAppr.DATE_LAST_MODIFIED, 'dd-MM-yyyy HH:mm:ss') DATE_LAST_MODIFIED,Format (TAppr.DATE_CREATION, 'dd-MM-yyyy HH:mm:ss') DATE_CREATION,"
-					+ " Format(TAppr.LAST_UNSUCCEssFUL_LOGIN_DATE, 'dd-MM-yyyy HH:mm:ss')LAST_UNSUCCEssFUL_LOGIN_DATE,TAppr.UNSUCCEssFUL_LOGIN_ATTEMPTS,TAppr.FILE_NAME,TAppr.USER_PHOTO,"
-					+ " TAppr.ENABLE_WIDGETS,TAppr.PREF_LANGUAGE,"
-					+ " (SELECT App_Theme FROM PRD_APP_THEME S1 WHERE S1.VISION_ID=TAppr.VISION_ID) APP_THEME,  "
-					+ " (SELECT Report_Slide_Theme FROM PRD_APP_THEME S1 WHERE S1.VISION_ID=TAppr.VISION_ID) Report_Slide_Theme, "
-					+ " (SELECT Language FROM PRD_APP_THEME S1 WHERE S1.VISION_ID=TAppr.VISION_ID) Language"
-					+ " FROM VISION_USERS TAppr WHERE USER_STATUS = 0"
-					+ " AND RECORD_INDICATOR = 0 AND UPPER (USER_LOGIN_ID) = UPPER (?) AND (UNSUCCEssFUL_LOGIN_ATTEMPTS IS NULL OR UNSUCCEssFUL_LOGIN_ATTEMPTS <= 3)");
+							+ " CharIndex('-',LINK_CLEB_STAFFID, CharIndex ('-',LINK_CLEB_STAFFID,1)+1)+1, Len(LINK_CLEB_STAFFID)) STAFF_ID, "
+							+ " TAppr.USER_NAME, TAppr.USER_LOGIN_ID,"
+							+ " TAppr.USER_EMAIL_ID, Format (TAppr.LAST_ACTIVITY_DATE, 'dd-MM-yyyy HH:mm:ss') LAST_ACTIVITY_DATE, TAppr.UPDATE_RESTRICTION,TAppr.AUTO_UPDATE_RESTRICTION,TAppr.LEGAL_VEHICLE,"
+							+ " (SELECT LV_DESCRIPTION FROM LEGAL_VEHICLES WHERE LEGAL_VEHICLE = TAppr.LEGAL_VEHICLE) AS LegalVehicleDesc,TAppr.GCID_ACCEss,TAppr.USER_STATUS_NT,TAppr.USER_STATUS,"
+							+ " Format (TAppr.USER_STATUS_DATE, 'dd-MM-yyyy HH:mm:ss') USER_STATUS_DATE,TAppr.MAKER,TAppr.VERIFIER,TAppr.INTERNAL_STATUS,TAppr.RECORD_INDICATOR_NT,TAppr.RECORD_INDICATOR,"
+							+ " Format (TAppr.DATE_LAST_MODIFIED, 'dd-MM-yyyy HH:mm:ss') DATE_LAST_MODIFIED,Format (TAppr.DATE_CREATION, 'dd-MM-yyyy HH:mm:ss') DATE_CREATION,"
+							+ " Format(TAppr.LAST_UNSUCCEssFUL_LOGIN_DATE, 'dd-MM-yyyy HH:mm:ss')LAST_UNSUCCEssFUL_LOGIN_DATE,TAppr.UNSUCCEssFUL_LOGIN_ATTEMPTS,TAppr.FILE_NAME,TAppr.USER_PHOTO,"
+							+ " TAppr.ENABLE_WIDGETS,TAppr.PREF_LANGUAGE,"
+							+ " (SELECT App_Theme FROM PRD_APP_THEME S1 WHERE S1.VISION_ID=TAppr.VISION_ID) APP_THEME,  "
+							+ " (SELECT Report_Slide_Theme FROM PRD_APP_THEME S1 WHERE S1.VISION_ID=TAppr.VISION_ID) Report_Slide_Theme, "
+							+ " (SELECT Language FROM PRD_APP_THEME S1 WHERE S1.VISION_ID=TAppr.VISION_ID) Language"
+							+ " FROM VISION_USERS TAppr WHERE USER_STATUS = 0"
+							+ " AND RECORD_INDICATOR = 0 AND UPPER (USER_LOGIN_ID) = UPPER (?) AND (UNSUCCEssFUL_LOGIN_ATTEMPTS IS NULL OR UNSUCCEssFUL_LOGIN_ATTEMPTS <= 3)");
 		}
 		try {
 
@@ -2274,9 +2320,10 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		} catch (Exception ex) {
 			ex.printStackTrace();
 			logger.error("Error: getQueryResults Exception :   ");
-			/*if (objParams != null)
-				for (int i = 0; i < objParams.length; i++)*/
-					//logger.error("objParams[" + i + "]" + objParams[i].toString());
+			/*
+			 * if (objParams != null) for (int i = 0; i < objParams.length; i++)
+			 */
+			// logger.error("objParams[" + i + "]" + objParams[i].toString());
 			return null;
 
 		}
@@ -2397,70 +2444,71 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 			return 0;
 		}
 	}
-	public int doUnlockUserAppr(VisionUsersVb vObject){
+
+	public int doUnlockUserAppr(VisionUsersVb vObject) {
 		String query = "Update VISION_USERS Set UNSUCCESSFUL_LOGIN_ATTEMPTS = 0 Where VISION_ID = ?";
-		Object[] args = {vObject.getVisionId()};
-		return getJdbcTemplate().update(query,args);
+		Object[] args = { vObject.getVisionId() };
+		return getJdbcTemplate().update(query, args);
 	}
+
 	@Override
 	protected ExceptionCode doDeleteRecordForNonTrans(VisionUsersVb vObject) throws RuntimeCustomException {
 		VisionUsersVb vObjectlocal = null;
 		List<VisionUsersVb> collTemp = null;
 		ExceptionCode exceptionCode = null;
 		strApproveOperation = Constants.DELETE;
-		strErrorDesc  = "";
+		strErrorDesc = "";
 		strCurrentOperation = Constants.DELETE;
 		setServiceDefaults();
 		collTemp = selectApprovedRecord(vObject);
-	
-	
-		if (collTemp == null){
+
+		if (collTemp == null) {
 			logger.error("Collection is null");
 			exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
 			throw buildRuntimeCustomException(exceptionCode);
 		}
 		// If record already exists in the approved table, reject the addition
-		if (collTemp.size() > 0 ){
-			vObjectlocal = ((ArrayList<VisionUsersVb>)collTemp).get(0);
+		if (collTemp.size() > 0) {
+			vObjectlocal = ((ArrayList<VisionUsersVb>) collTemp).get(0);
 			int intStaticDeletionFlag = getStatus(vObjectlocal);
-			if (intStaticDeletionFlag == Constants.PASSIVATE){
+			if (intStaticDeletionFlag == Constants.PASSIVATE) {
 				exceptionCode = getResultObject(Constants.CANNOT_DELETE_AN_INACTIVE_RECORD);
 				throw buildRuntimeCustomException(exceptionCode);
 			}
-		}
-		else{
+		} else {
 			exceptionCode = getResultObject(Constants.ATTEMPT_TO_DELETE_UNEXISTING_RECORD);
 			throw buildRuntimeCustomException(exceptionCode);
 		}
 
 		// check to see if the record already exists in the pending table
 		collTemp = doSelectPendingRecord(vObject);
-		if (collTemp == null){
+		if (collTemp == null) {
 			exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
 			throw buildRuntimeCustomException(exceptionCode);
 		}
 
-		// If records are there, check for the status and decide what error to return back
-		if (collTemp.size() > 0){
+		// If records are there, check for the status and decide what error to return
+		// back
+		if (collTemp.size() > 0) {
 			exceptionCode = getResultObject(Constants.TRYING_TO_DELETE_APPROVAL_PENDING_RECORD);
 			throw buildRuntimeCustomException(exceptionCode);
 		}
 
 		// insert the record into pending table with status 3 - deletion
-		if(vObjectlocal==null){
+		if (vObjectlocal == null) {
 			exceptionCode = getResultObject(Constants.ERRONEOUS_OPERATION);
 			throw buildRuntimeCustomException(exceptionCode);
 		}
-		if (collTemp.size() > 0){
-		    vObjectlocal=((ArrayList<VisionUsersVb>)collTemp).get(0);
-		    vObjectlocal.setDateCreation(vObject.getDateCreation());
+		if (collTemp.size() > 0) {
+			vObjectlocal = ((ArrayList<VisionUsersVb>) collTemp).get(0);
+			vObjectlocal.setDateCreation(vObject.getDateCreation());
 		}
-		//vObjectlocal.setDateCreation(vObject.getDateCreation());
+		// vObjectlocal.setDateCreation(vObject.getDateCreation());
 		vObjectlocal.setMaker(getIntCurrentUserId());
 		vObjectlocal.setRecordIndicator(Constants.STATUS_DELETE);
 		vObjectlocal.setVerifier(getIntCurrentUserId());
 		retVal = doInsertionPendWithDc(vObjectlocal);
-		if (retVal != Constants.SUCCESSFUL_OPERATION){
+		if (retVal != Constants.SUCCESSFUL_OPERATION) {
 			exceptionCode = getResultObject(retVal);
 			throw buildRuntimeCustomException(exceptionCode);
 		}
@@ -2492,9 +2540,10 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		} catch (Exception ex) {
 			ex.printStackTrace();
 			logger.error("Error: getQueryResults Exception :   ");
-			/*if (objParams != null)
-				for (int i = 0; i < objParams.length; i++)*/
-					//logger.error("objParams[" + i + "]" + objParams[i].toString());
+			/*
+			 * if (objParams != null) for (int i = 0; i < objParams.length; i++)
+			 */
+			// logger.error("objParams[" + i + "]" + objParams[i].toString());
 			return null;
 
 		}
@@ -2574,31 +2623,33 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		};
 		return mapper;
 	}
+
 	public int getMaxVisionId() {
 		String sql = "";
 		try {
-			sql = "SELECT  "+getDbFunction("NVL")+"(MAX(VISION_ID)+1,1000) VISION_ID FROM (SELECT  VISION_ID  FROM VISION_USERS "+
-				" UNION "+
-				" SELECT  VISION_ID  FROM VISION_USERS_PEND) T1";
-		}catch (Exception e) {
+			sql = "SELECT  " + getDbFunction("NVL")
+					+ "(MAX(VISION_ID)+1,1000) VISION_ID FROM (SELECT  VISION_ID  FROM VISION_USERS " + " UNION "
+					+ " SELECT  VISION_ID  FROM VISION_USERS_PEND) T1";
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return getJdbcTemplate().queryForObject(sql, Integer.class);
 	}
+
 	public int userLoginIdExists(String userLoginId) {
 		int retVal = 0;
 		try {
-			String sql = "SELECT SUM(CNT) CNT FROM( "+
-					"select count(1) CNT from vision_users where upper(user_login_id) = upper(?) "+
-					" UNION "+
-					" select count(1) CNT from vision_users_pend where upper(user_login_id) = upper(?)) T1";
-			Object args[] = {userLoginId,userLoginId};
-			retVal = getJdbcTemplate().queryForObject(sql,args,Integer.class);
-		}catch(Exception e) {
+			String sql = "SELECT SUM(CNT) CNT FROM( "
+					+ "select count(1) CNT from vision_users where upper(user_login_id) = upper(?) " + " UNION "
+					+ " select count(1) CNT from vision_users_pend where upper(user_login_id) = upper(?)) T1";
+			Object args[] = { userLoginId, userLoginId };
+			retVal = getJdbcTemplate().queryForObject(sql, args, Integer.class);
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return retVal;
 	}
+
 	public List<UserRestrictionVb> doUpdateRestrictionToUserObject(VisionUsersVb vObject,
 			List<UserRestrictionVb> restrictionList) {
 		Object args[] = { vObject.getVisionId() };
@@ -2613,23 +2664,22 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 
 		return restrictionList;
 	}
-	
+
 	// Used in Authentication for loading Widgets
 	public String getDefaultCountryLeBook() {
 		return getJdbcTemplate().queryForObject("select DEFAULT_CTRY_LEBOOK from V_DEFAULT_CTRY_LEBOOK", String.class);
 	}
-	
+
 	public String getCountryDesc(String country) {
 		return getJdbcTemplate().queryForObject(
 				"SELECT COUNTRY_DESCRIPTION FROM COUNTRIES WHERE COUNTRY = '" + country + "'", String.class);
 	}
 
 	public String getLebookDesc(String countryLeBook) {
-		return getJdbcTemplate().queryForObject(
-				"SELECT LEB_DESCRIPTION FROM LE_BOOK WHERE COUNTRY"+pipeLine+"'-'"+pipeLine+"LE_BOOK = '" + countryLeBook + "'",
-				String.class);
+		return getJdbcTemplate().queryForObject("SELECT LEB_DESCRIPTION FROM LE_BOOK WHERE COUNTRY" + pipeLine + "'-'"
+				+ pipeLine + "LE_BOOK = '" + countryLeBook + "'", String.class);
 	}
-	
+
 	public void doInsertUserLoginAudit(VisionUsersVb vObject, String ipAddress, int loginStatus, String comments) {
 		int loginStatusNt = 1068;
 		String query = "";
@@ -2639,7 +2689,7 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 				comments, vObject.getActiveDirectoryFlag() };
 		getJdbcTemplate().update(query, args);
 	}
-	
+
 	public String getLeBookList(VisionUsersVb vObject) {
 		Object args[] = { vObject.getVisionId() };
 		List<AlphaSubTabVb> tempList = null;
@@ -2670,8 +2720,8 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		 * + " WHERE VISION_ID = ? "+
 		 * " AND INSTR(T2.LE_BOOK,T1.COUNTRY+ '-' +T1.LE_BOOK) > 0");
 		 */
-		StringBuffer strBuf = new StringBuffer(
-				"SELECT COUNTRY"+pipeLine+"' - '"+pipeLine+"LE_BOOK AS LE_BOOK FROM VISION_USERS_VW WHERE VISION_ID = ? AND COUNTRY IS NOT NULL AND LE_BOOK IS NOT NULL ");
+		StringBuffer strBuf = new StringBuffer("SELECT COUNTRY" + pipeLine + "' - '" + pipeLine
+				+ "LE_BOOK AS LE_BOOK FROM VISION_USERS_VW WHERE VISION_ID = ? AND COUNTRY IS NOT NULL AND LE_BOOK IS NOT NULL ");
 		try {
 			tempList = getJdbcTemplate().query(strBuf.toString(), args, getMapperLeBook());
 		} catch (Exception ex) {
@@ -2705,7 +2755,7 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		};
 		return mapper;
 	}
-	
+
 	public List<VisionUsersVb> getPasswordByVisionId(VisionUsersVb dObj) {
 		Object objParams[] = new Object[1];
 		StringBuffer strQueryAppr = new StringBuffer(
@@ -2744,7 +2794,7 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		};
 		return mapper;
 	}
-	
+
 	public String getAoBackup(String accountOfficer) {
 		String query = "";
 		String backupAo = "";
@@ -2762,7 +2812,7 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 			return backupAo;
 		}
 	}
-	
+
 	public VisionUsersVb callProcToResetPassword(VisionUsersVb vObj, String passwordType) {
 		strCurrentOperation = "Query";
 		strErrorDesc = "";
@@ -2816,16 +2866,17 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		}
 		return vObj;
 	}
-	
+
 	public int doDeleteOpt(int visionId) {
 		String query = "";
 		query = "delete from VISION_USER_OTP WHERE  VISION_ID = ?";
 		Object[] args = { visionId };
 		return getJdbcTemplate().update(query, args);
 	}
-	
+
 	public String getOtpByVisionId(int visionId) {
-		String sql = "SELECT "+nullFun+"(OTP_VALUE, 0) OTP_VALUE FROM VISION_USER_OTP WHERE VISION_ID =  " + visionId;
+		String sql = "SELECT " + nullFun + "(OTP_VALUE, 0) OTP_VALUE FROM VISION_USER_OTP WHERE VISION_ID =  "
+				+ visionId;
 		String i = "";
 		try {
 			i = getJdbcTemplate().queryForObject(sql, String.class);
@@ -2841,7 +2892,7 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 		Object[] args = { visionId, optValue };
 		return getJdbcTemplate().update(query, args);
 	}
-	
+
 //	@SuppressWarnings({ "static-access", "deprecation" })
 //	public ExceptionCode prepareAndSendMail(VisionUsersVb vObject, String otp, String resultForgotBy) {
 ////		ExceptionCode exceptionCode = new ExceptionCode();
@@ -3075,14 +3126,14 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 			Session session;
 
 			if (useAuth) {
-			    Authenticator auth = new Authenticator() {
-			        protected PasswordAuthentication getPasswordAuthentication() {
-			            return new PasswordAuthentication(username, password);
-			        }
-			    };
-			    session = Session.getInstance(props, auth);
+				Authenticator auth = new Authenticator() {
+					protected PasswordAuthentication getPasswordAuthentication() {
+						return new PasswordAuthentication(username, password);
+					}
+				};
+				session = Session.getInstance(props, auth);
 			} else {
-			    session = Session.getInstance(props);
+				session = Session.getInstance(props);
 			}
 
 			// Compose the email
@@ -3092,7 +3143,8 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 			vObject.setPassword1(otp);
 
 			if (ValidationUtil.isValid(vObject.getUserEmailId())) {
-			    message.addRecipient(Message.RecipientType.TO, new InternetAddress(vObject.getUserEmailId().toLowerCase()));
+				message.addRecipient(Message.RecipientType.TO,
+						new InternetAddress(vObject.getUserEmailId().toLowerCase()));
 			}
 			message.setFrom(new InternetAddress(username));
 
@@ -3101,19 +3153,19 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 			String vmFile = "";
 
 			if (ValidationUtil.isValid(resultForgotBy)) {
-			    map.put("subject", "Trouble Signing In");
-			    map.put("supportMailId", username);
-			    map.put("emailScheduler", vObject);
+				map.put("subject", "Trouble Signing In");
+				map.put("supportMailId", username);
+				map.put("emailScheduler", vObject);
 
-			    if ("Username".equalsIgnoreCase(resultForgotBy)) {
-			        vmFile = "SR_EMAIL_FORGOT_USERNAME.vm";
-			    } else if ("Password".equalsIgnoreCase(resultForgotBy)) {
-			        vmFile = "SR_EMAIL_FORGOT_PASSWORD.vm";
-			    }
+				if ("Username".equalsIgnoreCase(resultForgotBy)) {
+					vmFile = "SR_EMAIL_FORGOT_USERNAME.vm";
+				} else if ("Password".equalsIgnoreCase(resultForgotBy)) {
+					vmFile = "SR_EMAIL_FORGOT_PASSWORD.vm";
+				}
 			} else {
-			    map.put("emailScheduler", vObject);
-			    map.put("subject", "One Time Password");
-			    vmFile = "SR_EMAIL_AUTHENTICATE_CODE.vm";
+				map.put("emailScheduler", vObject);
+				map.put("subject", "One Time Password");
+				vmFile = "SR_EMAIL_AUTHENTICATE_CODE.vm";
 			}
 
 			msgBody = FreeMarkerTemplateUtils.processTemplateIntoString(config.getTemplate(vmFile), map);
@@ -3126,32 +3178,32 @@ public class VisionUsersDao extends AbstractDao<VisionUsersVb> implements Applic
 			message.setContent(multipart);
 
 			if (!ValidationUtil.isValid(resultForgotBy)) {
-			    message.setSubject("OTP to verify your Vision RegTech User Login Credentials");
+				message.setSubject("OTP to verify your Vision RegTech User Login Credentials");
 			} else {
-			    message.setSubject("Trouble Signing In");
+				message.setSubject("Trouble Signing In");
 			}
 
 			message.setSentDate(new Date());
 
 			// Send the email
 			if (useAuth) {
-			    Transport transport = session.getTransport("smtp");
-			    transport.connect(hostName, username, password);
-			    transport.sendMessage(message, message.getAllRecipients());
-			    transport.close();
+				Transport transport = session.getTransport("smtp");
+				transport.connect(hostName, username, password);
+				transport.sendMessage(message, message.getAllRecipients());
+				transport.close();
 			} else {
-			    Transport.send(message);
+				Transport.send(message);
 			}
 
 			exceptionCode.setErrorMsg("OTP sent successfully");
 			exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
 
 		} catch (Exception e) {
-		    e.printStackTrace();
-		    exceptionCode = CommonUtils.getResultObject("Email Schedule", Constants.ERRONEOUS_OPERATION, "E-Mail", "");
-		    exceptionCode.setErrorMsg("OTP sent failed");
-		    exceptionCode.setOtherInfo(vObject);
-		    return exceptionCode;
+			e.printStackTrace();
+			exceptionCode = CommonUtils.getResultObject("Email Schedule", Constants.ERRONEOUS_OPERATION, "E-Mail", "");
+			exceptionCode.setErrorMsg("OTP sent failed");
+			exceptionCode.setOtherInfo(vObject);
+			return exceptionCode;
 		}
 		return exceptionCode;
 

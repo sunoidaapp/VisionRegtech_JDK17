@@ -18,6 +18,7 @@ import com.vision.dao.TemplateScheduleDao;
 import com.vision.exception.ExceptionCode;
 import com.vision.util.Constants;
 import com.vision.util.ValidationUtil;
+import com.vision.vb.EmailProcessControlVb;
 import com.vision.vb.TemplateConfigVb;
 import com.vision.vb.TemplateScheduleVb;
 
@@ -29,6 +30,9 @@ public class TemplateScheduleCron {
 
 	@Value("${schedule.rgBuild}")
 	private String rgBuildFlag;
+
+	@Value("${email.alerts}")
+	private String mailAlertFlag;
 
 	@Autowired
 	TemplateScheduleCronDao templateScheduleCronDao;
@@ -96,22 +100,40 @@ public class TemplateScheduleCron {
 			String processStatus;
 			if (exceptionCode.getErrorCode() == Constants.SUCCESSFUL_OPERATION) {
 				processStatus = "SS";
+				EmailProcessControlVb templateAlertdetail = templateScheduleDao
+						.getDetailsForEmailAlert(templateScheduleVb, processStatus, "SUBMITTER_GOUP");
+				if (mailAlertFlag.equalsIgnoreCase("Y")) {
+					if (templateScheduleDao.getCountMailAlert(templateAlertdetail, processStatus) < 0) {
+						templateScheduleDao.insertEmailProcessAudit(templateAlertdetail, processStatus);
+					} else {
+						templateScheduleDao.doUpdateEmailProcessAudit(templateAlertdetail, processStatus);
+					}
+				}
 				templateScheduleVb.setProcessStatus(processStatus);
 				templateScheduleVb.setProcessStatusDesc("Submission Success");
 				exceptionCode.setErrorMsg("Submission Success");
 				logger.info("Single Submit Success for Template ID: {}", templateScheduleVb.getTemplateId());
 			} else {
 				processStatus = "SR";
+				if (mailAlertFlag.equalsIgnoreCase("Y")) {
+					EmailProcessControlVb templateAlertdetail = templateScheduleDao
+							.getDetailsForEmailAlert(templateScheduleVb, processStatus, "MAKER_GROUP");
+					if (templateScheduleDao.getCountMailAlert(templateAlertdetail, processStatus) < 0) {
+						templateScheduleDao.insertEmailProcessAudit(templateAlertdetail, processStatus);
+					} else {
+						templateScheduleDao.doUpdateEmailProcessAudit(templateAlertdetail, processStatus);
+					}
+				}
 				templateScheduleVb.setProcessStatus(processStatus);
 				templateScheduleVb.setProcessStatusDesc("Submission Failed !");
 				exceptionCode.setErrorMsg("Submission Failed");
 				logger.warn("Single Submit Failed for Template ID: {}", templateScheduleVb.getTemplateId());
 			}
-			String mailAlert = commonDao.findVisionVariableValue("RG_MAIL_FLAG");
-			mailAlert = ValidationUtil.isValid(mailAlert) ? mailAlert : "N";
-			if (mailAlert.equalsIgnoreCase("Y")) {
-				templateScheduleWb.alertMail(templateScheduleVb);
-			}
+//			String mailAlert = commonDao.findVisionVariableValue("RG_MAIL_FLAG");
+//			mailAlert = ValidationUtil.isValid(mailAlert) ? mailAlert : "N";
+//			if (mailAlert.equalsIgnoreCase("Y")) {
+//				templateScheduleWb.alertMail(templateScheduleVb);
+//			}
 			templateScheduleVb.setRecordIndicator(Constants.STATUS_ZERO);
 			templateScheduleCronDao.updateProcessControl1(processStatus, templateScheduleVb, true);
 			templateScheduleCronDao.updateProcessControlheader1(processStatus, (String) exceptionCode.getResponse1(),

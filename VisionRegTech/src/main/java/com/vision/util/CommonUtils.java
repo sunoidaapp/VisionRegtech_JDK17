@@ -52,10 +52,8 @@ public class CommonUtils {
 	private static String strSeverityFlags[] = new String[50];
 	private static String SPACE = " ";
 	private static final SecureRandom random = new SecureRandom();
-	private static final String ALPHA_NUM =
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
- 
+	private static final String ALPHA_NUM = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+	private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
 	static {
 		strErrMsgs[0] = new String("System error.  Contact System Admin");
@@ -623,13 +621,16 @@ public class CommonUtils {
 			} else if ("MSSQL".equalsIgnoreCase(dataBaseType)) {
 				if (ValidationUtil.isValid(dbInstance) && ValidationUtil.isValid(hostName)) {
 					jdbcUrl = "jdbc:sqlserver://" + dbIP + ":" + dbPortNumber + ";instanceName=" + dbInstance
-							+ ";databaseName=" + hostName+";encrypt =false";
+							+ ";databaseName=" + hostName + ";encrypt =false";
 				} else if (ValidationUtil.isValid(dbInstance) && !ValidationUtil.isValid(hostName)) {
-					jdbcUrl = "jdbc:sqlserver://" + dbIP + ":" + dbPortNumber + ";instanceName=" + dbInstance+";encrypt=false";
+					jdbcUrl = "jdbc:sqlserver://" + dbIP + ":" + dbPortNumber + ";instanceName=" + dbInstance
+							+ ";encrypt=false";
 				} else if (!ValidationUtil.isValid(dbInstance) && ValidationUtil.isValid(hostName)) {
-					jdbcUrl = "jdbc:sqlserver://" + dbIP + ":" + dbPortNumber + ";databaseName=" + hostName+";encrypt=false";
+					jdbcUrl = "jdbc:sqlserver://" + dbIP + ":" + dbPortNumber + ";databaseName=" + hostName
+							+ ";encrypt=false";
 				} else {
-					jdbcUrl = "jdbc:sqlserver://" + dbIP + ":" + dbPortNumber + ";databaseName=" + hostName+";encrypt=false";
+					jdbcUrl = "jdbc:sqlserver://" + dbIP + ":" + dbPortNumber + ";databaseName=" + hostName
+							+ ";encrypt=false";
 				}
 
 				con = getDbConnection(jdbcUrl, dbUserName, dbPassWord, "MSSQL", version);
@@ -1005,13 +1006,16 @@ public class CommonUtils {
 		} else if ("MSSQL".equalsIgnoreCase(dataBaseType)) {
 			if (ValidationUtil.isValid(dbInstance) && ValidationUtil.isValid(dataBaseName)) {
 				jdbcUrl = "jdbc:sqlserver://" + dbIP + ":" + dbPortNumber + ";instanceName=" + dbInstance
-						+ ";databaseName=" + dataBaseName;
+						+ ";databaseName=" + dataBaseName + ";encrypt=true;trustServerCertificate=true";
 			} else if (ValidationUtil.isValid(dbInstance) && !ValidationUtil.isValid(dataBaseName)) {
-				jdbcUrl = "jdbc:sqlserver://" + dbIP + ":" + dbPortNumber + ";instanceName=" + dbInstance;
+				jdbcUrl = "jdbc:sqlserver://" + dbIP + ":" + dbPortNumber + ";instanceName=" + dbInstance
+						+ ";encrypt=true;trustServerCertificate=true";
 			} else if (!ValidationUtil.isValid(dbInstance) && ValidationUtil.isValid(dataBaseName)) {
-				jdbcUrl = "jdbc:sqlserver://" + dbIP + ":" + dbPortNumber + ";dataBaseName=" + dataBaseName;
+				jdbcUrl = "jdbc:sqlserver://" + dbIP + ":" + dbPortNumber + ";databaseName=" + dataBaseName
+						+ ";encrypt=true;trustServerCertificate=true";
 			} else {
-				jdbcUrl = "jdbc:sqlserver://" + dbIP + ":" + dbPortNumber + ";databaseName=" + dataBaseName;
+				jdbcUrl = "jdbc:sqlserver://" + dbIP + ":" + dbPortNumber + ";databaseName=" + dataBaseName
+						+ ";encrypt=true;trustServerCertificate=true";
 			}
 
 			con = getDbConnection(jdbcUrl, dbUserName, dbPassWord, "MSSQL", version);
@@ -1242,15 +1246,15 @@ public class CommonUtils {
 
 		int paddingLeft = 10;
 		int paddingRight = 10;
-		int spacing = 5;  // space between chars
+		int spacing = 5; // space between chars
 
 		// Calculate width of entire text with spacing between chars
 		int totalWidth = paddingLeft + paddingRight;
 		for (int i = 0; i < text.length(); i++) {
-		    totalWidth += fm.charWidth(text.charAt(i));
-		    if (i < text.length() - 1) {
-		        totalWidth += spacing; // spacing between chars
-		    }
+			totalWidth += fm.charWidth(text.charAt(i));
+			if (i < text.length() - 1) {
+				totalWidth += spacing; // spacing between chars
+			}
 		}
 
 		int height = 60;
@@ -1273,8 +1277,8 @@ public class CommonUtils {
 		int y = (height + fm.getAscent()) / 2 - 5;
 
 		for (char c : text.toCharArray()) {
-		    g2d.drawString(String.valueOf(c), x, y);
-		    x += fm.charWidth(c) + spacing;
+			g2d.drawString(String.valueOf(c), x, y);
+			x += fm.charWidth(c) + spacing;
 		}
 
 		g2d.dispose();
@@ -1301,65 +1305,68 @@ public class CommonUtils {
 		int b = min + random.nextInt(max - min);
 		return new Color(r, g, b);
 	}
+
 	public static <T> String replaceCharacterRanges(T input) {
-        String stringInput = String.valueOf(input);
-        // Replace A-Z with 'A'
-        String replaced = stringInput.replaceAll("[A-Z]", "A");
+		String stringInput = String.valueOf(input);
+		// Replace A-Z with 'A'
+		String replaced = stringInput.replaceAll("[A-Z]", "A");
 
-        // Replace a-z with 'a'
-        replaced = replaced.replaceAll("[a-z]", "a");
+		// Replace a-z with 'a'
+		replaced = replaced.replaceAll("[a-z]", "a");
 
-        // Replace 0-9 with '#'
-        replaced = replaced.replaceAll("[0-9]", "#");
+		// Replace 0-9 with '#'
+		replaced = replaced.replaceAll("[0-9]", "#");
 
-        return replaced;
-    }
+		return replaced;
+	}
+
 	public static String toCamelCase(String input) {
-	    StringBuilder sb = new StringBuilder();
-	    boolean nextUpper = false;
+		StringBuilder sb = new StringBuilder();
+		boolean nextUpper = false;
 
-	    for (int i = 0; i < input.length(); i++) {
-	        char c = input.charAt(i);
-	        if (c == ' ' || c == '_' || c == '-') {
-	            nextUpper = true;
-	        } else {
-	            if (sb.length() == 0) {
-	                sb.append(Character.toLowerCase(c));
-	            } else if (nextUpper) {
-	                sb.append(Character.toUpperCase(c));
-	                nextUpper = false;
-	            } else {
-	                sb.append(Character.toLowerCase(c));
-	            }
-	        }
-	    }
-	    return sb.toString();
+		for (int i = 0; i < input.length(); i++) {
+			char c = input.charAt(i);
+			if (c == ' ' || c == '_' || c == '-') {
+				nextUpper = true;
+			} else {
+				if (sb.length() == 0) {
+					sb.append(Character.toLowerCase(c));
+				} else if (nextUpper) {
+					sb.append(Character.toUpperCase(c));
+					nextUpper = false;
+				} else {
+					sb.append(Character.toLowerCase(c));
+				}
+			}
+		}
+		return sb.toString();
 	}
-	
+
 	public static String toPascalCaseKeepUnderscore(String input) {
-	    StringBuilder sb = new StringBuilder();
-	    boolean nextUpper = true; // capitalize first character
+		StringBuilder sb = new StringBuilder();
+		boolean nextUpper = true; // capitalize first character
 
-	    for (int i = 0; i < input.length(); i++) {
-	        char c = input.charAt(i);
-	        if (c == ' ' || c == '-') { // remove spaces and hyphens
-	            nextUpper = true;
-	        } else {
-	            if (nextUpper) {
-	                sb.append(Character.toUpperCase(c));
-	                nextUpper = false;
-	            } else {
-	                sb.append(c); // keep underscore and other characters as-is
-	            }
-	        }
-	    }
-	    return sb.toString();
+		for (int i = 0; i < input.length(); i++) {
+			char c = input.charAt(i);
+			if (c == ' ' || c == '-') { // remove spaces and hyphens
+				nextUpper = true;
+			} else {
+				if (nextUpper) {
+					sb.append(Character.toUpperCase(c));
+					nextUpper = false;
+				} else {
+					sb.append(c); // keep underscore and other characters as-is
+				}
+			}
+		}
+		return sb.toString();
 	}
+
 	public static String generateRandom32() {
-        StringBuilder sb = new StringBuilder(32);
-        for (int i = 0; i < 32; i++) {
-            sb.append(ALPHA_NUM.charAt(SECURE_RANDOM.nextInt(ALPHA_NUM.length())));
-        }
-        return sb.toString();
-    }
+		StringBuilder sb = new StringBuilder(32);
+		for (int i = 0; i < 32; i++) {
+			sb.append(ALPHA_NUM.charAt(SECURE_RANDOM.nextInt(ALPHA_NUM.length())));
+		}
+		return sb.toString();
+	}
 }

@@ -117,6 +117,7 @@ public class EmailScheduleDao extends AbstractDao<EmailScheduleVb> {
 		props.put("mail.smtp.port", "587");
 		props.put("mail.smtp.connectiontimeout", "10000");
 		props.put("mail.smtp.timeout", "10000");
+		props.put("mail.smtp.writetimeout", "10000");
 
 		Session session = Session.getInstance(props, new jakarta.mail.Authenticator() {
 			protected PasswordAuthentication getPasswordAuthentication() {
@@ -348,46 +349,54 @@ public class EmailScheduleDao extends AbstractDao<EmailScheduleVb> {
 //		return htmlTable.toString();
 //	}
 	public String emailData(EmailScheduleVb emailScheduleVb) {
-	    StringBuilder htmlTable = new StringBuilder();
+		StringBuilder htmlTable = new StringBuilder();
 
-	    // HTML table header with color style
-	    htmlTable.append(
-	            "<table width=\"80%\" cellspacing=0 cellpadding=0 align=center style=\"font:normal 12px Arial,Helvetica,sans-serif;border:solid 4px "
-	                    + "#006599;border-top:none\">\r\n" + "  <tbody><tr>\r\n"
-	                    + "    <td valign=top><table width=\"100%\" cellspacing=0 cellpadding=0 border=0 >\r\n"
-	                    + "      <tbody><tr>\r\n"
-	                    + "        <td height=41 style=\"font:normal 14px Arial,Helvetica,sans-serif;color:#FFF;padding:0px 4px;background-color:#006599;\" ><strong> GDI Submission Status Report </strong></td>\r\n"
-	                    + "      </tr>\r\n" + "    </tbody></table>\r\n"
-	                    + "<table width=\"100%\" cellspacing=0 cellpadding=0 border=0 style=\"font-size:12px;border: 1px solid #dfe8f6 !important;\">\r\n"
-	                    + "  <tbody>");
+		// HTML table header with color style
+		htmlTable.append(
+				"<table width=\"80%\" cellspacing=0 cellpadding=0 align=center style=\"font:normal 12px Arial,Helvetica,sans-serif;border:solid 4px "
+						+ "#006599;border-top:none\">\r\n" + "  <tbody><tr>\r\n"
+						+ "    <td valign=top><table width=\"100%\" cellspacing=0 cellpadding=0 border=0 >\r\n"
+						+ "      <tbody><tr>\r\n"
+						+ "        <td height=41 style=\"font:normal 14px Arial,Helvetica,sans-serif;color:#FFF;padding:0px 4px;background-color:#006599;\" ><strong> GDI Submission Status Report </strong></td>\r\n"
+						+ "      </tr>\r\n" + "    </tbody></table>\r\n"
+						+ "<table width=\"100%\" cellspacing=0 cellpadding=0 border=0 style=\"font-size:12px;border: 1px solid #dfe8f6 !important;\">\r\n"
+						+ "  <tbody>");
 
-	    // HTML Table header
-	    htmlTable.append("<tr style=\"background-color: #1a1c1b;\">");
-	    htmlTable.append("<th style ='background-color: #1E8B75;border-right: 1px solid #FFF;color: white; padding: 5px;text-align: center;border-collapse: collapse;'>")
-	            .append("TEMPLATE_ID").append("</th>");
-	    htmlTable.append("<th style ='background-color: #1E8B75;border-right: 1px solid #FFF;color: white; padding: 5px;text-align: center;border-collapse: collapse;'>")
-	            .append("TEMPLATE_DESCRIPTION").append("</th>");
-	    htmlTable.append("<th style ='background-color: #1E8B75;border-right: 1px solid #FFF;color: white; padding: 5px;text-align: center;border-collapse: collapse;'>")
-	            .append("PROCESS_FREQUENCY").append("</th>");
-	    htmlTable.append("<th style ='background-color: #1E8B75;border-right: 1px solid #FFF;color: white; padding: 5px;text-align: center;border-collapse: collapse;'>")
-	            .append("SCHEDULE_DATE").append("</th>");
-	    htmlTable.append("</tr>");
+		// HTML Table header
+		htmlTable.append("<tr style=\"background-color: #1a1c1b;\">");
+		htmlTable.append(
+				"<th style ='background-color: #1E8B75;border-right: 1px solid #FFF;color: white; padding: 5px;text-align: center;border-collapse: collapse;'>")
+				.append("TEMPLATE_ID").append("</th>");
+		htmlTable.append(
+				"<th style ='background-color: #1E8B75;border-right: 1px solid #FFF;color: white; padding: 5px;text-align: center;border-collapse: collapse;'>")
+				.append("TEMPLATE_DESCRIPTION").append("</th>");
+		htmlTable.append(
+				"<th style ='background-color: #1E8B75;border-right: 1px solid #FFF;color: white; padding: 5px;text-align: center;border-collapse: collapse;'>")
+				.append("PROCESS_FREQUENCY").append("</th>");
+		htmlTable.append(
+				"<th style ='background-color: #1E8B75;border-right: 1px solid #FFF;color: white; padding: 5px;text-align: center;border-collapse: collapse;'>")
+				.append("SCHEDULE_DATE").append("</th>");
+		htmlTable.append("</tr>");
 
-	    // Extract values from the single EmailScheduleVb object
-	    htmlTable.append("<tr>");
-	    htmlTable.append("<td style = \"background-color: #FFF; font-size:11px !important;padding: 5px; text-align: left;border-right: 1px solid #CCC;border-collapse: collapse;\" >")
-	            .append(emailScheduleVb.getTemplateId()).append("</td>");
-	    htmlTable.append("<td style = \"background-color: #FFF; font-size:11px !important;padding: 5px; text-align: left;border-right: 1px solid #CCC;border-collapse: collapse;\" >")
-	            .append(emailScheduleVb.getTemplateDesc()).append("</td>");
-	    htmlTable.append("<td style = \"background-color: #FFF; font-size:11px !important;padding: 5px; text-align: left;border-right: 1px solid #CCC;border-collapse: collapse;\" >")
-	            .append(emailScheduleVb.getProcessFrequency()).append("</td>");
-	    htmlTable.append("<td style = \"background-color: #FFF; font-size:11px !important;padding: 5px; text-align: left;border-right: 1px solid #CCC;border-collapse: collapse;\" >")
-	            .append(emailScheduleVb.getSheduleDate()).append("</td>");
-	    htmlTable.append("</tr>");
+		// Extract values from the single EmailScheduleVb object
+		htmlTable.append("<tr>");
+		htmlTable.append(
+				"<td style = \"background-color: #FFF; font-size:11px !important;padding: 5px; text-align: left;border-right: 1px solid #CCC;border-collapse: collapse;\" >")
+				.append(emailScheduleVb.getTemplateId()).append("</td>");
+		htmlTable.append(
+				"<td style = \"background-color: #FFF; font-size:11px !important;padding: 5px; text-align: left;border-right: 1px solid #CCC;border-collapse: collapse;\" >")
+				.append(emailScheduleVb.getTemplateDesc()).append("</td>");
+		htmlTable.append(
+				"<td style = \"background-color: #FFF; font-size:11px !important;padding: 5px; text-align: left;border-right: 1px solid #CCC;border-collapse: collapse;\" >")
+				.append(emailScheduleVb.getProcessFrequency()).append("</td>");
+		htmlTable.append(
+				"<td style = \"background-color: #FFF; font-size:11px !important;padding: 5px; text-align: left;border-right: 1px solid #CCC;border-collapse: collapse;\" >")
+				.append(emailScheduleVb.getSheduleDate()).append("</td>");
+		htmlTable.append("</tr>");
 
-	    htmlTable.append("</tbody></table></body></html>");
+		htmlTable.append("</tbody></table></body></html>");
 
-	    return htmlTable.toString();
+		return htmlTable.toString();
 	}
 
 	private String convertToReadableFormat(String columnName) {

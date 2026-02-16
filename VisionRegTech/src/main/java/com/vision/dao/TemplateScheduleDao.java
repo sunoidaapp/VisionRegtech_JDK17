@@ -10,15 +10,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.sql.CallableStatement;
+import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Time;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -32,7 +36,6 @@ import java.util.StringJoiner;
 import java.util.Vector;
 import java.util.stream.Collectors;
 
-import jakarta.servlet.ServletContext;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -42,7 +45,6 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.DataFormat;
@@ -69,7 +71,6 @@ import org.springframework.web.context.ServletContextAware;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-import com.itextpdf.styledxmlparser.jsoup.parser.XmlTreeBuilder;
 import com.vision.authentication.SessionContextHolder;
 import com.vision.exception.ExceptionCode;
 import com.vision.exception.RuntimeCustomException;
@@ -79,7 +80,7 @@ import com.vision.util.ExcelExportUtil;
 import com.vision.util.ValidationUtil;
 import com.vision.vb.ColumnHeadersVb;
 import com.vision.vb.CommonVb;
-import com.vision.vb.CustomersVb;
+import com.vision.vb.EmailProcessControlVb;
 import com.vision.vb.NumSubTabVb;
 import com.vision.vb.ReportsVb;
 import com.vision.vb.TemplateConfigVb;
@@ -88,6 +89,8 @@ import com.vision.vb.TemplateMappingVb;
 import com.vision.vb.TemplateScheduleVb;
 import com.vision.vb.VisionUsersVb;
 import com.vision.wb.TemplateConfigWb;
+
+import jakarta.servlet.ServletContext;
 
 @Component
 public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> implements ServletContextAware {
@@ -100,6 +103,9 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 	@Value("${app.decimal.precision}")
 	private String precisionFlag;
 	private ServletContext servletContext;
+
+	@Value("${email.alerts}")
+	private String mailAlertFlag;
 
 	public void setServletContext(ServletContext arg0) {
 		servletContext = arg0;
@@ -525,8 +531,8 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 				+ dbFunctionFormats("TAPPR.DATE_LAST_MODIFIED", "DATETIME_FORMAT", null) + " DATE_LAST_MODIFIED," + " "
 				+ dbFunctionFormats("TAPPR.DATE_CREATION", "DATETIME_FORMAT", null)
 				+ " DATE_CREATION,TAPPR.RG_SUBMISSION_TIME,TAPPR.AUTO_SUBMIT,"
-				+ "TAPPR.DATALIST,TAPPR.CATEGORY_TYPE,TAPPR.CBK_FILE_NAME,TAppr.INTERNAL_STATUS" + " FROM RG_TEMPLATE_CONFIG TAPPR"
-				+ " ,NUM_SUB_TAB T3,NUM_SUB_TAB T4 Where "
+				+ "TAPPR.DATALIST,TAPPR.CATEGORY_TYPE,TAPPR.CBK_FILE_NAME,TAppr.INTERNAL_STATUS"
+				+ " FROM RG_TEMPLATE_CONFIG TAPPR" + " ,NUM_SUB_TAB T3,NUM_SUB_TAB T4 Where "
 				+ " t3.NUM_tab =  TAPPR.TEMPLATE_STATUS_NT AND t3.NUM_sub_tab = TAPPR.TEMPLATE_STATUS"
 				+ " AND t4.NUM_tab = TAPPR.RECORD_INDICATOR_NT AND t4.NUM_sub_tab = TAPPR.RECORD_INDICATOR"
 				+ " AND TAPPR.COUNTRY =? AND TAPPR.LE_BOOK = ? AND  TAPPR.TEMPLATE_ID = ?");
@@ -586,7 +592,7 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 				vObject.setSubmissionTime(rs.getString("RG_SUBMISSION_TIME"));
 				vObject.setCbkFileName(rs.getString("CBK_FILE_NAME"));
 				vObject.setCategoryType(rs.getString("CATEGORY_TYPE"));
-				vObject.setInternalStatus(rs.getInt("INTERNAL_STATUS"));;
+				vObject.setInternalStatus(rs.getInt("INTERNAL_STATUS"));
 				return vObject;
 			}
 		};
@@ -602,37 +608,83 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 				int columnCount = metaData.getColumnCount();
 
 				Map<String, Object> row = new HashMap<>(columnCount);
-
 				for (int i = 1; i <= columnCount; i++) {
-					String columnName = metaData.getColumnName(i);
-					Object columnValue = rs.getObject(i);
-					int columnType = metaData.getColumnType(i);
-					if (columnValue == null) {
-						columnValue = "";
-					} else if (columnValue instanceof Timestamp) {
-						Timestamp timestamp = (Timestamp) columnValue;
-						String timestampString = timestamp.toString();
 
-						if (timestampString.contains(" ")) {
-							SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd");
-							SimpleDateFormat outputFormat = new SimpleDateFormat("dd-MMM-yyyy");
+					String columnName = metaData.getColumnName(i);
+					int columnType = metaData.getColumnType(i);
+					Object columnValue = "";
+
+					switch (columnType) {
+
+					case Types.TIMESTAMP:
+					case Types.TIMESTAMP_WITH_TIMEZONE: {
+						Timestamp ts = rs.getTimestamp(i);
+						columnValue = (ts != null) ? ts.toString() : "";
+						break;
+					}
+
+					case Types.DATE: {
+						Date dt = rs.getDate(i);
+						columnValue = (dt != null) ? dt.toString() : "";
+						break;
+					}
+
+					case Types.TIME:
+					case Types.TIME_WITH_TIMEZONE: {
+						Time tm = rs.getTime(i);
+						columnValue = (tm != null) ? tm.toString() : "";
+						break;
+					}
+
+					case Types.NUMERIC:
+					case Types.DECIMAL: {
+						BigDecimal bd = rs.getBigDecimal(i);
+						columnValue = (bd != null) ? bd.toPlainString() : "";
+						break;
+					}
+
+					case Types.INTEGER:
+					case Types.BIGINT:
+					case Types.SMALLINT:
+					case Types.TINYINT:
+					case Types.FLOAT:
+					case Types.DOUBLE: {
+						Object num = rs.getObject(i);
+						columnValue = (num != null) ? num.toString() : "";
+						break;
+					}
+
+					case Types.BLOB:
+					case Types.BINARY:
+					case Types.VARBINARY:
+					case Types.LONGVARBINARY: {
+						InputStream is = rs.getBinaryStream(i);
+						if (is != null) {
+							byte[] bytes = null;
 							try {
-								Date date = inputFormat.parse(timestampString);
-								// Format the Date to the desired output format
-								columnValue = outputFormat.format(date);
-							} catch (Exception e) {
+								bytes = is.readAllBytes();
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
+							columnValue = Base64.getEncoder().encodeToString(bytes);
 						}
+						break;
+					}
 
-					} else if (columnType == java.sql.Types.NUMERIC && metaData.getScale(i) > 0) {
-						if (columnValue != null) {
-							BigDecimal bigDecimalValue = new BigDecimal(columnValue.toString());
-							columnValue = bigDecimalValue.toPlainString();
+					case Types.CLOB:
+					case Types.NCLOB: {
+						Clob clob = rs.getClob(i);
+						if (clob != null) {
+							columnValue = clob.getSubString(1, (int) clob.length());
 						}
-					} else if (columnValue instanceof Integer || columnValue instanceof Long
-							|| columnValue instanceof Float || columnValue instanceof Double) {
-						columnValue = columnValue.toString();
+						break;
+					}
+
+					default: {
+						Object val = rs.getObject(i);
+						columnValue = (val != null) ? val.toString() : "";
+					}
 					}
 
 					row.put(columnName, columnValue);
@@ -709,7 +761,7 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 					query.append(" AND     TAPPR.COUNTRY = T3.COUNTRY    AND TAPPR.LE_BOOK = T3.LE_BOOK"
 //							+ "       AND TAPPR.CUSTOMER_ID = T3.CUSTOMER_ID"
 //							+ "       AND TAPPR.MESSAGE_REF_ID = T2.MESSAGE_REF_ID"
-							);
+					);
 				}
 				StringBuffer newQuery = new StringBuffer("SELECT * FROM (" + query + ") TAPPR");
 				query = newQuery;
@@ -720,6 +772,8 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 					vObject.getSourceTable().toUpperCase().trim() + "_PEND");
 			StringBuffer queryPend = new StringBuffer(pend);
 			String orderBy = " ORDER BY ROW_ID,VERSION_NO DESC";
+			String maxRecords = commonDao.findVisionVariableValue("PRD_REPORT_MAXFETCH");
+			dObj.setMaxRecords(Integer.parseInt(ValidationUtil.isValid(maxRecords) ? maxRecords : "5000"));
 			return getQueryPopupResults(dObj, queryPend, query, whereNotExists, orderBy, params);
 
 		} catch (Exception e) {
@@ -884,7 +938,7 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 					colHeaders = getColumnHeaders(columnHeaderXml);
 					templateScheduleVb.setColumnHeaderLst(colHeaders);
 				}
-				List<TemplateScheduleVb> collTemp =new ArrayList<>();
+				List<TemplateScheduleVb> collTemp = new ArrayList<>();
 				if ("HIS".equalsIgnoreCase(dObj.getTable())) {
 					collTemp = extractHistoryData(dObj, vObject);
 				} else {
@@ -948,10 +1002,9 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 //				+ " and T1.submission_date = T2.submission_date   "
 				+ logCondition + " AND T1.Country = ? And T1.Le_Book = ? " + "And T1.REPORTING_DATE = " + dateConvert
 //				+ " and t1.submission_date = " + dateConvert + ""
-						+ " And T1.TEMPLATE_ID = ?");
+				+ " And T1.TEMPLATE_ID = ?");
 		String orderBy = " Order by Audit_Trail_Sequence_Id desc";
-		Object[] params = { dObj.getCountry(), dObj.getLeBook(), dObj.getReportingDate(),
-				dObj.getTemplateId() };
+		Object[] params = { dObj.getCountry(), dObj.getLeBook(), dObj.getReportingDate(), dObj.getTemplateId() };
 		List<TemplateScheduleVb> collTemp = null;
 		try {
 			collTemp = getJdbcTemplate().query(query.concat(" " + orderBy), params, getMapperAudit());
@@ -1330,21 +1383,20 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 			exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
 			exceptionCode.setErrorMsg(parseErrorMsg(e));
 			return exceptionCode;
-		}catch (UncategorizedSQLException e) {
+		} catch (UncategorizedSQLException e) {
 			exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
 			exceptionCode.setErrorMsg(parseErrorMsg(e));
 			return exceptionCode;
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
 			exceptionCode.setErrorMsg(e.getMessage());
 		}
-			if (retVal == Constants.ERRONEOUS_OPERATION) {
-				exceptionCode = getResultObject(retVal);
-				throw buildRuntimeCustomException(exceptionCode);
-			} else {
-				exceptionCode = getResultObject(Constants.SUCCESSFUL_OPERATION);
-			}
+		if (retVal == Constants.ERRONEOUS_OPERATION) {
+			exceptionCode = getResultObject(retVal);
+			throw buildRuntimeCustomException(exceptionCode);
+		} else {
+			exceptionCode = getResultObject(Constants.SUCCESSFUL_OPERATION);
+		}
 		return exceptionCode;
 
 	}
@@ -1464,31 +1516,29 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 		String startDate = "";
 		String endDate = "";
 		String cond = "";
-		String dependentCond =" ";
-		String listTaggCond =" ";
-		String cbStatus= "";
-		String cbStatusGroupBy= "";
+		String dependentCond = " ";
+		String listTaggCond = " ";
+		String cbStatus = "";
+		String cbStatusGroupBy = "";
 		if (dObj.getCategoryType().equalsIgnoreCase("RG")) {
 			dependentCond = "	 JOIN RG_TEMPLATE_DEPENDENCY  T4 " + "	 ON     T3.TEMPLATE_ID = T4.TEMPLATE_NAME "
 					+ "	AND T3.COUNTRY = T4.COUNTRY " + "	  AND T3.LE_BOOK = T4.LE_BOOK "
-					+ " JOIN RG_PROCESS_CONTROLS T3D  "
-					+ "    ON T3D.TEMPLATE_ID = T4.DEPENDENT_TEMPLATE "
-					+ "   AND T3D.COUNTRY     = T4.COUNTRY "
-					+ "   AND T3D.LE_BOOK     = T4.LE_BOOK "
+					+ " JOIN RG_PROCESS_CONTROLS T3D  " + "    ON T3D.TEMPLATE_ID = T4.DEPENDENT_TEMPLATE "
+					+ "   AND T3D.COUNTRY     = T4.COUNTRY " + "   AND T3D.LE_BOOK     = T4.LE_BOOK "
 					+ "    JOIN RG_TEMPLATE_CONFIG T2D "
 					+ "             ON     T4.DEPENDENT_TEMPLATE = T2D.TEMPLATE_ID "
 					+ "                AND T4.COUNTRY = T2D.COUNTRY "
 					+ "                AND T4.LE_BOOK = T2D.LE_BOOK  ";
-			
-			listTaggCond = " , "+getDbFunction("STRING_AGG")+"(T4.DEPENDENT_TEMPLATE "+getDbFunction("PIPELINE")+" '|' "+getDbFunction("PIPELINE")+" T3D.RG_PROCESS_STATUS"+getDbFunction("PIPELINE")+" '|'"+getDbFunction("PIPELINE")+" T2D.TEMPLATE_DESCRIPTION, '||') "
+
+			listTaggCond = " , " + getDbFunction("STRING_AGG") + "(T4.DEPENDENT_TEMPLATE " + getDbFunction("PIPELINE")
+					+ " '|' " + getDbFunction("PIPELINE") + " T3D.RG_PROCESS_STATUS" + getDbFunction("PIPELINE")
+					+ " '|'" + getDbFunction("PIPELINE") + " T2D.TEMPLATE_DESCRIPTION, '||') "
 					+ "	WITHIN GROUP (ORDER BY T4.SUBMISSION_ORDER)  DEPENDENT_TEMPLATES ";
 		}
-		 cbStatus = "ORACLE".equalsIgnoreCase(databaseType)
-			        ? " DBMS_LOB.SUBSTR(T1.CB_STATUS, 4000, 1) AS CB_STATUS "
-			        : " T1.CB_STATUS ";
-		 cbStatusGroupBy = "ORACLE".equalsIgnoreCase(databaseType)
-			        ? " DBMS_LOB.SUBSTR(T1.CB_STATUS, 4000, 1)  "
-			        : " T1.CB_STATUS ";
+		cbStatus = "ORACLE".equalsIgnoreCase(databaseType) ? " DBMS_LOB.SUBSTR(T1.CB_STATUS, 4000, 1) AS CB_STATUS "
+				: " T1.CB_STATUS ";
+		cbStatusGroupBy = "ORACLE".equalsIgnoreCase(databaseType) ? " DBMS_LOB.SUBSTR(T1.CB_STATUS, 4000, 1)  "
+				: " T1.CB_STATUS ";
 		try {
 			StringBuffer strQueryAppr = new StringBuffer(" SELECT " + "		 T1.TEMPLATE_ID ," + "		 T1.COUNTRY,"
 					+ "	     T1.LE_BOOK," + "      T1.TEMPLATE_NAME ," + "      T2.PROCESS_FREQUENCY ,"
@@ -1505,27 +1555,24 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 					+ dateFormatStr + ")PROCESS_START_TIME, T2.CATEGORY_TYPE ," + "t1.template_id " + pipeLine + " '_' "
 					+ pipeLine + dateFormat + "      (T1.REPORTING_DATE ," + formatdate + ") " + pipeLine
 					+ " '.JSON' AS Jsonfile," + dateFormat + "      (T1.SUBMISSION_DATE ," + formatdate
-					+ ")SUBMISSION_DATE," + " T2.cbk_file_name  CSV_FILE_NAME," + " T1.REQUEST_NO, "+cbStatus+" , "
+					+ ")SUBMISSION_DATE," + " T2.cbk_file_name  CSV_FILE_NAME," + " T1.REQUEST_NO, " + cbStatus + " , "
 					+ " (SELECT MIN(USER_NAME) FROM VISION_USERS WHERE VISION_ID = " + getDbFunction("NVL")
-					+ "(T1.SUBMITTER,0) ) SUBMITTER_NAME,T1.SUBMITTER," 
-					+ "  'ACTUAL' TABLES" + "  "+listTaggCond
-					+ "FROM RG_TEMPLATES_HEADER T1 "
-					+ " JOIN RG_TEMPLATE_CONFIG T2  " + "     ON T1.TEMPLATE_ID = T2.TEMPLATE_ID "
-					+ "     AND T1.COUNTRY = T2.COUNTRY " + "     AND T1.LE_BOOK = T2.LE_BOOK AND T1.STATUS !=' ' "
-					+ " JOIN RG_PROCESS_CONTROLS T3  " + "     ON T1.TEMPLATE_ID = T3.TEMPLATE_ID "
-					+ "     AND T1.SUBMISSION_DATE = T3.SUBMISSION_DATE " + "     AND T1.COUNTRY = T3.COUNTRY "
-					+ "     AND T1.LE_BOOK = T3.LE_BOOK " + " JOIN PRD_TEMPLATE_ACCESS A1  "
-					+ "     ON T1.TEMPLATE_ID = A1.TEMPLATE_ID " + "     AND A1.USER_GROUP = '" + userGroup
-					+ "'     AND A1.USER_PROFILE =  '" + userProfile + "'"
-					+dependentCond
-					+ "	WHERE  " + "     T2.TEMPLATE_STATUS = 0 ");
+					+ "(T1.SUBMITTER,0) ) SUBMITTER_NAME,T1.SUBMITTER," + "  'ACTUAL' TABLES" + "  " + listTaggCond
+					+ "FROM RG_TEMPLATES_HEADER T1 " + " JOIN RG_TEMPLATE_CONFIG T2  "
+					+ "     ON T1.TEMPLATE_ID = T2.TEMPLATE_ID " + "     AND T1.COUNTRY = T2.COUNTRY "
+					+ "     AND T1.LE_BOOK = T2.LE_BOOK AND T1.STATUS !=' ' " + " JOIN RG_PROCESS_CONTROLS T3  "
+					+ "     ON T1.TEMPLATE_ID = T3.TEMPLATE_ID " + "     AND T1.SUBMISSION_DATE = T3.SUBMISSION_DATE "
+					+ "     AND T1.COUNTRY = T3.COUNTRY " + "     AND T1.LE_BOOK = T3.LE_BOOK "
+					+ " JOIN PRD_TEMPLATE_ACCESS A1  " + "     ON T1.TEMPLATE_ID = A1.TEMPLATE_ID "
+					+ "     AND A1.USER_GROUP = '" + userGroup + "'     AND A1.USER_PROFILE =  '" + userProfile + "'"
+					+ dependentCond + "	WHERE  " + "     T2.TEMPLATE_STATUS = 0 ");
 
 			String orderBy = "  ORDER BY T1.SUBMISSION_DATE, " + "  CASE t2.PROCESS_FREQUENCY " + "  WHEN 'I' THEN 1 "
 					+ "  WHEN 'D' THEN 2 " + "  WHEN 'W' THEN 3 " + "  WHEN 'M' THEN 4 " + "  WHEN 'Q' THEN 5 "
 					+ "  WHEN 'H' THEN 6 " + "  WHEN 'A' THEN 7 " + "  ELSE 8          " + "  END				"
 					+ " , TEMPLATE_ID    ";
-			String groupBy ="""
-					GROUP BY  
+			String groupBy = """
+					GROUP BY
 					T1.TEMPLATE_ID,
 					         T1.COUNTRY,
 					         T1.LE_BOOK,
@@ -1572,7 +1619,7 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 					if (dObj.getCategoryType().equalsIgnoreCase("RG")) {
 						strQueryAppr.append(groupBy);
 					}
-					
+
 					strQueryAppr.append(orderBy);
 					collTemp = getJdbcTemplate().query(strQueryAppr.toString(), getTemplateScheduleDetailsMapper());
 				} else {
@@ -1621,8 +1668,6 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 		}
 		return exceptionCode;
 	}
-
- 
 
 	protected RowMapper getTemplateScheduleDetailsMapper() {
 		RowMapper mapper = new RowMapper() {
@@ -1898,7 +1943,7 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 				vObject.setVerifier(0);
 				System.out.println("1");
 				retVal = updateTemplateHeaders(vObject, true);
-				retVal =updateProcessControls(vObject, true);
+				retVal = updateProcessControls(vObject, true);
 				exceptionCode = getResultObject(retVal);
 				exceptionCode.setOtherInfo(vObject.getProcessStatus());
 			}
@@ -1940,7 +1985,15 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 			vObject.setVerifier(intCurrentUserId);
 			retVal = updateTemplateHeaders(vObject, false);
 			retVal = updateProcessControls(vObject, false);
-			if(retVal == Constants.SUCCESSFUL_OPERATION) {
+			if (mailAlertFlag.equalsIgnoreCase("Y")) {
+				EmailProcessControlVb templateAlertdetail = getDetailsForEmailAlert(vObject, "TR", "MAKER_GROUP");
+				if (getCountMailAlert(templateAlertdetail, "TR") < 0) {
+					insertEmailProcessAudit(templateAlertdetail, "TR");
+				} else {
+					doUpdateEmailProcessAudit(templateAlertdetail, "TR");
+				}
+			}
+			if (retVal == Constants.SUCCESSFUL_OPERATION) {
 				retVal = saveComments(vObject);
 			}
 			exceptionCode = getResultObject(retVal);
@@ -2076,6 +2129,15 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 					vObject.setVerifier(intCurrentUserId);
 					int retval = updateTemplateHeaders(vObject, false);
 					updateProcessControls(vObject, false);
+					EmailProcessControlVb templateAlertdetail = getDetailsForEmailAlert(vObject, "SP",
+							"VERIFIER_GROUP");
+					if (mailAlertFlag.equalsIgnoreCase("Y")) {
+						if (getCountMailAlert(templateAlertdetail, "SP") < 0) {
+							insertEmailProcessAudit(templateAlertdetail, "SP");
+						} else {
+							doUpdateEmailProcessAudit(templateAlertdetail, "SP");
+						}
+					}
 					exceptionCode.setOtherInfo(vObject.getProcessStatus());
 					exceptionCode = getResultObject(retval);
 				}
@@ -2899,7 +2961,7 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 		return exceptionCode;
 	}
 
-	public static String beautifyXML(String xmlString,String categoryType) {
+	public static String beautifyXML(String xmlString, String categoryType) {
 		try {
 			// Escape special characters like '&' in the XML string
 			xmlString = xmlString.replaceAll("&(?!amp;|lt;|gt;|quot;|apos;)", "&amp;");
@@ -3010,79 +3072,73 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 		ExceptionCode exceptionCode = new ExceptionCode();
 		try {
 			Boolean isFatca = Constants.FATCA.equalsIgnoreCase(vObject.getCategoryType());
-			
+
 			String query = "SELECT ";
-			String versionNo = "  t1.VERSION_NO = (SELECT MAX(VERSION_NO ) FROM " + vObject.getSourceTable() + 
-					" WHERE COUNTRY = '"+vObject.getCountry()+"' AND LE_BOOK = '"+vObject.getLeBook()+"' )";
+			String versionNo = "  t1.VERSION_NO = (SELECT MAX(VERSION_NO ) FROM " + vObject.getSourceTable()
+					+ " WHERE COUNTRY = '" + vObject.getCountry() + "' AND LE_BOOK = '" + vObject.getLeBook() + "' )";
 
 			String cols = buildSelectColumns(vObject.getMappinglst());
 
-
 			String headerQuery = "ENTITY_BUILDING_IDENTIFIER,ENTITY_STREET,ENTITY_COUNTRY_CODE,LEGAL_ADDRESS_TYPE,ENTITY_NAME,ENTITY_CITY,"
 					+ "SENDING_COMPANY_IN,TRANSMITTING_COUNTRY, RECEIVING_COUNTRY, MESSAGE_TYPE, WARNING, CONTACT, MESSAGE_TYPE_INDIC, DOC_TYPE_IN,MESSAGE_REF_ID ";
-			if(isFatca) {
+			if (isFatca) {
 				headerQuery = "T3.SENDING_COMPANY_IN,T3.TRANSMITTING_COUNTRY, T3.RECEIVING_COUNTRY, T3.MESSAGE_TYPE,T3.MESSAGE_REF_ID,T3.ENTITY_NAME,T3.ENTITY_COUNTRY_CODE,"
 						+ "T3.ENTITY_POSTAL_CODE,T3.ENTITY_CITY,T3.ENTITY_ADDRESS_FREE,T3.FILER_CATEGORY,T3.ENTITY_STREET";
 			}
-			
 
-			if(cloud.equalsIgnoreCase("Y")) {
-				 headerQuery = 
-					    "T3.ENTITY_BUILDING_IDENTIFIER, T3.ENTITY_STREET, T3.ENTITY_COUNTRY_CODE, " +
-					    "T3.LEGAL_ADDRESS_TYPE, T3.ENTITY_NAME, T3.ENTITY_CITY, " +
-					    "T3.SENDING_COMPANY_IN AS SENDING_COMPANY_T3, " +
-					    "T3.TRANSMITTING_COUNTRY AS TRANSMITTING_COUNTRY_T3, " +
-					    "T3.RECEIVING_COUNTRY AS RECEIVING_COUNTRY_T3, " +
-					    "T3.MESSAGE_TYPE AS MESSAGE_TYPE_T3, " +
-					    "T3.WARNING AS WARNING_T3, " +
-					    "T3.CONTACT AS CONTACT_T3, " +
-					    "T3.MESSAGE_TYPE_INDIC AS MESSAGE_TYPE_INDIC_T3, " +
-					    "T3.DOC_TYPE_IN AS DOC_TYPE_IN_T3,"
-					    + "T3.MESSAGE_REF_ID AS MESSAGE_REF_ID_T3 ";
-					    ;
+			if (cloud.equalsIgnoreCase("Y")) {
+				headerQuery = "T3.ENTITY_BUILDING_IDENTIFIER, T3.ENTITY_STREET, T3.ENTITY_COUNTRY_CODE, "
+						+ "T3.LEGAL_ADDRESS_TYPE, T3.ENTITY_NAME, T3.ENTITY_CITY, "
+						+ "T3.SENDING_COMPANY_IN AS SENDING_COMPANY_T3, "
+						+ "T3.TRANSMITTING_COUNTRY AS TRANSMITTING_COUNTRY_T3, "
+						+ "T3.RECEIVING_COUNTRY AS RECEIVING_COUNTRY_T3, " + "T3.MESSAGE_TYPE AS MESSAGE_TYPE_T3, "
+						+ "T3.WARNING AS WARNING_T3, " + "T3.CONTACT AS CONTACT_T3, "
+						+ "T3.MESSAGE_TYPE_INDIC AS MESSAGE_TYPE_INDIC_T3, " + "T3.DOC_TYPE_IN AS DOC_TYPE_IN_T3,"
+						+ "T3.MESSAGE_REF_ID AS MESSAGE_REF_ID_T3 ";
+				;
 
 			}
 			if (!cloud.equalsIgnoreCase("Y")) {
-			    query += cols.toString() + " ," + headerQuery + " FROM " + vObject.getSourceTable() + " T1,"
-			            + vObject.getCbkFileName() + " ";
-			 
-			    String cond = " T1.COUNTRY = T3.COUNTRY AND T1.LE_BOOK = T3.LE_BOOK ";
-			    query += " WHERE " + cond;
+				query += cols.toString() + " ," + headerQuery + " FROM " + vObject.getSourceTable() + " T1,"
+						+ vObject.getCbkFileName() + " ";
+
+				String cond = " T1.COUNTRY = T3.COUNTRY AND T1.LE_BOOK = T3.LE_BOOK ";
+				query += " WHERE " + cond;
 			} else {
-			    query += cols.toString() + " ," + headerQuery + " FROM " + vObject.getSourceTable() + " T1, "
-			            + vObject.getCbkFileName() + " ";
-			    String cond = " T1.COUNTRY = T3.COUNTRY AND T1.LE_BOOK = T3.LE_BOOK ";
-			    query += " WHERE " + cond;
+				query += cols.toString() + " ," + headerQuery + " FROM " + vObject.getSourceTable() + " T1, "
+						+ vObject.getCbkFileName() + " ";
+				String cond = " T1.COUNTRY = T3.COUNTRY AND T1.LE_BOOK = T3.LE_BOOK ";
+				query += " WHERE " + cond;
 			}
 
 			// Add filter condition
 			if (ValidationUtil.isValid(filter)) {
-			    if (query.toLowerCase().contains(" where ")) {
-			        query += " AND " + filter;
-			    } else {
-			        query += " WHERE " + filter;
-			    }
+				if (query.toLowerCase().contains(" where ")) {
+					query += " AND " + filter;
+				} else {
+					query += " WHERE " + filter;
+				}
 			}
 
 			// Add source table filter condition
 			if (ValidationUtil.isValid(vObject.getSourceTableFilter())
-			        && !"NA".equalsIgnoreCase(vObject.getSourceTableFilter())) {
-			    if (query.toLowerCase().contains(" where ")) {
-			        query += " AND " + vObject.getSourceTableFilter();
-			    } else {
-			        query += " WHERE " + vObject.getSourceTableFilter();
-			    }
+					&& !"NA".equalsIgnoreCase(vObject.getSourceTableFilter())) {
+				if (query.toLowerCase().contains(" where ")) {
+					query += " AND " + vObject.getSourceTableFilter();
+				} else {
+					query += " WHERE " + vObject.getSourceTableFilter();
+				}
 			}
-			 if (query.toLowerCase().contains(" where ")) {
-			        query += " AND " + versionNo;
-			    } else {
-			        query += " WHERE " +versionNo;
-			    }
+			if (query.toLowerCase().contains(" where ")) {
+				query += " AND " + versionNo;
+			} else {
+				query += " WHERE " + versionNo;
+			}
 			String orderBy = " ORDER BY t1.ROW_ID";
 			query = query.concat(orderBy);
 
 			String tmpFilePath = System.getProperty("java.io.tmpdir");
-			String xml="";
+			String xml = "";
 
 			String sql = "Select Count(*) FROM " + vObject.getSourceTable() + " WHERe COUNTRY = ? AND LE_BOOK = ?";
 
@@ -3092,16 +3148,18 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 				query = "SELECT " + headerQuery + " From " + vObject.getCbkFileName() + " where COUNTRY = '"
 						+ vObject.getCountry() + "' AND LE_BOOK = '" + vObject.getLeBook() + "' ";
 			}
-			
-			xml = getJdbcTemplate().query(query, (ResultSetExtractor<String>) rs -> isFatca?generateFatcaXml(rs,cnt,vObject.getInternalStatus()):generateCrsXml(rs,cnt));
-			
-			String path = System.getProperty("java.io.tmpdir") + File.separator + vObject.getSourceTable() + ".xml";
-	        
-	        String beautified = beautifyXML(xml,vObject.getCategoryType());
 
-	        try (BufferedWriter bw = new BufferedWriter(new FileWriter(path))) {
-	            bw.write(beautified);
-	        }
+			xml = getJdbcTemplate().query(query,
+					(ResultSetExtractor<String>) rs -> isFatca ? generateFatcaXml(rs, cnt, vObject.getInternalStatus())
+							: generateCrsXml(rs, cnt));
+
+			String path = System.getProperty("java.io.tmpdir") + File.separator + vObject.getSourceTable() + ".xml";
+
+			String beautified = beautifyXML(xml, vObject.getCategoryType());
+
+			try (BufferedWriter bw = new BufferedWriter(new FileWriter(path))) {
+				bw.write(beautified);
+			}
 			// Set the response details in the exception code
 			exceptionCode.setOtherInfo(vObject.getSourceTable());
 			exceptionCode.setResponse(tmpFilePath); // Return the path of the generated XML file
@@ -3181,28 +3239,50 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 	public ExceptionCode templateValidation(TemplateScheduleVb templateScheduleVb) {
 		ExceptionCode exceptionCode = new ExceptionCode();
 		String Status = "";
-		if(!"Y".equalsIgnoreCase(cloud)) {
-		exceptionCode = callProcTovalidateTemplate(templateScheduleVb);
-		}else {
+		if (!"Y".equalsIgnoreCase(cloud)) {
+			exceptionCode = callProcTovalidateTemplate(templateScheduleVb);
+		} else {
 			exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
 		}
-		
+
 		if (exceptionCode.getErrorCode() != Constants.SUCCESSFUL_OPERATION) {
 			templateScheduleCronDao.updateProcessControl("VE", templateScheduleVb, false);
 			templateScheduleCronDao.updateProcessControlheader("VE", "", "", templateScheduleVb);
+			if (mailAlertFlag.equalsIgnoreCase("Y")) {
+				EmailProcessControlVb templateAlertdetail = getDetailsForEmailAlert(templateScheduleVb, "VE",
+						"MAKER_GROUP");
+				if (getCountMailAlert(templateAlertdetail, "VE") < 0) {
+					insertEmailProcessAudit(templateAlertdetail, "VE");
+				} else {
+					doUpdateEmailProcessAudit(templateAlertdetail, "VE");
+				}
+			}
 			exceptionCode = CommonUtils.getResultObject("Template", Constants.ERRONEOUS_OPERATION, "Validation", "");
 		} else {
 			int cnt = getErrorCount(templateScheduleVb);
+			EmailProcessControlVb templateAlertdetail = new EmailProcessControlVb();
 			Status = "SP";
 			if (cnt > 0) {
 				Status = "VE";
 				exceptionCode = CommonUtils.getResultObject("Template", Constants.ERRONEOUS_OPERATION, "Validation",
 						"");
+				templateAlertdetail = getDetailsForEmailAlert(templateScheduleVb, Status, "MAKER_GROUP");
 			} else {
 				exceptionCode = CommonUtils.getResultObject("Template", Constants.SUCCESSFUL_OPERATION, "Validation",
 						"");
 				if (getPendCount(templateScheduleVb) > 0) {
 					Status = "AP";
+					templateAlertdetail = getDetailsForEmailAlert(templateScheduleVb, Status, "VERIFIER_GROUP");
+				}
+			}
+			if (Status == "SP") {
+				templateAlertdetail = getDetailsForEmailAlert(templateScheduleVb, Status, "SUBMITTER_GROUP");
+			}
+			if (mailAlertFlag.equalsIgnoreCase("Y")) {
+				if (getCountMailAlert(templateAlertdetail, Status) == 0) {
+					insertEmailProcessAudit(templateAlertdetail, Status);
+				} else {
+					int retVal = doUpdateEmailProcessAudit(templateAlertdetail, Status);
 				}
 			}
 			templateScheduleVb.setRecordIndicator(Constants.STATUS_INSERT);
@@ -3374,31 +3454,35 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 		setServiceDefaults();
 		String sql = " INSERT INTO RG_TEMPLATES_COMMENTS (TEMPLATE_ID, SUBMISSION_DATE, REPORTING_DATE, COUNTRY, "
 				+ " LE_BOOK, COMMENTS, MAKER, VERIFIER, STATUS, RECORD_INDICATOR, DATE_LAST_MODIFIED, DATE_CREATION) "
-				+ " VALUES ( ?,"+dateConvert+","+dateConvert+",?,?,?,?,?,?,?," + getDbFunction("SYSDATE") + "," + getDbFunction("SYSDATE") + ")";
+				+ " VALUES ( ?," + dateConvert + "," + dateConvert + ",?,?,?,?,?,?,?," + getDbFunction("SYSDATE") + ","
+				+ getDbFunction("SYSDATE") + ")";
 		Object[] args = { vObject.getTemplateId(), vObject.getSubmissionDate(), vObject.getReportingDate(),
 				vObject.getCountry(), vObject.getLeBook(), vObject.getComments(), intCurrentUserId, intCurrentUserId,
-				vObject.getProcessStatus(),vObject.getRecordIndicator() };
+				vObject.getProcessStatus(), vObject.getRecordIndicator() };
 		return getJdbcTemplate().update(sql, args);
 	}
-	public ArrayList<TemplateScheduleVb> getCommmentsLst(TemplateScheduleVb vObject){
+
+	public ArrayList<TemplateScheduleVb> getCommmentsLst(TemplateScheduleVb vObject) {
 		ArrayList<TemplateScheduleVb> collTemp = new ArrayList<>();
 		try {
 			String sql = " SELECT TEMPLATE_ID, SUBMISSION_DATE, REPORTING_DATE, STATUS_AT, RECORD_INDICATOR_AT, COUNTRY, LE_BOOK, COMMENTS, MAKER, "
 					+ " VERIFIER, STATUS, RECORD_INDICATOR, "
 					+ dbFunctionFormats("TAPPR.DATE_LAST_MODIFIED", "DATETIME_FORMAT", null)
 					+ " DATE_LAST_MODIFIED,TAPPR.DATE_LAST_MODIFIED DATE_LAST_MODIFIED_1," + " "
-					+ dbFunctionFormats("TAPPR.DATE_CREATION", "DATETIME_FORMAT", null) + " DATE_CREATION ,"
-					+ " "+makerApprDesc +" , "+verifierApprDesc +" , "+recordIndicatorAtDesc.replaceAll("T1.", "TAPPR.")
-					+ " FROM RG_TEMPLATES_COMMENTS TAPPR " + " where COUNTRY= ? AND "
-					+ " LE_BOOK= ? AND TEMPLATE_ID= ? AND SUBMISSION_DATE= " + dateConvert + " AND REPORTING_DATE= "
-					+ dateConvert +"ORDER BY DATE_LAST_MODIFIED_1 DESC ";
-			Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getTemplateId(),vObject.getSubmissionDate(),vObject.getReportingDate()};
-			collTemp = (ArrayList<TemplateScheduleVb>) getJdbcTemplate().query(sql, args,getCommentsMapper());
-		} catch(Exception e) {
+					+ dbFunctionFormats("TAPPR.DATE_CREATION", "DATETIME_FORMAT", null) + " DATE_CREATION ," + " "
+					+ makerApprDesc + " , " + verifierApprDesc + " , "
+					+ recordIndicatorAtDesc.replaceAll("T1.", "TAPPR.") + " FROM RG_TEMPLATES_COMMENTS TAPPR "
+					+ " where COUNTRY= ? AND " + " LE_BOOK= ? AND TEMPLATE_ID= ? AND SUBMISSION_DATE= " + dateConvert
+					+ " AND REPORTING_DATE= " + dateConvert + "ORDER BY DATE_LAST_MODIFIED_1 DESC ";
+			Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getTemplateId(),
+					vObject.getSubmissionDate(), vObject.getReportingDate() };
+			collTemp = (ArrayList<TemplateScheduleVb>) getJdbcTemplate().query(sql, args, getCommentsMapper());
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return collTemp;
 	}
+
 	protected RowMapper getCommentsMapper() {
 		RowMapper mapper = new RowMapper() {
 			@Override
@@ -3423,6 +3507,7 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 		};
 		return mapper;
 	}
+
 	public int insertIntoAuthToken(String token, Timestamp validTill) {
 //
 //	    StringBuilder columns = new StringBuilder("AUTH_TOKEN, VALID_TILL, STATUS_NT, STATUS");
@@ -3451,49 +3536,45 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 		return getJdbcTemplate().update(sql, argsList.toArray());
 
 	}
-	public void markTokenAsExpired(String token) {
-	    String updateSql = "UPDATE RG_AUTH_TOKEN SET STATUS = 9 WHERE AUTH_TOKEN = ?";
-	    getJdbcTemplate().update(updateSql, token);
-	}
-	public Map<String, Object> fetchActiveAuthToken() {
-	    String sql = "SELECT AUTH_TOKEN, VALID_TILL FROM RG_AUTH_TOKEN  WHERE STATUS = 1 ORDER BY VALID_TILL DESC  ";
 
-	    try {
-	        return getJdbcTemplate().queryForMap(sql);
-	    } catch (Exception e) {
-	        return null;
-	    }
+	public void markTokenAsExpired(String token) {
+		String updateSql = "UPDATE RG_AUTH_TOKEN SET STATUS = 9 WHERE AUTH_TOKEN = ?";
+		getJdbcTemplate().update(updateSql, token);
+	}
+
+	public Map<String, Object> fetchActiveAuthToken() {
+		String sql = "SELECT AUTH_TOKEN, VALID_TILL FROM RG_AUTH_TOKEN  WHERE STATUS = 1 ORDER BY VALID_TILL DESC  ";
+
+		try {
+			return getJdbcTemplate().queryForMap(sql);
+		} catch (Exception e) {
+			return null;
+		}
 	}
 
 	public TemplateScheduleVb fetchTemplateSchedule() {
-	    String sql = " SELECT T1.COUNTRY, T1.LE_BOOK, T1.TEMPLATE_ID, " +
+		String sql = " SELECT T1.COUNTRY, T1.LE_BOOK, T1.TEMPLATE_ID, " +
 //	                 "T1.REPORTING_DATE, T1.SUBMISSION_DATE " +
-	              dateFormat + "      (T1.SUBMISSION_DATE ," + formatdate
-						+ ")SUBMISSION_DATE,"+
-						  dateFormat + "      (T1.REPORTING_DATE ," + formatdate
-							+ ")REPORTING_DATE " +
-	                 " FROM rg_templates_header T1, Rg_Process_Controls T2 " +
-	                 " WHERE T1.COUNTRY = T2.COUNTRY " +
-	                 " AND T1.LE_BOOK = T2.LE_BOOK " +
-	                 " AND T1.TEMPLATE_ID = T2.TEMPLATE_ID " +
-	                 " AND T1.STATUS = T2.RG_PROCESS_STATUS " +
-	                 " AND T1.STATUS IN ('SI')"
-	                 + "AND T1.INTERNAL_STATUS  = 1";
+				dateFormat + "      (T1.SUBMISSION_DATE ," + formatdate + ")SUBMISSION_DATE," + dateFormat
+				+ "      (T1.REPORTING_DATE ," + formatdate + ")REPORTING_DATE "
+				+ " FROM rg_templates_header T1, Rg_Process_Controls T2 " + " WHERE T1.COUNTRY = T2.COUNTRY "
+				+ " AND T1.LE_BOOK = T2.LE_BOOK " + " AND T1.TEMPLATE_ID = T2.TEMPLATE_ID "
+				+ " AND T1.STATUS = T2.RG_PROCESS_STATUS " + " AND T1.STATUS IN ('SI')" + "AND T1.INTERNAL_STATUS  = 1";
 
-	    List<TemplateScheduleVb> result = jdbcTemplate.query(sql, new RowMapper<TemplateScheduleVb>() {
-	        @Override
-	        public TemplateScheduleVb mapRow(ResultSet rs, int rowNum) throws SQLException {
-	            TemplateScheduleVb vb = new TemplateScheduleVb();
-	            vb.setCountry(rs.getString("COUNTRY"));
-	            vb.setLeBook(rs.getString("LE_BOOK"));
-	            vb.setTemplateId(rs.getString("TEMPLATE_ID"));
-	            vb.setReportingDate(rs.getString("REPORTING_DATE"));
-	            vb.setSubmissionDate(rs.getString("SUBMISSION_DATE"));
-	            return vb;
-	        }
-	    });
+		List<TemplateScheduleVb> result = jdbcTemplate.query(sql, new RowMapper<TemplateScheduleVb>() {
+			@Override
+			public TemplateScheduleVb mapRow(ResultSet rs, int rowNum) throws SQLException {
+				TemplateScheduleVb vb = new TemplateScheduleVb();
+				vb.setCountry(rs.getString("COUNTRY"));
+				vb.setLeBook(rs.getString("LE_BOOK"));
+				vb.setTemplateId(rs.getString("TEMPLATE_ID"));
+				vb.setReportingDate(rs.getString("REPORTING_DATE"));
+				vb.setSubmissionDate(rs.getString("SUBMISSION_DATE"));
+				return vb;
+			}
+		});
 
-	    return result.isEmpty() ? null : result.get(0);
+		return result.isEmpty() ? null : result.get(0);
 	}
 //	public String buildSelectColumns(List<TemplateMappingVb> mappings) {
 //	    if (mappings == null || mappings.isEmpty()) {
@@ -3563,534 +3644,528 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 //	    return sb.toString();
 //	}
 
+	public String buildSelectColumns(List<TemplateMappingVb> mappings) {
+		if (mappings == null || mappings.isEmpty())
+			return "";
 
+		List<String> cols = new ArrayList<>();
+		Set<String> seen = new LinkedHashSet<>(); // preserves order
+		for (TemplateMappingVb m : mappings) {
+			String src = m.getSourceColumn() == null ? "" : m.getSourceColumn().trim();
+			String alias = m.getTargetColumn() == null ? "" : m.getTargetColumn().trim();
+			if (src.isEmpty() || alias.isEmpty())
+				continue;
 
-	    
+			String expr;
+			String srcUp = src.toUpperCase(Locale.ROOT);
 
-	    public  String buildSelectColumns(List<TemplateMappingVb> mappings) {
-	        if (mappings == null || mappings.isEmpty()) return "";
+			if (srcUp.startsWith("TO_CHAR")) {
+				expr = src + " AS " + alias;
+			} else if ("TIMESTAMP".equalsIgnoreCase(src) || "TIMESTAMP".equalsIgnoreCase(alias)) {
+				String safeAlias = alias.replaceAll("\\s+", "_");
 
-	        List<String> cols = new ArrayList<>();
-	        Set<String> seen = new LinkedHashSet<>(); // preserves order
-	        for (TemplateMappingVb m : mappings) {
-	            String src = m.getSourceColumn() == null ? "" : m.getSourceColumn().trim();
-	            String alias = m.getTargetColumn() == null ? "" : m.getTargetColumn().trim();
-	            if (src.isEmpty() || alias.isEmpty()) continue;
-
-	            String expr;
-	            String srcUp = src.toUpperCase(Locale.ROOT);
-
-	            if (srcUp.startsWith("TO_CHAR")) {
-	                expr = src + " AS " + alias;
-	            } else if ("TIMESTAMP".equalsIgnoreCase(src) || "TIMESTAMP".equalsIgnoreCase(alias)) {
-	                String safeAlias = alias.replaceAll("\\s+", "_");
-	                
-	                if (databaseType.equalsIgnoreCase("ORACLE")) {
-	                    expr = "TO_CHAR(SYSDATE,'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS " + safeAlias;
-	                } else {
-	                    expr = "LEFT(CONVERT(varchar(33), GETUTCDATE(), 126),19) + 'Z' AS " + safeAlias;
-	                }
-	            } else if (srcUp.contains("DATE") || srcUp.contains("DOB") || srcUp.contains("TS") || srcUp.contains("PERIOD")) {
-	                String colRef = (!src.contains("(") && !src.contains(".")) ? "T1." + src : src;
-	                if (databaseType.equalsIgnoreCase("ORACLE")) {
-	                    expr = "TO_CHAR(" + colRef + ",'RRRR-MM-DD') AS " + alias;
-	                } else {
-	                    expr = "CONVERT(varchar(10)," + colRef + ",23) AS " + alias;
-	                }
-	            } else if (!src.contains("(") && !src.contains(".")) {
-	                expr = "T1." + src + " AS " + alias;
-	            } else {
-	                expr = src + " AS " + alias;
-	            }
-
-	            String key = expr.toUpperCase(Locale.ROOT).replaceAll("\\s+", " ").trim();
-	            if (seen.add(key)) cols.add(expr);
-	        }
-
-	        return String.join(",\n    ", cols.isEmpty() ? Collections.emptyList() : cols).isEmpty()
-	                ? ""
-	                : "    " + String.join(",\n    ", cols);
-	    }
-	    public TemplateScheduleVb fetchTemplatemailSchedule(TemplateScheduleVb templateScheduleVb) {
-			String sql = "  SELECT T1.TEMPLATE_ID,T1.TEMPLATE_NAME,T2.SUBMISSION_DATE,T2.REPORTING_DATE, "
-					+ "  T2.MAKER,T2.SUBMITTER,V1.USER_NAME AS MAKER_NAME,V2.USER_NAME AS SUBMITTER_NAME, "
-					+ "  V1.USER_EMAIL_ID AS MAKER_MAIL_ID,V2.USER_EMAIL_ID AS SUBMITTER_MAIL_ID, "
-					+ "  A1.ALPHA_SUBTAB_DESCRIPTION  AS PROCESS_STATUS_DESC "
-					+ "  FROM rg_templates_header  T1 JOIN rg_process_controls T2 " + "  ON T1.COUNTRY = T2.COUNTRY "
-					+ "  AND T1.LE_BOOK = T2.LE_BOOK " + "  AND T1.TEMPLATE_ID = T2.TEMPLATE_ID "
-					+ "  LEFT JOIN vision_users V1 ON V1.VISION_ID = T2.MAKER "
-					+ "  LEFT JOIN vision_users V2 ON V2.VISION_ID = T2.SUBMITTER " + "  LEFT JOIN alpha_sub_tab A1 "
-					+ "  ON A1.ALPHA_TAB = T1.STATUS_AT AND A1.ALPHA_SUB_TAB = T1.STATUS "
-					+ "  WHERE T2.COUNTRY = ? " + "  AND T2.LE_BOOK = ? " + "  AND T2.TEMPLATE_ID = ? "
-					+ "  AND T2.SUBMISSION_DATE =  " + dateConvert + "  AND T2.REPORTING_DATE =  " + dateConvert;
-			Object[] args = { templateScheduleVb.getCountry(), templateScheduleVb.getLeBook(),
-					templateScheduleVb.getTemplateId(), templateScheduleVb.getSubmissionDate(),
-					templateScheduleVb.getReportingDate() };
-			List<TemplateScheduleVb> result = jdbcTemplate.query(sql, new RowMapper<TemplateScheduleVb>() {
-				@Override
-				public TemplateScheduleVb mapRow(ResultSet rs, int rowNum) throws SQLException {
-					TemplateScheduleVb vb = new TemplateScheduleVb();
-					vb.setTemplateId(rs.getString("TEMPLATE_ID"));
-					vb.setReportingDate(rs.getString("REPORTING_DATE"));
-					vb.setSubmissionDate(rs.getString("SUBMISSION_DATE"));
-					vb.setTemplateName(rs.getString("TEMPLATE_NAME"));
-					vb.setMakerName(rs.getString("MAKER_NAME"));
-					vb.setSubmitterName(rs.getString("SUBMITTER_NAME"));
-					vb.setMakerMailId(rs.getString("MAKER_MAIL_ID"));
-					vb.setSubmitterMailId(rs.getString("SUBMITTER_MAIL_ID"));
-					vb.setProcessStatusDesc(rs.getString("PROCESS_STATUS_DESC"));
-					return vb;
-				}
-			},args);
-
-			return result.isEmpty() ? null : result.get(0);
-		}
-
-	    public List<TemplateScheduleVb> extractHistoryData(TemplateScheduleVb dObj, TemplateConfigVb vObject) {
-			Vector<Object> params = new Vector<Object>();
-			List<TemplateScheduleVb> collTemp =null;
-			try {
-				List<ColumnHeadersVb> lst = getColumns(vObject.getSourceTable().toUpperCase().trim()+"_HIS");
-				StringJoiner joiner = new StringJoiner(",");
-				if (lst != null && lst.size() > 0) {
-					if (cloud.equalsIgnoreCase("Y") && !vObject.getCategoryType().equalsIgnoreCase("RG")) {
-						for (ColumnHeadersVb columnHeadersVb : lst) {
-							if ((columnHeadersVb.getColType().equalsIgnoreCase("NUMERIC")
-									|| columnHeadersVb.getColType().equalsIgnoreCase("NUMBER")
-									|| columnHeadersVb.getColType().equalsIgnoreCase("INT"))
-									&& !columnHeadersVb.getDecimalCnt().equalsIgnoreCase("0"))
-								joiner.add(
-										dbFunctionFormats("TAPPR." + columnHeadersVb.getDbColumnName(), "NUM_FORMAT", "5")
-												+ " " + columnHeadersVb.getDbColumnName());
-							else if (columnHeadersVb.getColType().equalsIgnoreCase("DATE")
-									|| columnHeadersVb.getColType().equalsIgnoreCase("DATETIME")
-									|| columnHeadersVb.getColType().equalsIgnoreCase("TIMESTAMP"))
-								joiner.add(dateFormat + "(TAPPR." + columnHeadersVb.getDbColumnName() + "," + formatdate
-										+ ") " + columnHeadersVb.getDbColumnName());
-							else
-								joiner.add("TAPPR." + columnHeadersVb.getDbColumnName());
-						}
-					} else {
-						for (ColumnHeadersVb columnHeadersVb : lst) {
-//							if ("Y".equalsIgnoreCase(precisionFlag)) {
-							if ((columnHeadersVb.getColType().equalsIgnoreCase("NUMERIC")
-									|| columnHeadersVb.getColType().equalsIgnoreCase("NUMBER")
-									|| columnHeadersVb.getColType().equalsIgnoreCase("INT"))
-									&& !columnHeadersVb.getDecimalCnt().equalsIgnoreCase("0")
-									&& "Y".equalsIgnoreCase(precisionFlag))
-								joiner.add(dbFunctionFormats(columnHeadersVb.getDbColumnName(), "NUM_FORMAT", "5") + " "
-										+ columnHeadersVb.getDbColumnName());
-							else if (columnHeadersVb.getColType().equalsIgnoreCase("DATE")
-									|| columnHeadersVb.getColType().equalsIgnoreCase("DATETIME")
-									|| columnHeadersVb.getColType().equalsIgnoreCase("TIMESTAMP"))
-								joiner.add(dateFormat + "(" + columnHeadersVb.getDbColumnName() + "," + formatdate + ") "
-										+ columnHeadersVb.getDbColumnName());
-//							}
-							else
-								joiner.add(columnHeadersVb.getDbColumnName());
-						}
-					}
-
-				}
-
-				StringBuffer query = new StringBuffer("SELECT 'APPR' TAB, " + joiner + " FROM ");
-//				String whereNotExists = getStringWhrNotExist(vObject.getSourceTable(), true);
-				if (cloud.equalsIgnoreCase("Y") && !vObject.getCategoryType().equalsIgnoreCase("RG")) {
-					query = query.append(
-							vObject.getSourceTable().toUpperCase().trim()+"_HIS" + " TAPPR," + vObject.getCbkFileName() + " ");
+				if (databaseType.equalsIgnoreCase("ORACLE")) {
+					expr = "TO_CHAR(SYSDATE,'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS " + safeAlias;
 				} else {
-					query = query.append(vObject.getSourceTable().toUpperCase().trim()+"_HIS" + " TAPPR");
+					expr = "LEFT(CONVERT(varchar(33), GETUTCDATE(), 126),19) + 'Z' AS " + safeAlias;
 				}
-				if (ValidationUtil.isValid(dObj.getBasicFilterStr()) && !dObj.getBasicFilterStr().isEmpty()) {
-					CommonUtils.addToQuery(dObj.getBasicFilterStr(), query);
+			} else if (srcUp.contains("DATE") || srcUp.contains("DOB") || srcUp.contains("TS")
+					|| srcUp.contains("PERIOD")) {
+				String colRef = (!src.contains("(") && !src.contains(".")) ? "T1." + src : src;
+				if (databaseType.equalsIgnoreCase("ORACLE")) {
+					expr = "TO_CHAR(" + colRef + ",'RRRR-MM-DD') AS " + alias;
+				} else {
+					expr = "CONVERT(varchar(10)," + colRef + ",23) AS " + alias;
 				}
-				if (vObject.getSourceTableFilter() != null && !"NA".equalsIgnoreCase(vObject.getSourceTableFilter())) {
-					CommonUtils.addToQuery(vObject.getSourceTableFilter().replace("T1", "TAPPR"), query);
-					if (cloud.equalsIgnoreCase("Y") && !vObject.getCategoryType().equalsIgnoreCase("RG")) {
-						query.append(" AND     TAPPR.COUNTRY = T3.COUNTRY    AND TAPPR.LE_BOOK = T3.LE_BOOK"
-//								+ "       AND TAPPR.CUSTOMER_ID = T3.CUSTOMER_ID"
-//								+ "       AND TAPPR.MESSAGE_REF_ID = T2.MESSAGE_REF_ID"
-								);
-					}
-					StringBuffer newQuery = new StringBuffer("SELECT * FROM (" + query + ") TAPPR");
-					query = newQuery;
-				}
-				if (ValidationUtil.isValid(dObj.getReportingDate())) {
-					if ("MSSQL".equalsIgnoreCase(databaseType)) {
-						CommonUtils.addToQuery("Convert(date, '" + dObj.getReportingDate() + "',113)", query);
-					} else {
-						CommonUtils.addToQuery("REPORTING_DATE = '" + dObj.getReportingDate() + "'", query);
-					}
-				}
-				String orderBy = " ORDER BY ROW_ID,VERSION_NO DESC";
-				String finalQuery ="SELECT ROW_NUMBER () OVER (ORDER BY ROW_ID, VERSION_NO DESC) NUM, ROWTEMP.* "
-						+ "  FROM ("+query.toString()+") ROWTEMP";
-				collTemp =getJdbcTemplate().query(finalQuery, getMapper());
-				return collTemp;
-
-			} catch (Exception e) {
-				e.printStackTrace();
-				return null;
+			} else if (!src.contains("(") && !src.contains(".")) {
+				expr = "T1." + src + " AS " + alias;
+			} else {
+				expr = src + " AS " + alias;
 			}
+
+			String key = expr.toUpperCase(Locale.ROOT).replaceAll("\\s+", " ").trim();
+			if (seen.add(key))
+				cols.add(expr);
 		}
-	    
-	    public ExceptionCode extractHistoryDataForExport(TemplateScheduleVb dObj, TemplateConfigVb vObject,String exportType,boolean isError) {
-			Vector<Object> params = new Vector<Object>();
-			List<TemplateScheduleVb> collTemp =null;
-			ExceptionCode exceptionCode = new ExceptionCode();
-			try {
-//				List<ColumnHeadersVb> lst = getColumns(vObject.getSourceTable().toUpperCase().trim()+"_HIS");
-				List<ColumnHeadersVb> lst = getNeededColumnsForDownload(vObject.getSourceTable().toUpperCase().trim()+"_HIS");
-				StringJoiner joiner = new StringJoiner(",");
-				if (lst != null && lst.size() > 0) {
-					if (cloud.equalsIgnoreCase("Y") && !vObject.getCategoryType().equalsIgnoreCase("RG")) {
-						for (ColumnHeadersVb columnHeadersVb : lst) {
-							if ((columnHeadersVb.getColType().equalsIgnoreCase("NUMERIC")
-									|| columnHeadersVb.getColType().equalsIgnoreCase("NUMBER")
-									|| columnHeadersVb.getColType().equalsIgnoreCase("INT"))
-									&& !columnHeadersVb.getDecimalCnt().equalsIgnoreCase("0"))
-								joiner.add(
-										dbFunctionFormats("TAPPR." + columnHeadersVb.getDbColumnName(), "NUM_FORMAT", "5")
-												+ " " + columnHeadersVb.getDbColumnName());
-							else if (columnHeadersVb.getColType().equalsIgnoreCase("DATE")
-									|| columnHeadersVb.getColType().equalsIgnoreCase("DATETIME")
-									|| columnHeadersVb.getColType().equalsIgnoreCase("TIMESTAMP"))
-								joiner.add(dateFormat + "(TAPPR." + columnHeadersVb.getDbColumnName() + "," + formatdate
-										+ ") " + columnHeadersVb.getDbColumnName());
-							else
-								joiner.add("TAPPR." + columnHeadersVb.getDbColumnName());
-						}
-					} else {
-						for (ColumnHeadersVb columnHeadersVb : lst) {
-//							if ("Y".equalsIgnoreCase(precisionFlag)) {
-							if ((columnHeadersVb.getColType().equalsIgnoreCase("NUMERIC")
-									|| columnHeadersVb.getColType().equalsIgnoreCase("NUMBER")
-									|| columnHeadersVb.getColType().equalsIgnoreCase("INT"))
-									&& !columnHeadersVb.getDecimalCnt().equalsIgnoreCase("0")
-									&& "Y".equalsIgnoreCase(precisionFlag))
-								joiner.add(dbFunctionFormats(columnHeadersVb.getDbColumnName(), "NUM_FORMAT", "5") + " "
-										+ columnHeadersVb.getDbColumnName());
-							else if (columnHeadersVb.getColType().equalsIgnoreCase("DATE")
-									|| columnHeadersVb.getColType().equalsIgnoreCase("DATETIME")
-									|| columnHeadersVb.getColType().equalsIgnoreCase("TIMESTAMP"))
-								joiner.add(dateFormat + "(" + columnHeadersVb.getDbColumnName() + "," + formatdate + ") "
-										+ columnHeadersVb.getDbColumnName());
-//							}
-							else
-								joiner.add(columnHeadersVb.getDbColumnName());
-						}
-					}
 
-				}
+		return String.join(",\n    ", cols.isEmpty() ? Collections.emptyList() : cols).isEmpty() ? ""
+				: "    " + String.join(",\n    ", cols);
+	}
 
-				StringBuffer query = new StringBuffer("SELECT 'APPR' TAB, " + joiner + " FROM ");
-//				String whereNotExists = getStringWhrNotExist(vObject.getSourceTable(), true);
+	public TemplateScheduleVb fetchTemplatemailSchedule(TemplateScheduleVb templateScheduleVb) {
+		String sql = "  SELECT T1.TEMPLATE_ID,T1.TEMPLATE_NAME,T2.SUBMISSION_DATE,T2.REPORTING_DATE, "
+				+ "  T2.MAKER,T2.SUBMITTER,V1.USER_NAME AS MAKER_NAME,V2.USER_NAME AS SUBMITTER_NAME, "
+				+ "  V1.USER_EMAIL_ID AS MAKER_MAIL_ID,V2.USER_EMAIL_ID AS SUBMITTER_MAIL_ID, "
+				+ "  A1.ALPHA_SUBTAB_DESCRIPTION  AS PROCESS_STATUS_DESC "
+				+ "  FROM rg_templates_header  T1 JOIN rg_process_controls T2 " + "  ON T1.COUNTRY = T2.COUNTRY "
+				+ "  AND T1.LE_BOOK = T2.LE_BOOK " + "  AND T1.TEMPLATE_ID = T2.TEMPLATE_ID "
+				+ "  LEFT JOIN vision_users V1 ON V1.VISION_ID = T2.MAKER "
+				+ "  LEFT JOIN vision_users V2 ON V2.VISION_ID = T2.SUBMITTER " + "  LEFT JOIN alpha_sub_tab A1 "
+				+ "  ON A1.ALPHA_TAB = T1.STATUS_AT AND A1.ALPHA_SUB_TAB = T1.STATUS " + "  WHERE T2.COUNTRY = ? "
+				+ "  AND T2.LE_BOOK = ? " + "  AND T2.TEMPLATE_ID = ? " + "  AND T2.SUBMISSION_DATE =  " + dateConvert
+				+ "  AND T2.REPORTING_DATE =  " + dateConvert;
+		Object[] args = { templateScheduleVb.getCountry(), templateScheduleVb.getLeBook(),
+				templateScheduleVb.getTemplateId(), templateScheduleVb.getSubmissionDate(),
+				templateScheduleVb.getReportingDate() };
+		List<TemplateScheduleVb> result = jdbcTemplate.query(sql, new RowMapper<TemplateScheduleVb>() {
+			@Override
+			public TemplateScheduleVb mapRow(ResultSet rs, int rowNum) throws SQLException {
+				TemplateScheduleVb vb = new TemplateScheduleVb();
+				vb.setTemplateId(rs.getString("TEMPLATE_ID"));
+				vb.setReportingDate(rs.getString("REPORTING_DATE"));
+				vb.setSubmissionDate(rs.getString("SUBMISSION_DATE"));
+				vb.setTemplateName(rs.getString("TEMPLATE_NAME"));
+				vb.setMakerName(rs.getString("MAKER_NAME"));
+				vb.setSubmitterName(rs.getString("SUBMITTER_NAME"));
+				vb.setMakerMailId(rs.getString("MAKER_MAIL_ID"));
+				vb.setSubmitterMailId(rs.getString("SUBMITTER_MAIL_ID"));
+				vb.setProcessStatusDesc(rs.getString("PROCESS_STATUS_DESC"));
+				return vb;
+			}
+		}, args);
+
+		return result.isEmpty() ? null : result.get(0);
+	}
+
+	public List<TemplateScheduleVb> extractHistoryData(TemplateScheduleVb dObj, TemplateConfigVb vObject) {
+		Vector<Object> params = new Vector<Object>();
+		List<TemplateScheduleVb> collTemp = null;
+		try {
+			List<ColumnHeadersVb> lst = getColumns(vObject.getSourceTable().toUpperCase().trim() + "_HIS");
+			StringJoiner joiner = new StringJoiner(",");
+			if (lst != null && lst.size() > 0) {
 				if (cloud.equalsIgnoreCase("Y") && !vObject.getCategoryType().equalsIgnoreCase("RG")) {
-					query = query.append(
-							vObject.getSourceTable().toUpperCase().trim()+"_HIS" + " TAPPR," + vObject.getCbkFileName() + " ");
+					for (ColumnHeadersVb columnHeadersVb : lst) {
+						if ((columnHeadersVb.getColType().equalsIgnoreCase("NUMERIC")
+								|| columnHeadersVb.getColType().equalsIgnoreCase("NUMBER")
+								|| columnHeadersVb.getColType().equalsIgnoreCase("INT"))
+								&& !columnHeadersVb.getDecimalCnt().equalsIgnoreCase("0"))
+							joiner.add(
+									dbFunctionFormats("TAPPR." + columnHeadersVb.getDbColumnName(), "NUM_FORMAT", "5")
+											+ " " + columnHeadersVb.getDbColumnName());
+						else if (columnHeadersVb.getColType().equalsIgnoreCase("DATE")
+								|| columnHeadersVb.getColType().equalsIgnoreCase("DATETIME")
+								|| columnHeadersVb.getColType().equalsIgnoreCase("TIMESTAMP"))
+							joiner.add(dateFormat + "(TAPPR." + columnHeadersVb.getDbColumnName() + "," + formatdate
+									+ ") " + columnHeadersVb.getDbColumnName());
+						else
+							joiner.add("TAPPR." + columnHeadersVb.getDbColumnName());
+					}
 				} else {
-					query = query.append(vObject.getSourceTable().toUpperCase().trim()+"_HIS" + " TAPPR");
+					for (ColumnHeadersVb columnHeadersVb : lst) {
+//							if ("Y".equalsIgnoreCase(precisionFlag)) {
+						if ((columnHeadersVb.getColType().equalsIgnoreCase("NUMERIC")
+								|| columnHeadersVb.getColType().equalsIgnoreCase("NUMBER")
+								|| columnHeadersVb.getColType().equalsIgnoreCase("INT"))
+								&& !columnHeadersVb.getDecimalCnt().equalsIgnoreCase("0")
+								&& "Y".equalsIgnoreCase(precisionFlag))
+							joiner.add(dbFunctionFormats(columnHeadersVb.getDbColumnName(), "NUM_FORMAT", "5") + " "
+									+ columnHeadersVb.getDbColumnName());
+						else if (columnHeadersVb.getColType().equalsIgnoreCase("DATE")
+								|| columnHeadersVb.getColType().equalsIgnoreCase("DATETIME")
+								|| columnHeadersVb.getColType().equalsIgnoreCase("TIMESTAMP"))
+							joiner.add(dateFormat + "(" + columnHeadersVb.getDbColumnName() + "," + formatdate + ") "
+									+ columnHeadersVb.getDbColumnName());
+//							}
+						else
+							joiner.add(columnHeadersVb.getDbColumnName());
+					}
 				}
-				if (ValidationUtil.isValid(dObj.getBasicFilterStr()) && !dObj.getBasicFilterStr().isEmpty()) {
-					CommonUtils.addToQuery(dObj.getBasicFilterStr(), query);
-				}
-				if (vObject.getSourceTableFilter() != null && !"NA".equalsIgnoreCase(vObject.getSourceTableFilter())) {
-					CommonUtils.addToQuery(vObject.getSourceTableFilter().replace("T1", "TAPPR"), query);
-					if (cloud.equalsIgnoreCase("Y") && !vObject.getCategoryType().equalsIgnoreCase("RG")) {
-						query.append(" AND     TAPPR.COUNTRY = T3.COUNTRY    AND TAPPR.LE_BOOK = T3.LE_BOOK"
+
+			}
+
+			StringBuffer query = new StringBuffer("SELECT 'APPR' TAB, " + joiner + " FROM ");
+//				String whereNotExists = getStringWhrNotExist(vObject.getSourceTable(), true);
+			if (cloud.equalsIgnoreCase("Y") && !vObject.getCategoryType().equalsIgnoreCase("RG")) {
+				query = query.append(vObject.getSourceTable().toUpperCase().trim() + "_HIS" + " TAPPR,"
+						+ vObject.getCbkFileName() + " ");
+			} else {
+				query = query.append(vObject.getSourceTable().toUpperCase().trim() + "_HIS" + " TAPPR");
+			}
+			if (ValidationUtil.isValid(dObj.getBasicFilterStr()) && !dObj.getBasicFilterStr().isEmpty()) {
+				CommonUtils.addToQuery(dObj.getBasicFilterStr(), query);
+			}
+			if (vObject.getSourceTableFilter() != null && !"NA".equalsIgnoreCase(vObject.getSourceTableFilter())) {
+				CommonUtils.addToQuery(vObject.getSourceTableFilter().replace("T1", "TAPPR"), query);
+				if (cloud.equalsIgnoreCase("Y") && !vObject.getCategoryType().equalsIgnoreCase("RG")) {
+					query.append(" AND     TAPPR.COUNTRY = T3.COUNTRY    AND TAPPR.LE_BOOK = T3.LE_BOOK"
 //								+ "       AND TAPPR.CUSTOMER_ID = T3.CUSTOMER_ID"
 //								+ "       AND TAPPR.MESSAGE_REF_ID = T2.MESSAGE_REF_ID"
-								);
-					}
-					StringBuffer newQuery = new StringBuffer("SELECT * FROM (" + query + ") TAPPR");
-					query = newQuery;
+					);
 				}
-				if (ValidationUtil.isValid(dObj.getReportingDate())) {
-					if ("MSSQL".equalsIgnoreCase(databaseType)) {
-						query.append(" WHERE REPORTING_DATE = Convert(date, '" + dObj.getReportingDate() + "',113)");
-					} else {
-						query.append(" WHERE REPORTING_DATE = '" + dObj.getReportingDate() + "'");
+				StringBuffer newQuery = new StringBuffer("SELECT * FROM (" + query + ") TAPPR");
+				query = newQuery;
+			}
+			if (ValidationUtil.isValid(dObj.getReportingDate())) {
+				if ("MSSQL".equalsIgnoreCase(databaseType)) {
+					CommonUtils.addToQuery("Convert(date, '" + dObj.getReportingDate() + "',113)", query);
+				} else {
+					CommonUtils.addToQuery("REPORTING_DATE = '" + dObj.getReportingDate() + "'", query);
+				}
+			}
+			String orderBy = " ORDER BY ROW_ID,VERSION_NO DESC";
+			String finalQuery = "SELECT ROW_NUMBER () OVER (ORDER BY ROW_ID, VERSION_NO DESC) NUM, ROWTEMP.* "
+					+ "  FROM (" + query.toString() + ") ROWTEMP";
+			collTemp = getJdbcTemplate().query(finalQuery, getMapper());
+			return collTemp;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	public ExceptionCode extractHistoryDataForExport(TemplateScheduleVb dObj, TemplateConfigVb vObject,
+			String exportType, boolean isError) {
+		Vector<Object> params = new Vector<Object>();
+		List<TemplateScheduleVb> collTemp = null;
+		ExceptionCode exceptionCode = new ExceptionCode();
+		try {
+//				List<ColumnHeadersVb> lst = getColumns(vObject.getSourceTable().toUpperCase().trim()+"_HIS");
+			List<ColumnHeadersVb> lst = getNeededColumnsForDownload(
+					vObject.getSourceTable().toUpperCase().trim() + "_HIS");
+			StringJoiner joiner = new StringJoiner(",");
+			if (lst != null && lst.size() > 0) {
+				if (cloud.equalsIgnoreCase("Y") && !vObject.getCategoryType().equalsIgnoreCase("RG")) {
+					for (ColumnHeadersVb columnHeadersVb : lst) {
+						if ((columnHeadersVb.getColType().equalsIgnoreCase("NUMERIC")
+								|| columnHeadersVb.getColType().equalsIgnoreCase("NUMBER")
+								|| columnHeadersVb.getColType().equalsIgnoreCase("INT"))
+								&& !columnHeadersVb.getDecimalCnt().equalsIgnoreCase("0"))
+							joiner.add(
+									dbFunctionFormats("TAPPR." + columnHeadersVb.getDbColumnName(), "NUM_FORMAT", "5")
+											+ " " + columnHeadersVb.getDbColumnName());
+						else if (columnHeadersVb.getColType().equalsIgnoreCase("DATE")
+								|| columnHeadersVb.getColType().equalsIgnoreCase("DATETIME")
+								|| columnHeadersVb.getColType().equalsIgnoreCase("TIMESTAMP"))
+							joiner.add(dateFormat + "(TAPPR." + columnHeadersVb.getDbColumnName() + "," + formatdate
+									+ ") " + columnHeadersVb.getDbColumnName());
+						else
+							joiner.add("TAPPR." + columnHeadersVb.getDbColumnName());
+					}
+				} else {
+					for (ColumnHeadersVb columnHeadersVb : lst) {
+//							if ("Y".equalsIgnoreCase(precisionFlag)) {
+						if ((columnHeadersVb.getColType().equalsIgnoreCase("NUMERIC")
+								|| columnHeadersVb.getColType().equalsIgnoreCase("NUMBER")
+								|| columnHeadersVb.getColType().equalsIgnoreCase("INT"))
+								&& !columnHeadersVb.getDecimalCnt().equalsIgnoreCase("0")
+								&& "Y".equalsIgnoreCase(precisionFlag))
+							joiner.add(dbFunctionFormats(columnHeadersVb.getDbColumnName(), "NUM_FORMAT", "5") + " "
+									+ columnHeadersVb.getDbColumnName());
+						else if (columnHeadersVb.getColType().equalsIgnoreCase("DATE")
+								|| columnHeadersVb.getColType().equalsIgnoreCase("DATETIME")
+								|| columnHeadersVb.getColType().equalsIgnoreCase("TIMESTAMP"))
+							joiner.add(dateFormat + "(" + columnHeadersVb.getDbColumnName() + "," + formatdate + ") "
+									+ columnHeadersVb.getDbColumnName());
+//							}
+						else
+							joiner.add(columnHeadersVb.getDbColumnName());
 					}
 				}
-				String orderBy = " ORDER BY ROW_ID,VERSION_NO DESC";
+
+			}
+
+			StringBuffer query = new StringBuffer("SELECT 'APPR' TAB, " + joiner + " FROM ");
+//				String whereNotExists = getStringWhrNotExist(vObject.getSourceTable(), true);
+			if (cloud.equalsIgnoreCase("Y") && !vObject.getCategoryType().equalsIgnoreCase("RG")) {
+				query = query.append(vObject.getSourceTable().toUpperCase().trim() + "_HIS" + " TAPPR,"
+						+ vObject.getCbkFileName() + " ");
+			} else {
+				query = query.append(vObject.getSourceTable().toUpperCase().trim() + "_HIS" + " TAPPR");
+			}
+			if (ValidationUtil.isValid(dObj.getBasicFilterStr()) && !dObj.getBasicFilterStr().isEmpty()) {
+				CommonUtils.addToQuery(dObj.getBasicFilterStr(), query);
+			}
+			if (vObject.getSourceTableFilter() != null && !"NA".equalsIgnoreCase(vObject.getSourceTableFilter())) {
+				CommonUtils.addToQuery(vObject.getSourceTableFilter().replace("T1", "TAPPR"), query);
+				if (cloud.equalsIgnoreCase("Y") && !vObject.getCategoryType().equalsIgnoreCase("RG")) {
+					query.append(" AND     TAPPR.COUNTRY = T3.COUNTRY    AND TAPPR.LE_BOOK = T3.LE_BOOK"
+//								+ "       AND TAPPR.CUSTOMER_ID = T3.CUSTOMER_ID"
+//								+ "       AND TAPPR.MESSAGE_REF_ID = T2.MESSAGE_REF_ID"
+					);
+				}
+				StringBuffer newQuery = new StringBuffer("SELECT * FROM (" + query + ") TAPPR");
+				query = newQuery;
+			}
+			if (ValidationUtil.isValid(dObj.getReportingDate())) {
+				if ("MSSQL".equalsIgnoreCase(databaseType)) {
+					query.append(" WHERE REPORTING_DATE = Convert(date, '" + dObj.getReportingDate() + "',113)");
+				} else {
+					query.append(" WHERE REPORTING_DATE = '" + dObj.getReportingDate() + "'");
+				}
+			}
+			String orderBy = " ORDER BY ROW_ID,VERSION_NO DESC";
 //				return getQueryPopupResults(dObj, queryPend, query, whereNotExists, orderBy, params);
-				String finalQuery ="SELECT ROW_NUMBER () OVER (ORDER BY ROW_ID, VERSION_NO DESC) NUM, ROWTEMP.* "
-						+ "  FROM ("+query.toString()+") ROWTEMP";
+			String finalQuery = "SELECT ROW_NUMBER () OVER (ORDER BY ROW_ID, VERSION_NO DESC) NUM, ROWTEMP.* "
+					+ "  FROM (" + query.toString() + ") ROWTEMP";
 //				collTemp =getJdbcTemplate().query(finalQuery, getMapper());
 //				return collTemp;
-				if ("CSV".equalsIgnoreCase(exportType)) {
-					String tmpFilePath = System.getProperty("java.io.tmpdir");
-					String csvFilePath = tmpFilePath + File.separator + vObject.getSourceTable() + ".csv";
+			if ("CSV".equalsIgnoreCase(exportType)) {
+				String tmpFilePath = System.getProperty("java.io.tmpdir");
+				String csvFilePath = tmpFilePath + File.separator + vObject.getSourceTable() + ".csv";
 
-					try (FileWriter fileWriter = new FileWriter(csvFilePath)) {
-						// Execute the query and process the ResultSet
-						getJdbcTemplate().query(finalQuery, new RowCallbackHandler() {
-							@Override
-							public void processRow(ResultSet rs) throws SQLException {
-								try {
-									writeResultSetToCsv(rs, fileWriter);
-								} catch (IOException e) {
-									throw new SQLException("Error writing to CSV file", e);
-								}
-							}
-						});
-					}
-
-					exceptionCode.setOtherInfo(vObject.getSourceTable());
-					exceptionCode.setResponse(tmpFilePath);
-					exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
-					return exceptionCode;
-				} else if("XL".equalsIgnoreCase(exportType)) {
-					String tempDir = System.getProperty("java.io.tmpdir");
-					String fileSuffix = isError ? "_Errors" : "";
-					String excelFilePath = tempDir + File.separator + dObj.getSourceTable()+"_HIS" + fileSuffix + ".xlsx";
-
-					exceptionCode.setOtherInfo(dObj.getSourceTable()+"_HIS" +  fileSuffix);
-
-					SXSSFWorkbook workbook = new SXSSFWorkbook();
-
-					if (isError) {
-						Sheet summarySheet = workbook.createSheet("Summary");
-
-						String assetFolderUrl = commonDao.getAssetFolderUrl(servletContext);
-						Map<Integer, XSSFCellStyle> styles = ExcelExportUtil.createStyles1(workbook, "4285F4");
-
-						vObject.setMaker(intCurrentUserId);
-						templateConfigWb.getScreenDao().fetchMakerVerifierNames(vObject);
-
-						ReportsVb reports = new ReportsVb();
-						reports.setApplicationTheme("8e8e8e");
-						reports.setReportTitle(vObject.getTemplateDescription() + " - Errors");
-						reports.setMakerName(vObject.getMakerName());
-
-						ExcelExportUtil.createPromptsPage(reports, summarySheet, workbook, assetFolderUrl, styles, 0);
-					}
-
-					Sheet dataSheet = workbook.createSheet(dObj.getSourceTable().toUpperCase()+"_HIS");
-					getJdbcTemplate().query(finalQuery.toString(), rs -> {
-						try {
-							writeResultSetToExcel(rs, dataSheet);
-						} catch (IOException e) {
-							throw new SQLException("Error writing to Excel file", e);
-						}
-					});
-
-
-					try (FileOutputStream fileOut = new FileOutputStream(excelFilePath)) {
-						workbook.write(fileOut);
-					}
-					workbook.close();
-
-					exceptionCode.setResponse(tempDir);
-					exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
-				return exceptionCode;	
-				}else {
-					String tmpFilePath = System.getProperty("java.io.tmpdir");
-					String xmlFilePath = tmpFilePath + File.separator + vObject.getSourceTable() + ".xml";
-
-					StringBuilder xmlData = new StringBuilder();
-					System.out.println("xml Query :"+finalQuery);
+				try (FileWriter fileWriter = new FileWriter(csvFilePath)) {
+					// Execute the query and process the ResultSet
 					getJdbcTemplate().query(finalQuery, new RowCallbackHandler() {
 						@Override
 						public void processRow(ResultSet rs) throws SQLException {
-							StringBuilder xmlBuilder = new StringBuilder();
-
 							try {
-								ResultSetMetaData metaData = rs.getMetaData();
-								int columnCount = metaData.getColumnCount();
-								Map<String, String> columnNameMap = new HashMap<>(); // Only stores column name mappings
-
-								
-								for (int i = 1; i <= columnCount; i++) {
-								    String originalColumnName = metaData.getColumnLabel(i);
-								    String normalizedKey = originalColumnName.replaceAll("_", "").toUpperCase();
-								    columnNameMap.put(normalizedKey, originalColumnName); 
-								}
-								int row = rs.getRow();
-
-								if (row == 1) {
-									rootElementCrsBuilderxml(xmlBuilder);
-
-									
-									messageSpecCrsXmlBuilder(rs, xmlBuilder, columnNameMap);
-
-									
-									/* modified by gokulkumar */
-									// CRS Body
-									xmlBuilder.append("<crs:CrsBody>");
-									xmlBuilder.append("<crs:ReportingFI>");
-
-									if (columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
-									    tagElement(xmlBuilder, "crs:ResCountryCode", rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
-									}
-									if (columnNameMap.containsKey("SENDINGCOMPANYIN") && columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
-									    tagElementWithAttribute(xmlBuilder,
-									        "crs:IN",
-									        rs.getString(columnNameMap.get("SENDINGCOMPANYIN")),
-									        "issuedBy",
-									        rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE"))
-									    );
-									}
-									if (columnNameMap.containsKey("ENTITYNAME")) {
-									    tagElement(xmlBuilder, "crs:Name", rs.getString(columnNameMap.get("ENTITYNAME")));
-									}
-									
-									
-									
-									/* modified by gokulkumar */
-									// Address
-									if (columnNameMap.containsKey("LEGALADDRESSTYPE")) {
-									    addressCrsXmlBuilder(rs, xmlBuilder, columnNameMap);
-									}
-
-									
-									docSpecCrsXmlBuilder(rs, xmlBuilder, columnNameMap);
-									xmlBuilder.append("</crs:ReportingFI>");
-									xmlBuilder.append("<crs:ReportingGroup>");
-								}
-
-								accountReportFooterCrsXmlBuilder(rs, xmlBuilder, columnNameMap);
-									
-
-									/* modified by gokulkumar */
-								// AccountHolder
-								xmlBuilder.append("<crs:AccountHolder>");
-								xmlBuilder.append("<crs:Individual>");
-								// ResCountryCode
-								if (columnNameMap.containsKey("RESCOUNTRYCODE")) {
-								    tagElement(xmlBuilder, "crs:ResCountryCode", rs.getString(columnNameMap.get("RESCOUNTRYCODE")));
-								}
-								// TIN with attribute "issuedBy"
-								String taxIdNumber = columnNameMap.containsKey("TAXIDNUMBER") 
-								        ? rs.getString(columnNameMap.get("TAXIDNUMBER")) : null;
-								String resCountryCode = columnNameMap.containsKey("RESCOUNTRYCODE") 
-								        ? rs.getString(columnNameMap.get("RESCOUNTRYCODE")) : null;
-
-								if (taxIdNumber != null) {
-								    tagElementWithAttribute(xmlBuilder, "crs:TIN", taxIdNumber, "issuedBy", resCountryCode != null ? resCountryCode : "");
-								}
-								// Name section
-								xmlBuilder.append("<crs:Name>");
-								if (columnNameMap.containsKey("FIRSTNAME")) {
-								    tagElement(xmlBuilder, "crs:FirstName", rs.getString(columnNameMap.get("FIRSTNAME")));
-								}
-
-								if (columnNameMap.containsKey("LASTNAME")) {
-								    tagElement(xmlBuilder, "crs:LastName", rs.getString(columnNameMap.get("LASTNAME")));
-								}
-								xmlBuilder.append("</crs:Name>");
-
-
-								
-								/* modified by gokulkumar */
-								// address
-								xmlBuilder.append("<crs:Address>");
-
-								// CountryCode
-								if (columnNameMap.containsKey("COUNTRYCODE")) {
-								    tagElement(xmlBuilder, "cfc:CountryCode", rs.getString(columnNameMap.get("COUNTRYCODE")));
-								}
-
-								if (columnNameMap.containsKey("ADDRESSFREE")) {
-								    String street = rs.getString(columnNameMap.get("ADDRESSFREE"));
-								    tagElement(xmlBuilder, "cfc:AddressFree", street != null ? street : "");
-								}
-
-								
-								
-								// BirthInfo
-								xmlBuilder.append("<crs:BirthInfo>");
-								if (columnNameMap.containsKey("DATEOFBIRTH")) {
-								    String birthDate = rs.getString(columnNameMap.get("DATEOFBIRTH"));
-								    tagElement(xmlBuilder, "crs:BirthDate", birthDate != null ? birthDate : "");
-								}
-								if (columnNameMap.containsKey("CITY")) {
-								    String city = rs.getString(columnNameMap.get("CITY"));
-								    tagElement(xmlBuilder, "cfc:City", city != null ? city : "");
-								}
-						
-								
-								xmlBuilder.append("<crs:CountryInfo>");
-								if (columnNameMap.containsKey("BIRTHCOUNTRYCODE")) {
-								    tagElement(xmlBuilder, "cfc:CountryCode", rs.getString(columnNameMap.get("BIRTHCOUNTRYCODE")));
-								}
-								xmlBuilder.append("</crs:CountryInfo>");
-								xmlBuilder.append("</crs:BirthInfo>");
-								xmlBuilder.append("</crs:Individual>");
-								xmlBuilder.append("</crs:AccountHolder>");
-								// Account Balance
-								String accountBalance = columnNameMap.containsKey("ACCOUNTBALANCE")
-								        ? rs.getString(columnNameMap.get("ACCOUNTBALANCE")) : null;
-
-								String acctCurrency = columnNameMap.containsKey("ACCTCURRENCY")
-								        ? rs.getString(columnNameMap.get("ACCTCURRENCY")) : null;
-
-								if (accountBalance != null) {
-								    tagElementWithAttribute(
-								        xmlBuilder,
-								        "crs:AccountBalance",
-								        accountBalance,
-								        "currCode", acctCurrency != null ? acctCurrency : ""
-								    );
-								}
-
-								
-
-								xmlBuilder.append("</crs:AccountReport>");
-								xmlData.append(xmlBuilder);
-
-							} catch (Exception e) {
-								e.printStackTrace();
-								throw new SQLException("Error generating CRS XML", e);
+								writeResultSetToCsv(rs, fileWriter);
+							} catch (IOException e) {
+								throw new SQLException("Error writing to CSV file", e);
 							}
 						}
 					});
-					// Append XML footer after processing all rows
-					xmlData.append("</crs:ReportingGroup>");
-					xmlData.append("</crs:CrsBody>" + "</crs:CRS_OECD>");
-
-					// Now xmlData contains the complete XML document
-
-//					System.out.println(xmlData.toString());
-					String beautifiedXml = beautifyXML(xmlData.toString(),vObject.getCategoryType());
-
-					// Write the beautified XML to a file
-					try (BufferedWriter writer = new BufferedWriter(new FileWriter(xmlFilePath))) {
-						writer.write(beautifiedXml);
-					}
-
-					// Set the response details in the exception code
-					exceptionCode.setOtherInfo(vObject.getSourceTable());
-					exceptionCode.setResponse(tmpFilePath); // Return the path of the generated XML file
-					exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
-					return exceptionCode;
 				}
 
-			} catch (Exception e) {
-				e.printStackTrace();
+				exceptionCode.setOtherInfo(vObject.getSourceTable());
+				exceptionCode.setResponse(tmpFilePath);
+				exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
+				return exceptionCode;
+			} else if ("XL".equalsIgnoreCase(exportType)) {
+				String tempDir = System.getProperty("java.io.tmpdir");
+				String fileSuffix = isError ? "_Errors" : "";
+				String excelFilePath = tempDir + File.separator + dObj.getSourceTable() + "_HIS" + fileSuffix + ".xlsx";
+
+				exceptionCode.setOtherInfo(dObj.getSourceTable() + "_HIS" + fileSuffix);
+
+				SXSSFWorkbook workbook = new SXSSFWorkbook();
+
+				if (isError) {
+					Sheet summarySheet = workbook.createSheet("Summary");
+
+					String assetFolderUrl = commonDao.getAssetFolderUrl(servletContext);
+					Map<Integer, XSSFCellStyle> styles = ExcelExportUtil.createStyles1(workbook, "4285F4");
+
+					vObject.setMaker(intCurrentUserId);
+					templateConfigWb.getScreenDao().fetchMakerVerifierNames(vObject);
+
+					ReportsVb reports = new ReportsVb();
+					reports.setApplicationTheme("8e8e8e");
+					reports.setReportTitle(vObject.getTemplateDescription() + " - Errors");
+					reports.setMakerName(vObject.getMakerName());
+
+					ExcelExportUtil.createPromptsPage(reports, summarySheet, workbook, assetFolderUrl, styles, 0);
+				}
+
+				Sheet dataSheet = workbook.createSheet(dObj.getSourceTable().toUpperCase() + "_HIS");
+				getJdbcTemplate().query(finalQuery.toString(), rs -> {
+					try {
+						writeResultSetToExcel(rs, dataSheet);
+					} catch (IOException e) {
+						throw new SQLException("Error writing to Excel file", e);
+					}
+				});
+
+				try (FileOutputStream fileOut = new FileOutputStream(excelFilePath)) {
+					workbook.write(fileOut);
+				}
+				workbook.close();
+
+				exceptionCode.setResponse(tempDir);
+				exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
+				return exceptionCode;
+			} else {
+				String tmpFilePath = System.getProperty("java.io.tmpdir");
+				String xmlFilePath = tmpFilePath + File.separator + vObject.getSourceTable() + ".xml";
+
+				StringBuilder xmlData = new StringBuilder();
+				System.out.println("xml Query :" + finalQuery);
+				getJdbcTemplate().query(finalQuery, new RowCallbackHandler() {
+
+					@Override
+					public void processRow(ResultSet rs) throws SQLException {
+						StringBuilder xmlBuilder = new StringBuilder();
+
+						try {
+							ResultSetMetaData metaData = rs.getMetaData();
+							int columnCount = metaData.getColumnCount();
+							Map<String, String> columnNameMap = new HashMap<>(); // Only stores column name mappings
+
+							for (int i = 1; i <= columnCount; i++) {
+								String originalColumnName = metaData.getColumnLabel(i);
+								String normalizedKey = originalColumnName.replaceAll("_", "").toUpperCase();
+								columnNameMap.put(normalizedKey, originalColumnName);
+							}
+							int row = rs.getRow();
+
+							if (row == 1) {
+								rootElementCrsBuilderxml(xmlBuilder);
+
+								messageSpecCrsXmlBuilder(rs, xmlBuilder, columnNameMap);
+
+								/* modified by gokulkumar */
+								// CRS Body
+								xmlBuilder.append("<crs:CrsBody>");
+								xmlBuilder.append("<crs:ReportingFI>");
+
+								if (columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
+									tagElement(xmlBuilder, "crs:ResCountryCode",
+											rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
+								}
+								if (columnNameMap.containsKey("SENDINGCOMPANYIN")
+										&& columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
+									tagElementWithAttribute(xmlBuilder, "crs:IN",
+											rs.getString(columnNameMap.get("SENDINGCOMPANYIN")), "issuedBy",
+											rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
+								}
+								if (columnNameMap.containsKey("ENTITYNAME")) {
+									tagElement(xmlBuilder, "crs:Name", rs.getString(columnNameMap.get("ENTITYNAME")));
+								}
+
+								/* modified by gokulkumar */
+								// Address
+								if (columnNameMap.containsKey("LEGALADDRESSTYPE")) {
+									addressCrsXmlBuilder(rs, xmlBuilder, columnNameMap);
+								}
+
+								docSpecCrsXmlBuilder(rs, xmlBuilder, columnNameMap);
+								xmlBuilder.append("</crs:ReportingFI>");
+								xmlBuilder.append("<crs:ReportingGroup>");
+							}
+
+							accountReportFooterCrsXmlBuilder(rs, xmlBuilder, columnNameMap);
+
+							/* modified by gokulkumar */
+							// AccountHolder
+							xmlBuilder.append("<crs:AccountHolder>");
+							xmlBuilder.append("<crs:Individual>");
+							// ResCountryCode
+							if (columnNameMap.containsKey("RESCOUNTRYCODE")) {
+								tagElement(xmlBuilder, "crs:ResCountryCode",
+										rs.getString(columnNameMap.get("RESCOUNTRYCODE")));
+							}
+							// TIN with attribute "issuedBy"
+							String taxIdNumber = columnNameMap.containsKey("TAXIDNUMBER")
+									? rs.getString(columnNameMap.get("TAXIDNUMBER"))
+									: null;
+							String resCountryCode = columnNameMap.containsKey("RESCOUNTRYCODE")
+									? rs.getString(columnNameMap.get("RESCOUNTRYCODE"))
+									: null;
+
+							if (taxIdNumber != null) {
+								tagElementWithAttribute(xmlBuilder, "crs:TIN", taxIdNumber, "issuedBy",
+										resCountryCode != null ? resCountryCode : "");
+							}
+							// Name section
+							xmlBuilder.append("<crs:Name>");
+							if (columnNameMap.containsKey("FIRSTNAME")) {
+								tagElement(xmlBuilder, "crs:FirstName", rs.getString(columnNameMap.get("FIRSTNAME")));
+							}
+
+							if (columnNameMap.containsKey("LASTNAME")) {
+								tagElement(xmlBuilder, "crs:LastName", rs.getString(columnNameMap.get("LASTNAME")));
+							}
+							xmlBuilder.append("</crs:Name>");
+
+							/* modified by gokulkumar */
+							// address
+							xmlBuilder.append("<crs:Address>");
+
+							// CountryCode
+							if (columnNameMap.containsKey("COUNTRYCODE")) {
+								tagElement(xmlBuilder, "cfc:CountryCode",
+										rs.getString(columnNameMap.get("COUNTRYCODE")));
+							}
+
+							if (columnNameMap.containsKey("ADDRESSFREE")) {
+								String street = rs.getString(columnNameMap.get("ADDRESSFREE"));
+								tagElement(xmlBuilder, "cfc:AddressFree", street != null ? street : "");
+							}
+
+							// BirthInfo
+							xmlBuilder.append("<crs:BirthInfo>");
+							if (columnNameMap.containsKey("DATEOFBIRTH")) {
+								String birthDate = rs.getString(columnNameMap.get("DATEOFBIRTH"));
+								tagElement(xmlBuilder, "crs:BirthDate", birthDate != null ? birthDate : "");
+							}
+							if (columnNameMap.containsKey("CITY")) {
+								String city = rs.getString(columnNameMap.get("CITY"));
+								tagElement(xmlBuilder, "cfc:City", city != null ? city : "");
+							}
+
+							xmlBuilder.append("<crs:CountryInfo>");
+							if (columnNameMap.containsKey("BIRTHCOUNTRYCODE")) {
+								tagElement(xmlBuilder, "cfc:CountryCode",
+										rs.getString(columnNameMap.get("BIRTHCOUNTRYCODE")));
+							}
+							xmlBuilder.append("</crs:CountryInfo>");
+							xmlBuilder.append("</crs:BirthInfo>");
+							xmlBuilder.append("</crs:Individual>");
+							xmlBuilder.append("</crs:AccountHolder>");
+							// Account Balance
+							String accountBalance = columnNameMap.containsKey("ACCOUNTBALANCE")
+									? rs.getString(columnNameMap.get("ACCOUNTBALANCE"))
+									: null;
+
+							String acctCurrency = columnNameMap.containsKey("ACCTCURRENCY")
+									? rs.getString(columnNameMap.get("ACCTCURRENCY"))
+									: null;
+
+							if (accountBalance != null) {
+								tagElementWithAttribute(xmlBuilder, "crs:AccountBalance", accountBalance, "currCode",
+										acctCurrency != null ? acctCurrency : "");
+							}
+
+							xmlBuilder.append("</crs:AccountReport>");
+							xmlData.append(xmlBuilder);
+
+						} catch (Exception e) {
+							e.printStackTrace();
+							throw new SQLException("Error generating CRS XML", e);
+						}
+					}
+				});
+				// Append XML footer after processing all rows
+				xmlData.append("</crs:ReportingGroup>");
+				xmlData.append("</crs:CrsBody>" + "</crs:CRS_OECD>");
+
+				// Now xmlData contains the complete XML document
+
+//					System.out.println(xmlData.toString());
+				String beautifiedXml = beautifyXML(xmlData.toString(), vObject.getCategoryType());
+
+				// Write the beautified XML to a file
+				try (BufferedWriter writer = new BufferedWriter(new FileWriter(xmlFilePath))) {
+					writer.write(beautifiedXml);
+				}
+
+				// Set the response details in the exception code
+				exceptionCode.setOtherInfo(vObject.getSourceTable());
+				exceptionCode.setResponse(tmpFilePath); // Return the path of
+														// the generated XML
+														// file
+				exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
 				return exceptionCode;
 			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return exceptionCode;
 		}
-	    private String generateCrsXml(ResultSet rs,int cnt) throws SQLException {
+	}
 
-	        StringBuilder xmlBuilder = new StringBuilder();
-	        boolean isFirstRow = true;
-	        ResultSetMetaData md = rs.getMetaData();
-	        int columnCount = md.getColumnCount();
-	        Map<String, String> columnNameMap = new HashMap<>();
+	private String generateCrsXml(ResultSet rs, int cnt) throws SQLException {
 
-	        while (rs.next()) {
+		StringBuilder xmlBuilder = new StringBuilder();
+		boolean isFirstRow = true;
+		ResultSetMetaData md = rs.getMetaData();
+		int columnCount = md.getColumnCount();
+		Map<String, String> columnNameMap = new HashMap<>();
 
-	            // Build column map once per row
-	        	columnNameMap.clear();
-	            for (int i = 1; i <= columnCount; i++) {
-	                String dbCol = md.getColumnLabel(i);
-	                String key = dbCol.replaceAll("_", "").toUpperCase();
-	                columnNameMap.put(key, dbCol);
-	            }
-            if(isFirstRow){
+		while (rs.next()) {
+
+			// Build column map once per row
+			columnNameMap.clear();
+			for (int i = 1; i <= columnCount; i++) {
+				String dbCol = md.getColumnLabel(i);
+				String key = dbCol.replaceAll("_", "").toUpperCase();
+				columnNameMap.put(key, dbCol);
+			}
+			if (isFirstRow) {
 				// Start root element
-            	rootElementCrsBuilderxml(xmlBuilder);
+				rootElementCrsBuilderxml(xmlBuilder);
 
 				messageSpecCrsXmlBuilder(rs, xmlBuilder, columnNameMap);
 
@@ -4099,666 +4174,641 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 				xmlBuilder.append("<crs:ReportingFI>");
 
 				if (columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
-				    tagElement(xmlBuilder, "crs:ResCountryCode", rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
+					tagElement(xmlBuilder, "crs:ResCountryCode", rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
 				}
 				if (columnNameMap.containsKey("SENDINGCOMPANYIN") && columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
-				    tagElementWithAttribute(xmlBuilder,
-				        "crs:IN",
-				        rs.getString(columnNameMap.get("SENDINGCOMPANYIN")),
-				        "issuedBy",
-				        rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE"))
-				    );
+					tagElementWithAttribute(xmlBuilder, "crs:IN", rs.getString(columnNameMap.get("SENDINGCOMPANYIN")),
+							"issuedBy", rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
 				}
 				if (columnNameMap.containsKey("ENTITYNAME")) {
-				    tagElement(xmlBuilder, "crs:Name", rs.getString(columnNameMap.get("ENTITYNAME")));
+					tagElement(xmlBuilder, "crs:Name", rs.getString(columnNameMap.get("ENTITYNAME")));
 				}
-				
-				
+
 				// Address
 				if (columnNameMap.containsKey("LEGALADDRESSTYPE")) {
-				    addressCrsXmlBuilder(rs, xmlBuilder, columnNameMap);
+					addressCrsXmlBuilder(rs, xmlBuilder, columnNameMap);
 				}
 
 				// DocSpec
 				docSpecCrsXmlBuilder(rs, xmlBuilder, columnNameMap);
 				xmlBuilder.append("</crs:ReportingFI>");
 				xmlBuilder.append("<crs:ReportingGroup>");
-				 isFirstRow = false;
+				isFirstRow = false;
 			}
-	            accountReportCrsXmlBuilder(rs, xmlBuilder, columnNameMap);
-	         // ---------------- FOOTER ----------------
-				// AccountReport
-				accountReportFooterCrsXmlBuilder(rs, xmlBuilder, columnNameMap);
-					
-
-				
-				
-				// AccountHolder
-				accountHolderCrsXmlBuilder(rs, xmlBuilder, columnNameMap);
-				String accountBalance = columnNameMap.containsKey("ACCOUNTBALANCE")
-				        ? rs.getString(columnNameMap.get("ACCOUNTBALANCE")) : null;
-
-				String acctCurrency = columnNameMap.containsKey("ACCTCURRENCY")
-				        ? rs.getString(columnNameMap.get("ACCTCURRENCY")) : null;
-
-				if (accountBalance != null) {
-				    tagElementWithAttribute(
-				        xmlBuilder,
-				        "crs:AccountBalance",
-				        accountBalance,
-				        "currCode", acctCurrency != null ? acctCurrency : ""
-				    );
-				}
-
-				
-
-				xmlBuilder.append("</crs:AccountReport>");
-	        }
-			xmlBuilder.append("</crs:ReportingGroup>");
-			xmlBuilder.append("</crs:CrsBody>" + "</crs:CRS_OECD>");
-
-
-	        return xmlBuilder.toString();
-	    }
-
-		private void accountHolderCrsXmlBuilder(ResultSet rs, StringBuilder xmlBuilder,
-				Map<String, String> columnNameMap) throws SQLException {
-			xmlBuilder.append("<crs:AccountHolder>");
-			xmlBuilder.append("<crs:Individual>");
-			// ResCountryCode
-			if (columnNameMap.containsKey("RESCOUNTRYCODE")) {
-			    tagElement(xmlBuilder, "crs:ResCountryCode", rs.getString(columnNameMap.get("RESCOUNTRYCODE")));
-			}
-			// TIN with attribute "issuedBy"
-			String taxIdNumber = columnNameMap.containsKey("TAXIDNUMBER") 
-			        ? rs.getString(columnNameMap.get("TAXIDNUMBER")) : null;
-			String resCountryCode = columnNameMap.containsKey("RESCOUNTRYCODE") 
-			        ? rs.getString(columnNameMap.get("RESCOUNTRYCODE")) : null;
-
-			if (taxIdNumber != null) {
-			    tagElementWithAttribute(xmlBuilder, "crs:TIN", taxIdNumber, "issuedBy", resCountryCode != null ? resCountryCode : "");
-			}
-			// Name section
-			xmlBuilder.append("<crs:Name>");
-			if (columnNameMap.containsKey("FIRSTNAME")) {
-			    tagElement(xmlBuilder, "crs:FirstName", rs.getString(columnNameMap.get("FIRSTNAME")));
-			}
-
-			if (columnNameMap.containsKey("LASTNAME")) {
-			    tagElement(xmlBuilder, "crs:LastName", rs.getString(columnNameMap.get("LASTNAME")));
-			}
-			xmlBuilder.append("</crs:Name>");
-
-
-			// address
-			xmlBuilder.append("<crs:Address>");
-
-			// CountryCode
-			if (columnNameMap.containsKey("COUNTRYCODE")) {
-			    tagElement(xmlBuilder, "cfc:CountryCode", rs.getString(columnNameMap.get("COUNTRYCODE")));
-			}
-
-			if (columnNameMap.containsKey("ADDRESSFREE")) {
-			    String street = rs.getString(columnNameMap.get("ADDRESSFREE"));
-			    tagElement(xmlBuilder, "cfc:AddressFree", street != null ? street : "");
-			}
-			xmlBuilder.append("</crs:Address>");
-
-			
-			// BirthInfo
-			xmlBuilder.append("<crs:BirthInfo>");
-			if (columnNameMap.containsKey("DATEOFBIRTH")) {
-			    String birthDate = rs.getString(columnNameMap.get("DATEOFBIRTH"));
-			    tagElement(xmlBuilder, "crs:BirthDate", birthDate != null ? birthDate : "");
-			}
-			if (columnNameMap.containsKey("CITY")) {
-			    String city = rs.getString(columnNameMap.get("CITY"));
-			    tagElement(xmlBuilder, "cfc:City", city != null ? city : "");
-			}
-
-			
-			xmlBuilder.append("<crs:CountryInfo>");
-			if (columnNameMap.containsKey("BIRTHCOUNTRYCODE")) {
-			    tagElement(xmlBuilder, "cfc:CountryCode", rs.getString(columnNameMap.get("BIRTHCOUNTRYCODE")));
-			}
-			xmlBuilder.append("</crs:CountryInfo>");
-			xmlBuilder.append("</crs:BirthInfo>");
-			xmlBuilder.append("</crs:Individual>");
-			xmlBuilder.append("</crs:AccountHolder>");
-		}
-
-		private void accountReportFooterCrsXmlBuilder(ResultSet rs, StringBuilder xmlBuilder,
-				Map<String, String> columnNameMap) throws SQLException {
-			xmlBuilder.append("<crs:AccountReport>");
-			xmlBuilder.append("<crs:DocSpec>");
-			
-			if (columnNameMap.containsKey("DOCTYPEINDIC")) {
-			    tagElement(xmlBuilder, "stf:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
-			}
-			
-			
-			if (columnNameMap.containsKey("DOCREFID")) {
-			    tagElement(xmlBuilder, "stf:DocRefId", rs.getString(columnNameMap.get("DOCREFID"))+CommonUtils.generateRandom32());
-			}
-			xmlBuilder.append("</crs:DocSpec>");
- 
-			
-			String accountNumber = columnNameMap.containsKey("ACCOUNTNUMBER")
-				    ? rs.getString(columnNameMap.get("ACCOUNTNUMBER")) : null;
-
-				String accountType = columnNameMap.containsKey("ACCOUNTTYPE")
-				    ? rs.getString(columnNameMap.get("ACCOUNTTYPE")) : "";
-
-				String accountStatus = columnNameMap.containsKey("ACCOUNTSTATUS")
-				    ? rs.getString(columnNameMap.get("ACCOUNTSTATUS")) : null;
-
-				if (accountNumber != null) {
-					 tagElement(xmlBuilder, "crs:AccountNumber", accountNumber);
-				}
-		}
-
-		private void accountReportCrsXmlBuilder(ResultSet rs, StringBuilder xmlBuilder,
-				Map<String, String> columnNameMap) throws SQLException {
-			xmlBuilder.append("<crs:AccountReport>");
-
-			// DocSpec
-			xmlBuilder.append("<crs:DocSpec>");
-
-			if (columnNameMap.containsKey("DOCTYPEINDIC"))
-			    tagElement(xmlBuilder, "stf:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
-
-			if (columnNameMap.containsKey("DOCREFID"))
-			    tagElement(xmlBuilder, "stf:DocRefId",
-			        rs.getString(columnNameMap.get("DOCREFID")) + CommonUtils.generateRandom32());
-
-			xmlBuilder.append("</crs:DocSpec>");
-
-			// Account Number
-			if (columnNameMap.containsKey("ACCOUNTNUMBER"))
-			    tagElement(xmlBuilder, "crs:AccountNumber", rs.getString(columnNameMap.get("ACCOUNTNUMBER")));
-
-			// Account Holder
-			xmlBuilder.append("<crs:AccountHolder><crs:Individual>");
-
-			if (columnNameMap.containsKey("RESCOUNTRYCODE"))
-			    tagElement(xmlBuilder, "crs:ResCountryCode", rs.getString(columnNameMap.get("RESCOUNTRYCODE")));
-
-			if (columnNameMap.containsKey("TAXIDNUMBER"))
-			    tagElementWithAttribute(xmlBuilder, "crs:TIN",
-			        rs.getString(columnNameMap.get("TAXIDNUMBER")), "issuedBy",
-			        rs.getString(columnNameMap.get("RESCOUNTRYCODE")));
-
-			xmlBuilder.append("<crs:Name>");
-			if (columnNameMap.containsKey("FIRSTNAME"))
-			    tagElement(xmlBuilder, "crs:FirstName", rs.getString(columnNameMap.get("FIRSTNAME")));
-			if (columnNameMap.containsKey("LASTNAME"))
-			    tagElement(xmlBuilder, "crs:LastName", rs.getString(columnNameMap.get("LASTNAME")));
-			xmlBuilder.append("</crs:Name>");
-
-			xmlBuilder.append("</crs:Individual></crs:AccountHolder>");
-
-			// Birth Info
-			xmlBuilder.append("<crs:BirthInfo>");
-			if (columnNameMap.containsKey("DATEOFBIRTH"))
-			    tagElement(xmlBuilder, "crs:BirthDate", rs.getString(columnNameMap.get("DATEOFBIRTH")));
-			xmlBuilder.append("</crs:BirthInfo>");
-
-			// Account Balance
-			if (columnNameMap.containsKey("ACCOUNTBALANCE"))
-			    tagElementWithAttribute(xmlBuilder, "crs:AccountBalance",
-			        rs.getString(columnNameMap.get("ACCOUNTBALANCE")),
-			        "currCode", rs.getString(columnNameMap.get("ACCTCURRENCY")));
-
-			xmlBuilder.append("</crs:AccountReport>");
-		}
-
-		private void docSpecCrsXmlBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
-				throws SQLException {
-			xmlBuilder.append("<crs:DocSpec>");
-
-			if (columnNameMap.containsKey("DOCTYPEINDIC")) {
-			    tagElement(xmlBuilder, "stf:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
-			}
-
-			if (columnNameMap.containsKey("MESSAGEREFID")) {
-			    tagElement(xmlBuilder, "stf:DocRefId", rs.getString(columnNameMap.get("MESSAGEREFID")));
-			}
-
-			xmlBuilder.append("</crs:DocSpec>");
-		}
-
-		private void addressCrsXmlBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
-				throws SQLException {
-			xmlBuilder.append("<crs:Address legalAddressType=\"")
-			          .append(rs.getString(columnNameMap.get("LEGALADDRESSTYPE")))
-			          .append("\">");
-
-			if (columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
-			    tagElement(xmlBuilder, "cfc:CountryCode", rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
-			}
-
-			xmlBuilder.append("<cfc:AddressFix>");
-
-			if (columnNameMap.containsKey("ENTITYSTREET")) {
-			    tagElement(xmlBuilder, "cfc:Street", rs.getString(columnNameMap.get("ENTITYSTREET")));
-			}
-
-			if (columnNameMap.containsKey("ENTITYBUILDINGIDENTIFIER")) {
-			    tagElement(xmlBuilder, "cfc:BuildingIdentifier", rs.getString(columnNameMap.get("ENTITYBUILDINGIDENTIFIER")));
-			}
-
-			if (columnNameMap.containsKey("ENTITYCITY")) {
-			    tagElement(xmlBuilder, "cfc:City", rs.getString(columnNameMap.get("ENTITYCITY")));
-			}
-
-			xmlBuilder.append("</cfc:AddressFix>");
-			xmlBuilder.append("</crs:Address>");
-		}
-
-		private void messageSpecCrsXmlBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
-				throws SQLException {
-			xmlBuilder.append("<crs:MessageSpec>");
-			if (columnNameMap.containsKey("SENDINGCOMPANYIN")) {
-			    tagElement(xmlBuilder, "crs:SendingCompanyIN", rs.getString(columnNameMap.get("SENDINGCOMPANYIN")));
-			}
-			if (columnNameMap.containsKey("TRANSMITTINGCOUNTRY")) {
-			    tagElement(xmlBuilder, "crs:TransmittingCountry", rs.getString(columnNameMap.get("TRANSMITTINGCOUNTRY")));
-			}
-			if (columnNameMap.containsKey("RECEIVINGCOUNTRY")) {
-			    tagElement(xmlBuilder, "crs:ReceivingCountry", rs.getString(columnNameMap.get("RECEIVINGCOUNTRY")));
-			}
-			if (columnNameMap.containsKey("MESSAGETYPE")) {
-			    tagElement(xmlBuilder, "crs:MessageType", rs.getString(columnNameMap.get("MESSAGETYPE")));
-			}
-			if (columnNameMap.containsKey("WARNING")) {
-			    tagElement(xmlBuilder, "crs:Warning", rs.getString(columnNameMap.get("WARNING")));
-			}
-			if (columnNameMap.containsKey("CONTACT")) {
-			    tagElement(xmlBuilder, "crs:Contact", rs.getString(columnNameMap.get("CONTACT")));
-			}
-			if (columnNameMap.containsKey("MESSAGEREFID")) {
-			    tagElement(xmlBuilder, "crs:MessageRefId", rs.getString(columnNameMap.get("MESSAGEREFID"))+CommonUtils.generateRandom32());
-			}
-			if (columnNameMap.containsKey("MESSAGETYPEINDIC")) {
-			    tagElement(xmlBuilder, "crs:MessageTypeIndic", rs.getString(columnNameMap.get("MESSAGETYPEINDIC")));
-			}
-			if (columnNameMap.containsKey("REPORTINGPERIOD")) {
-			    tagElement(xmlBuilder, "crs:ReportingPeriod", rs.getString(columnNameMap.get("REPORTINGPERIOD")));
-			}
-			if (columnNameMap.containsKey("TIMESTAMP")) {
-			    tagElement(xmlBuilder, "crs:Timestamp", rs.getString(columnNameMap.get("TIMESTAMP")));
-			}
-
-			xmlBuilder.append("</crs:MessageSpec>");
-		}
-
-		private void rootElementCrsBuilderxml(StringBuilder xmlBuilder) {
-			xmlBuilder.append("<crs:CRS_OECD xmlns:crs=\"urn:oecd:ties:crs:v2\" ")
-			.append("xmlns:cfc=\"urn:oecd:ties:commontypesfatcacrs:v2\" ")
-			.append("xmlns:ftc=\"urn:oecd:ties:fatca:v1\" ")
-			.append("xmlns:iso=\"urn:oecd:ties:isocrstypes:v1\" ")
-			.append("xmlns:stf=\"urn:oecd:ties:crsstf:v5\" ")
-			.append("xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" ")
-			.append("version=\"2.0\" ")
-			.append("xsi:schemaLocation=\"urn:oecd:ties:crs:v1 CrsXML_v2.0.xsd\">");
-		}	    
-	    
-	    /**
-	     * creating a fatca Xml
-	     * @param rs
-	     * @return
-	     * @throws SQLException
-	     */
-	    private String generateFatcaXml(ResultSet rs,int cnt,int internalStatus) throws SQLException {
-
-	        StringBuilder xmlBuilder = new StringBuilder();
-	        boolean isFirstRow = true;
-	        ResultSetMetaData md = rs.getMetaData();
-	        int columnCount = md.getColumnCount();
-	        Map<String, String> columnNameMap = new HashMap<>();
-
-			while (rs.next()) {
-				// Build column map once per row
-				columnNameMap.clear();
-				for (int i = 1; i <= columnCount; i++) {
-					String dbCol = md.getColumnLabel(i);
-					String key = dbCol.replaceAll("_", "").toUpperCase();
-					columnNameMap.put(key, dbCol);
-				}
-				if (isFirstRow) {
-
-					// Start root element
-					buildDefaultXmlBuilder(xmlBuilder);
-					
-					//Message Spec
-					xmlMessageSpecBuilder(rs, xmlBuilder, columnNameMap);
-					
-					xmlBuilder.append("<ftc:FATCA>");
-					xmlBuilder.append("<ftc:ReportingFI>");
-
-					if (columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
-						tagElement(xmlBuilder, "sfa:ResCountryCode",
-								rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
-					}
-					if (columnNameMap.containsKey("SENDINGCOMPANYIN")
-							&& columnNameMap.containsKey("RECEIVINGCOUNTRY")) {
-						tagElementWithAttribute(xmlBuilder, "sfa:TIN",
-								rs.getString(columnNameMap.get("SENDINGCOMPANYIN")), "issuedBy",
-								rs.getString(columnNameMap.get("RECEIVINGCOUNTRY")));
-					}
-					if (columnNameMap.containsKey("ENTITYNAME") && rs.getString(columnNameMap.get("ENTITYNAME"))!=null) {
-						tagElement(xmlBuilder, "sfa:Name", rs.getString(columnNameMap.get("ENTITYNAME")));
-					}
-
-					// Address
-					if (columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
-						xmlAddressTagBuilder(rs, xmlBuilder, columnNameMap);
-					}
-
-					if (columnNameMap.containsKey("FILERCATEGORY")) {
-						tagElement(xmlBuilder, "ftc:FilerCategory", rs.getString(columnNameMap.get("FILERCATEGORY")));
-					}
-					xmlBuilder.append("<ftc:DocSpec>");
-					if (columnNameMap.containsKey("DOCTYPEINDIC")) {
-						tagElement(xmlBuilder, "ftc:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
-					}
-					if (columnNameMap.containsKey("DOCREFID")) {
-						tagElement(xmlBuilder, "ftc:DocRefId", rs.getString(columnNameMap.get("DOCREFID"))+"."+CommonUtils.generateRandom32());
-					}
-
-					xmlBuilder.append("</ftc:DocSpec>");
-					xmlBuilder.append("</ftc:ReportingFI>");
-					xmlBuilder.append("<ftc:ReportingGroup>");
-					isFirstRow = false;
-					if(internalStatus == 0) {
-						createPoolReport(rs, xmlBuilder, columnNameMap);
-						return xmlBuilder.toString();
-					}
-					if(cnt==0) {
-						createDefaultStructure(rs, xmlBuilder, columnNameMap);
-					}
-				}
-				// DocSpec
-				if (cnt != 0) {
-					xmlBuilder.append("<ftc:AccountReport>");
-					xmldocSpecBuilder(rs, xmlBuilder, columnNameMap);
-					// Account Holder Xml
-					xmlAccountHolderBuilder(rs, xmlBuilder, columnNameMap);
-					xmlBuilder.append("</ftc:AccountReport>");
-					// ---------------- FOOTER ----------------
-					// AccountReport
-//					xmlFooterAccountReportBuilder(rs, xmlBuilder, columnNameMap);
-					xmlPaymentBuilder(rs, xmlBuilder, columnNameMap);
-				}
-			}
-			xmlBuilder.append("</ftc:ReportingGroup>");
-			xmlBuilder.append("</ftc:FATCA>");
-			xmlBuilder.append("</ftc:FATCA_OECD>");
-			xmlBuilder.append("</Object>");
-			xmlBuilder.append("</Signature>");
-
-
-	        return xmlBuilder.toString();
-	    }
-	    
-
-		private void createPoolReport(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap) {
-			try {
-				xmlBuilder.append("<ftc:PoolReport>");
-				xmlBuilder.append("<ftc:DocSpec>");
-
-				if (columnNameMap.containsKey("DOCTYPEINDIC"))
-					tagElement(xmlBuilder, "ftc:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
-
-				if (columnNameMap.containsKey("MESSAGEREFID"))
-					tagElement(xmlBuilder, "ftc:DocRefId",
-							rs.getString(columnNameMap.get("MESSAGEREFID")) + CommonUtils.generateRandom32());
-
-				xmlBuilder.append("</ftc:DocSpec>");
-				if (columnNameMap.containsKey("ACCOUNTCOUNT"))
-					tagElement(xmlBuilder, "ftc:AccountCount",
-							rs.getString(columnNameMap.get("ACCOUNTCOUNT")) );
-				if (columnNameMap.containsKey("POOLREPORTTYPE"))
-					tagElement(xmlBuilder, "ftc:AccountPoolReportType",
-							rs.getString(columnNameMap.get("POOLREPORTTYPE")) );
-				if (columnNameMap.containsKey("TOTALACCOUNTBALANCE"))
-				    tagElementWithAttribute(xmlBuilder, "ftc:AccountBalance",
-				        ""+rs.getInt(columnNameMap.get("TOTALACCOUNTBALANCE")),
-				        "currCode", rs.getString(columnNameMap.get("CURRENCYCODE")));
-
-				xmlBuilder.append("</ftc:PoolReport>");
-				xmlBuilder.append("</ftc:ReportingGroup>");
-				xmlBuilder.append(" </ftc:FATCA>");
-				xmlBuilder.append("</ftc:FATCA_OECD>");
-				xmlBuilder.append("</Object>");
-				xmlBuilder.append("</Signature>");
-				
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-
-		}
-
-		private void createDefaultStructure(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap) {
-			try {
-				xmlBuilder.append("<ftc:NilReport>");
-				xmlBuilder.append("<ftc:DocSpec>");
-
-				if (columnNameMap.containsKey("MESSAGETYPE"))
-					tagElement(xmlBuilder, "ftc:DocTypeIndic", rs.getString(columnNameMap.get("MESSAGETYPE")));
-
-				if (columnNameMap.containsKey("MESSAGEREFID"))
-					tagElement(xmlBuilder, "ftc:DocRefId",
-							rs.getString(columnNameMap.get("MESSAGEREFID")) + CommonUtils.generateRandom32());
-
-				xmlBuilder.append("</ftc:DocSpec>");
-				xmlBuilder.append("<ftc:NoAccountToReport>");
-				xmlBuilder.append("yes") ;
-				xmlBuilder.append("</ftc:NoAccountToReport>");
-
-				xmlBuilder.append("</ftc:NilReport>");
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-
-		}
-
-		private void xmlFooterAccountReportBuilder(ResultSet rs, StringBuilder xmlBuilder,
-				Map<String, String> columnNameMap) throws SQLException {
-			
-			xmlBuilder.append("<ftc:AccountReport>");
-			xmlBuilder.append("<ftc:DocSpec>");
-
-			if (columnNameMap.containsKey("DOCTYPEINDIC")) {
-				tagElement(xmlBuilder, "ftc:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
-			}
-
-			if (columnNameMap.containsKey("DOCREFID")) {
-				tagElement(xmlBuilder, "ftc:DocRefId",
-						rs.getString(columnNameMap.get("DOCREFID")) + CommonUtils.generateRandom32());
-			}
-			xmlBuilder.append("</ftc:DocSpec>");
-
-			String accountNumber = columnNameMap.containsKey("CUSTOMERID")
-					? rs.getString(columnNameMap.get("CUSTOMERID"))
-					: null;
-
-			String accountType = columnNameMap.containsKey("ACCOUNTTYPE")
-					? rs.getString(columnNameMap.get("ACCOUNTTYPE"))
-					: "";
-
-			String accountStatus = columnNameMap.containsKey("ACCOUNTSTATUS")
-					? rs.getString(columnNameMap.get("ACCOUNTSTATUS"))
-					: null;
-
-			if (accountNumber != null) {
-				tagElement(xmlBuilder, "ftc:AccountNumber", accountNumber);
-			}
-			if (accountNumber != null && accountStatus !=null ) {
-				if (accountStatus.equalsIgnoreCase("0")) {
-					tagElement(xmlBuilder, "ftc:AccountClosed", "false");
-				}else {
-					tagElement(xmlBuilder, "ftc:AccountClosed", "true");
-				}
-			}
-			xmlBuilder.append("<sfa:Address>");
-
-			// CountryCode
-			if (columnNameMap.containsKey("COUNTRYCODE")) {
-				tagElement(xmlBuilder, "sfa:CountryCode", rs.getString(columnNameMap.get("COUNTRYCODE")));
-			}
-//			if (columnNameMap.containsKey("ADDRESSFREE")) {
-//				String street = rs.getString(columnNameMap.get("ADDRESSFREE"));
-//				tagElement(xmlBuilder, "sfa:AddressFree", street != null ? street : "");
-//			}
-			xmlBuilder.append("<sfa:AddressFix>");
-			if (columnNameMap.containsKey("STREET")) {
-				tagElement(xmlBuilder, "sfa:Street", rs.getString(columnNameMap.get("STREET")));
-			}
-			if (columnNameMap.containsKey("USZIPCODE")) {
-				tagElement(xmlBuilder, "sfa:PostCode", rs.getString(columnNameMap.get("USZIPCODE")));
-			}
-			if (columnNameMap.containsKey("USCITY")) {
-				tagElement(xmlBuilder, "sfa:City", rs.getString(columnNameMap.get("USCITY")));
-			}
-			if (columnNameMap.containsKey("COUNTRYSUBENTITY")) {
-				tagElement(xmlBuilder, "sfa:CountrySubentity", rs.getString(columnNameMap.get("COUNTRYSUBENTITY")));
-			}
-			xmlBuilder.append("</sfa:AddressFix>");
-			if (columnNameMap.containsKey("ADDRESSFREE")) {
-				tagElement(xmlBuilder, "sfa:AddressFree", rs.getString(columnNameMap.get("ADDRESSFREE")));
-			}
-			xmlBuilder.append("</sfa:Address>");
-
-			// Account Holder
-			xmlAccountHolderFooterBuilder(rs, xmlBuilder, columnNameMap);
-			
-			//Substantial Owner
-			xmlSubstantialOwnerBuilder(rs, xmlBuilder, columnNameMap);
-
-			// Account Balance
+			accountReportCrsXmlBuilder(rs, xmlBuilder, columnNameMap);
+			// ---------------- FOOTER ----------------
+			// AccountReport
+			accountReportFooterCrsXmlBuilder(rs, xmlBuilder, columnNameMap);
+
+			// AccountHolder
+			accountHolderCrsXmlBuilder(rs, xmlBuilder, columnNameMap);
 			String accountBalance = columnNameMap.containsKey("ACCOUNTBALANCE")
 					? rs.getString(columnNameMap.get("ACCOUNTBALANCE"))
 					: null;
 
-			String acctCurrency = columnNameMap.containsKey("CURRENCYCODE")
-					? rs.getString(columnNameMap.get("CURRENCYCODE"))
+			String acctCurrency = columnNameMap.containsKey("ACCTCURRENCY")
+					? rs.getString(columnNameMap.get("ACCTCURRENCY"))
 					: null;
 
 			if (accountBalance != null) {
-				tagElementWithAttribute(xmlBuilder, "ftc:AccountBalance", accountBalance, "currCode",
+				tagElementWithAttribute(xmlBuilder, "crs:AccountBalance", accountBalance, "currCode",
 						acctCurrency != null ? acctCurrency : "");
 			}
-			
-			//Payment Builder
-			xmlPaymentBuilder(rs, xmlBuilder, columnNameMap);
 
-			xmlBuilder.append("</ftc:AccountReport>");
+			xmlBuilder.append("</crs:AccountReport>");
+		}
+		xmlBuilder.append("</crs:ReportingGroup>");
+		xmlBuilder.append("</crs:CrsBody>" + "</crs:CRS_OECD>");
+
+		return xmlBuilder.toString();
+	}
+
+	private void accountHolderCrsXmlBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
+			throws SQLException {
+		xmlBuilder.append("<crs:AccountHolder>");
+		xmlBuilder.append("<crs:Individual>");
+		// ResCountryCode
+		if (columnNameMap.containsKey("RESCOUNTRYCODE")) {
+			tagElement(xmlBuilder, "crs:ResCountryCode", rs.getString(columnNameMap.get("RESCOUNTRYCODE")));
+		}
+		// TIN with attribute "issuedBy"
+		String taxIdNumber = columnNameMap.containsKey("TAXIDNUMBER") ? rs.getString(columnNameMap.get("TAXIDNUMBER"))
+				: null;
+		String resCountryCode = columnNameMap.containsKey("RESCOUNTRYCODE")
+				? rs.getString(columnNameMap.get("RESCOUNTRYCODE"))
+				: null;
+
+		if (taxIdNumber != null) {
+			tagElementWithAttribute(xmlBuilder, "crs:TIN", taxIdNumber, "issuedBy",
+					resCountryCode != null ? resCountryCode : "");
+		}
+		// Name section
+		xmlBuilder.append("<crs:Name>");
+		if (columnNameMap.containsKey("FIRSTNAME")) {
+			tagElement(xmlBuilder, "crs:FirstName", rs.getString(columnNameMap.get("FIRSTNAME")));
 		}
 
-		private void xmlSubstantialOwnerBuilder(ResultSet rs, StringBuilder xmlBuilder,
-				Map<String, String> columnNameMap) throws SQLException {
-			xmlBuilder.append("<ftc:SubstantialOwner>");
-			xmlBuilder.append("<ftc:Individual>");
+		if (columnNameMap.containsKey("LASTNAME")) {
+			tagElement(xmlBuilder, "crs:LastName", rs.getString(columnNameMap.get("LASTNAME")));
+		}
+		xmlBuilder.append("</crs:Name>");
 
-			if (columnNameMap.containsKey("TIN") && rs.getString(columnNameMap.get("TIN"))!=null)
-				tagElementWithAttribute(xmlBuilder, "sfa:TIN", rs.getString(columnNameMap.get("TIN")),
-						"issuedBy", rs.getString(columnNameMap.get("TINISSUEDJURISDICTION")));
+		// address
+		xmlBuilder.append("<crs:Address>");
 
-			xmlBuilder.append("<sfa:Name>");
-			
-			if (columnNameMap.containsKey("CUSTOMERNAME"))
-				tagElement(xmlBuilder, "sfa:FirstName", rs.getString(columnNameMap.get("CUSTOMERNAME")));
-			if (columnNameMap.containsKey("MIDDLENAME"))
-				tagElement(xmlBuilder, "sfa:MiddleName", rs.getString(columnNameMap.get("MIDDLENAME")));
-			if (columnNameMap.containsKey("LASTNAME"))
-				tagElement(xmlBuilder, "sfa:LastName", rs.getString(columnNameMap.get("LASTNAME")));
-			
-			xmlBuilder.append("</sfa:Name>");
-			
-			xmlBuilder.append("<sfa:Address>");
-
-			// CountryCode
-			if (columnNameMap.containsKey("COUNTRYCODE")) {
-				tagElement(xmlBuilder, "sfa:CountryCode", rs.getString(columnNameMap.get("COUNTRYCODE")));
-			}
-			if (columnNameMap.containsKey("ADDRESSFREE")) {
-				String street = rs.getString(columnNameMap.get("ADDRESSFREE"));
-				tagElement(xmlBuilder, "sfa:AddressFree", street != null ? street : "");
-			}
-			xmlBuilder.append("</sfa:Address>");
-			xmlBuilder.append("</ftc:Individual>");
-			xmlBuilder.append("</ftc:SubstantialOwner>");
+		// CountryCode
+		if (columnNameMap.containsKey("COUNTRYCODE")) {
+			tagElement(xmlBuilder, "cfc:CountryCode", rs.getString(columnNameMap.get("COUNTRYCODE")));
 		}
 
-		private void xmlAccountHolderFooterBuilder(ResultSet rs, StringBuilder xmlBuilder,
-				Map<String, String> columnNameMap) throws SQLException {
-			xmlBuilder.append("<ftc:AccountHolder>");
-			xmlBuilder.append("<ftc:Individual>");
-			// ResCountryCode
-			if (columnNameMap.containsKey("RESCOUNTRYCODE")) {
-				tagElement(xmlBuilder, "sfa:ResCountryCode", rs.getString(columnNameMap.get("RESCOUNTRYCODE")));
-			}
-			// TIN with attribute "issuedBy"
-			String taxIdNumber = columnNameMap.containsKey("TIN")
-					? rs.getString(columnNameMap.get("TIN"))
-					: null;
-			String resCountryCode = columnNameMap.containsKey("RESCOUNTRYCODE")
-					? rs.getString(columnNameMap.get("RESCOUNTRYCODE"))
-					: null;
+		if (columnNameMap.containsKey("ADDRESSFREE")) {
+			String street = rs.getString(columnNameMap.get("ADDRESSFREE"));
+			tagElement(xmlBuilder, "cfc:AddressFree", street != null ? street : "");
+		}
+		xmlBuilder.append("</crs:Address>");
 
-			if (taxIdNumber != null) {
-				tagElementWithAttribute(xmlBuilder, "sfa:TIN", taxIdNumber, "issuedBy",
-						resCountryCode != null ? resCountryCode : "");
-			}
-			// Name section
-			xmlBuilder.append("<sfa:Name>");
-			if (columnNameMap.containsKey("CUSTOMERNAME")) {
-				tagElement(xmlBuilder, "sfa:FirstName", rs.getString(columnNameMap.get("CUSTOMERNAME")));
-			}
-			if (columnNameMap.containsKey("MIDDLENAME")) {
-				tagElement(xmlBuilder, "sfa:MiddleName", rs.getString(columnNameMap.get("MIDDLENAME")));
-			}
-			if (columnNameMap.containsKey("LASTNAME")) {
-				tagElement(xmlBuilder, "sfa:LastName", rs.getString(columnNameMap.get("LASTNAME")));
-			}
-			xmlBuilder.append("</sfa:Name>");
+		// BirthInfo
+		xmlBuilder.append("<crs:BirthInfo>");
+		if (columnNameMap.containsKey("DATEOFBIRTH")) {
+			String birthDate = rs.getString(columnNameMap.get("DATEOFBIRTH"));
+			tagElement(xmlBuilder, "crs:BirthDate", birthDate != null ? birthDate : "");
+		}
+		if (columnNameMap.containsKey("CITY")) {
+			String city = rs.getString(columnNameMap.get("CITY"));
+			tagElement(xmlBuilder, "cfc:City", city != null ? city : "");
+		}
 
-			// address
+		xmlBuilder.append("<crs:CountryInfo>");
+		if (columnNameMap.containsKey("BIRTHCOUNTRYCODE")) {
+			tagElement(xmlBuilder, "cfc:CountryCode", rs.getString(columnNameMap.get("BIRTHCOUNTRYCODE")));
+		}
+		xmlBuilder.append("</crs:CountryInfo>");
+		xmlBuilder.append("</crs:BirthInfo>");
+		xmlBuilder.append("</crs:Individual>");
+		xmlBuilder.append("</crs:AccountHolder>");
+	}
 
-			// address
-			xmlBuilder.append("<sfa:Address>");
+	private void accountReportFooterCrsXmlBuilder(ResultSet rs, StringBuilder xmlBuilder,
+			Map<String, String> columnNameMap) throws SQLException {
+		xmlBuilder.append("<crs:AccountReport>");
+		xmlBuilder.append("<crs:DocSpec>");
 
-			// CountryCode
-			if (columnNameMap.containsKey("COUNTRYCODE")) {
-				tagElement(xmlBuilder, "sfa:CountryCode", rs.getString(columnNameMap.get("COUNTRYCODE")));
+		if (columnNameMap.containsKey("DOCTYPEINDIC")) {
+			tagElement(xmlBuilder, "stf:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
+		}
+
+		if (columnNameMap.containsKey("DOCREFID")) {
+			tagElement(xmlBuilder, "stf:DocRefId",
+					rs.getString(columnNameMap.get("DOCREFID")) + CommonUtils.generateRandom32());
+		}
+		xmlBuilder.append("</crs:DocSpec>");
+
+		String accountNumber = columnNameMap.containsKey("ACCOUNTNUMBER")
+				? rs.getString(columnNameMap.get("ACCOUNTNUMBER"))
+				: null;
+
+		String accountType = columnNameMap.containsKey("ACCOUNTTYPE") ? rs.getString(columnNameMap.get("ACCOUNTTYPE"))
+				: "";
+
+		String accountStatus = columnNameMap.containsKey("ACCOUNTSTATUS")
+				? rs.getString(columnNameMap.get("ACCOUNTSTATUS"))
+				: null;
+
+		if (accountNumber != null) {
+			tagElement(xmlBuilder, "crs:AccountNumber", accountNumber);
+		}
+	}
+
+	private void accountReportCrsXmlBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
+			throws SQLException {
+		xmlBuilder.append("<crs:AccountReport>");
+
+		// DocSpec
+		xmlBuilder.append("<crs:DocSpec>");
+
+		if (columnNameMap.containsKey("DOCTYPEINDIC"))
+			tagElement(xmlBuilder, "stf:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
+
+		if (columnNameMap.containsKey("DOCREFID"))
+			tagElement(xmlBuilder, "stf:DocRefId",
+					rs.getString(columnNameMap.get("DOCREFID")) + CommonUtils.generateRandom32());
+
+		xmlBuilder.append("</crs:DocSpec>");
+
+		// Account Number
+		if (columnNameMap.containsKey("ACCOUNTNUMBER"))
+			tagElement(xmlBuilder, "crs:AccountNumber", rs.getString(columnNameMap.get("ACCOUNTNUMBER")));
+
+		// Account Holder
+		xmlBuilder.append("<crs:AccountHolder><crs:Individual>");
+
+		if (columnNameMap.containsKey("RESCOUNTRYCODE"))
+			tagElement(xmlBuilder, "crs:ResCountryCode", rs.getString(columnNameMap.get("RESCOUNTRYCODE")));
+
+		if (columnNameMap.containsKey("TAXIDNUMBER"))
+			tagElementWithAttribute(xmlBuilder, "crs:TIN", rs.getString(columnNameMap.get("TAXIDNUMBER")), "issuedBy",
+					rs.getString(columnNameMap.get("RESCOUNTRYCODE")));
+
+		xmlBuilder.append("<crs:Name>");
+		if (columnNameMap.containsKey("FIRSTNAME"))
+			tagElement(xmlBuilder, "crs:FirstName", rs.getString(columnNameMap.get("FIRSTNAME")));
+		if (columnNameMap.containsKey("LASTNAME"))
+			tagElement(xmlBuilder, "crs:LastName", rs.getString(columnNameMap.get("LASTNAME")));
+		xmlBuilder.append("</crs:Name>");
+
+		xmlBuilder.append("</crs:Individual></crs:AccountHolder>");
+
+		// Birth Info
+		xmlBuilder.append("<crs:BirthInfo>");
+		if (columnNameMap.containsKey("DATEOFBIRTH"))
+			tagElement(xmlBuilder, "crs:BirthDate", rs.getString(columnNameMap.get("DATEOFBIRTH")));
+		xmlBuilder.append("</crs:BirthInfo>");
+
+		// Account Balance
+		if (columnNameMap.containsKey("ACCOUNTBALANCE") && columnNameMap.containsKey("ACCTCURRENCY"))
+			tagElementWithAttribute(xmlBuilder, "crs:AccountBalance", rs.getString(columnNameMap.get("ACCOUNTBALANCE")),
+					"currCode", rs.getString(columnNameMap.get("ACCTCURRENCY")));
+
+		xmlBuilder.append("</crs:AccountReport>");
+	}
+
+	private void docSpecCrsXmlBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
+			throws SQLException {
+		xmlBuilder.append("<crs:DocSpec>");
+
+		if (columnNameMap.containsKey("DOCTYPEINDIC")) {
+			tagElement(xmlBuilder, "stf:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
+		}
+
+		if (columnNameMap.containsKey("MESSAGEREFID")) {
+			tagElement(xmlBuilder, "stf:DocRefId", rs.getString(columnNameMap.get("MESSAGEREFID")));
+		}
+
+		xmlBuilder.append("</crs:DocSpec>");
+	}
+
+	private void addressCrsXmlBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
+			throws SQLException {
+		xmlBuilder.append("<crs:Address legalAddressType=\"")
+				.append(rs.getString(columnNameMap.get("LEGALADDRESSTYPE"))).append("\">");
+
+		if (columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
+			tagElement(xmlBuilder, "cfc:CountryCode", rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
+		}
+
+		xmlBuilder.append("<cfc:AddressFix>");
+
+		if (columnNameMap.containsKey("ENTITYSTREET")) {
+			tagElement(xmlBuilder, "cfc:Street", rs.getString(columnNameMap.get("ENTITYSTREET")));
+		}
+
+		if (columnNameMap.containsKey("ENTITYBUILDINGIDENTIFIER")) {
+			tagElement(xmlBuilder, "cfc:BuildingIdentifier",
+					rs.getString(columnNameMap.get("ENTITYBUILDINGIDENTIFIER")));
+		}
+
+		if (columnNameMap.containsKey("ENTITYCITY")) {
+			tagElement(xmlBuilder, "cfc:City", rs.getString(columnNameMap.get("ENTITYCITY")));
+		}
+
+		xmlBuilder.append("</cfc:AddressFix>");
+		xmlBuilder.append("</crs:Address>");
+	}
+
+	private void messageSpecCrsXmlBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
+			throws SQLException {
+		xmlBuilder.append("<crs:MessageSpec>");
+		if (columnNameMap.containsKey("SENDINGCOMPANYIN")) {
+			tagElement(xmlBuilder, "crs:SendingCompanyIN", rs.getString(columnNameMap.get("SENDINGCOMPANYIN")));
+		}
+		if (columnNameMap.containsKey("TRANSMITTINGCOUNTRY")) {
+			tagElement(xmlBuilder, "crs:TransmittingCountry", rs.getString(columnNameMap.get("TRANSMITTINGCOUNTRY")));
+		}
+		if (columnNameMap.containsKey("RECEIVINGCOUNTRY")) {
+			tagElement(xmlBuilder, "crs:ReceivingCountry", rs.getString(columnNameMap.get("RECEIVINGCOUNTRY")));
+		}
+		if (columnNameMap.containsKey("MESSAGETYPE")) {
+			tagElement(xmlBuilder, "crs:MessageType", rs.getString(columnNameMap.get("MESSAGETYPE")));
+		}
+		if (columnNameMap.containsKey("WARNING")) {
+			tagElement(xmlBuilder, "crs:Warning", rs.getString(columnNameMap.get("WARNING")));
+		}
+		if (columnNameMap.containsKey("CONTACT")) {
+			tagElement(xmlBuilder, "crs:Contact", rs.getString(columnNameMap.get("CONTACT")));
+		}
+		if (columnNameMap.containsKey("MESSAGEREFID")) {
+			tagElement(xmlBuilder, "crs:MessageRefId",
+					rs.getString(columnNameMap.get("MESSAGEREFID")) + CommonUtils.generateRandom32());
+		}
+		if (columnNameMap.containsKey("MESSAGETYPEINDIC")) {
+			tagElement(xmlBuilder, "crs:MessageTypeIndic", rs.getString(columnNameMap.get("MESSAGETYPEINDIC")));
+		}
+		if (columnNameMap.containsKey("REPORTINGPERIOD")) {
+			tagElement(xmlBuilder, "crs:ReportingPeriod", rs.getString(columnNameMap.get("REPORTINGPERIOD")));
+		}
+		if (columnNameMap.containsKey("TIMESTAMP")) {
+			tagElement(xmlBuilder, "crs:Timestamp", rs.getString(columnNameMap.get("TIMESTAMP")));
+		}
+
+		xmlBuilder.append("</crs:MessageSpec>");
+	}
+
+	private void rootElementCrsBuilderxml(StringBuilder xmlBuilder) {
+		xmlBuilder.append("<crs:CRS_OECD xmlns:crs=\"urn:oecd:ties:crs:v2\" ")
+				.append("xmlns:cfc=\"urn:oecd:ties:commontypesfatcacrs:v2\" ")
+				.append("xmlns:ftc=\"urn:oecd:ties:fatca:v1\" ").append("xmlns:iso=\"urn:oecd:ties:isocrstypes:v1\" ")
+				.append("xmlns:stf=\"urn:oecd:ties:crsstf:v5\" ")
+				.append("xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" ").append("version=\"2.0\" ")
+				.append("xsi:schemaLocation=\"urn:oecd:ties:crs:v1 CrsXML_v2.0.xsd\">");
+	}
+
+	/**
+	 * creating a fatca Xml
+	 * 
+	 * @param rs
+	 * @return
+	 * @throws SQLException
+	 */
+	private String generateFatcaXml(ResultSet rs, int cnt, int internalStatus) throws SQLException {
+
+		StringBuilder xmlBuilder = new StringBuilder();
+		boolean isFirstRow = true;
+		ResultSetMetaData md = rs.getMetaData();
+		int columnCount = md.getColumnCount();
+		Map<String, String> columnNameMap = new HashMap<>();
+
+		while (rs.next()) {
+			// Build column map once per row
+			columnNameMap.clear();
+			for (int i = 1; i <= columnCount; i++) {
+				String dbCol = md.getColumnLabel(i);
+				String key = dbCol.replaceAll("_", "").toUpperCase();
+				columnNameMap.put(key, dbCol);
 			}
+			if (isFirstRow) {
+
+				// Start root element
+				buildDefaultXmlBuilder(xmlBuilder);
+
+				// Message Spec
+				xmlMessageSpecBuilder(rs, xmlBuilder, columnNameMap);
+
+				xmlBuilder.append("<ftc:FATCA>");
+				xmlBuilder.append("<ftc:ReportingFI>");
+
+				if (columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
+					tagElement(xmlBuilder, "sfa:ResCountryCode", rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
+				}
+				if (columnNameMap.containsKey("SENDINGCOMPANYIN") && columnNameMap.containsKey("RECEIVINGCOUNTRY")) {
+					tagElementWithAttribute(xmlBuilder, "sfa:TIN", rs.getString(columnNameMap.get("SENDINGCOMPANYIN")),
+							"issuedBy", rs.getString(columnNameMap.get("RECEIVINGCOUNTRY")));
+				}
+				if (columnNameMap.containsKey("ENTITYNAME") && rs.getString(columnNameMap.get("ENTITYNAME")) != null) {
+					tagElement(xmlBuilder, "sfa:Name", rs.getString(columnNameMap.get("ENTITYNAME")));
+				}
+
+				// Address
+				if (columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
+					xmlAddressTagBuilder(rs, xmlBuilder, columnNameMap);
+				}
+
+				if (columnNameMap.containsKey("FILERCATEGORY")) {
+					tagElement(xmlBuilder, "ftc:FilerCategory", rs.getString(columnNameMap.get("FILERCATEGORY")));
+				}
+				xmlBuilder.append("<ftc:DocSpec>");
+				if (columnNameMap.containsKey("DOCTYPEINDIC")) {
+					tagElement(xmlBuilder, "ftc:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
+				}
+				if (columnNameMap.containsKey("DOCREFID")) {
+					tagElement(xmlBuilder, "ftc:DocRefId",
+							rs.getString(columnNameMap.get("DOCREFID")) + "." + CommonUtils.generateRandom32());
+				}
+
+				xmlBuilder.append("</ftc:DocSpec>");
+				xmlBuilder.append("</ftc:ReportingFI>");
+				xmlBuilder.append("<ftc:ReportingGroup>");
+				isFirstRow = false;
+				if (internalStatus == 0) {
+					createPoolReport(rs, xmlBuilder, columnNameMap);
+					return xmlBuilder.toString();
+				}
+				if (cnt == 0) {
+					createDefaultStructure(rs, xmlBuilder, columnNameMap);
+				}
+			}
+			// DocSpec
+			if (cnt != 0) {
+				xmlBuilder.append("<ftc:AccountReport>");
+				xmldocSpecBuilder(rs, xmlBuilder, columnNameMap);
+				// Account Holder Xml
+				xmlAccountHolderBuilder(rs, xmlBuilder, columnNameMap);
+				xmlBuilder.append("</ftc:AccountReport>");
+				// ---------------- FOOTER ----------------
+				// AccountReport
+//					xmlFooterAccountReportBuilder(rs, xmlBuilder, columnNameMap);
+				xmlPaymentBuilder(rs, xmlBuilder, columnNameMap);
+			}
+		}
+		xmlBuilder.append("</ftc:ReportingGroup>");
+		xmlBuilder.append("</ftc:FATCA>");
+		xmlBuilder.append("</ftc:FATCA_OECD>");
+		xmlBuilder.append("</Object>");
+		xmlBuilder.append("</Signature>");
+
+		return xmlBuilder.toString();
+	}
+
+	private void createPoolReport(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap) {
+		try {
+			xmlBuilder.append("<ftc:PoolReport>");
+			xmlBuilder.append("<ftc:DocSpec>");
+
+			if (columnNameMap.containsKey("DOCTYPEINDIC"))
+				tagElement(xmlBuilder, "ftc:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
+
+			if (columnNameMap.containsKey("MESSAGEREFID"))
+				tagElement(xmlBuilder, "ftc:DocRefId",
+						rs.getString(columnNameMap.get("MESSAGEREFID")) + CommonUtils.generateRandom32());
+
+			xmlBuilder.append("</ftc:DocSpec>");
+			if (columnNameMap.containsKey("ACCOUNTCOUNT"))
+				tagElement(xmlBuilder, "ftc:AccountCount", rs.getString(columnNameMap.get("ACCOUNTCOUNT")));
+			if (columnNameMap.containsKey("POOLREPORTTYPE"))
+				tagElement(xmlBuilder, "ftc:AccountPoolReportType", rs.getString(columnNameMap.get("POOLREPORTTYPE")));
+			if (columnNameMap.containsKey("TOTALACCOUNTBALANCE"))
+				tagElementWithAttribute(xmlBuilder, "ftc:AccountBalance",
+						"" + rs.getInt(columnNameMap.get("TOTALACCOUNTBALANCE")), "currCode",
+						rs.getString(columnNameMap.get("CURRENCYCODE")));
+
+			xmlBuilder.append("</ftc:PoolReport>");
+			xmlBuilder.append("</ftc:ReportingGroup>");
+			xmlBuilder.append(" </ftc:FATCA>");
+			xmlBuilder.append("</ftc:FATCA_OECD>");
+			xmlBuilder.append("</Object>");
+			xmlBuilder.append("</Signature>");
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+
+	private void createDefaultStructure(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap) {
+		try {
+			xmlBuilder.append("<ftc:NilReport>");
+			xmlBuilder.append("<ftc:DocSpec>");
+
+			if (columnNameMap.containsKey("MESSAGETYPE"))
+				tagElement(xmlBuilder, "ftc:DocTypeIndic", rs.getString(columnNameMap.get("MESSAGETYPE")));
+
+			if (columnNameMap.containsKey("MESSAGEREFID"))
+				tagElement(xmlBuilder, "ftc:DocRefId",
+						rs.getString(columnNameMap.get("MESSAGEREFID")) + CommonUtils.generateRandom32());
+
+			xmlBuilder.append("</ftc:DocSpec>");
+			xmlBuilder.append("<ftc:NoAccountToReport>");
+			xmlBuilder.append("yes");
+			xmlBuilder.append("</ftc:NoAccountToReport>");
+
+			xmlBuilder.append("</ftc:NilReport>");
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+
+	private void xmlFooterAccountReportBuilder(ResultSet rs, StringBuilder xmlBuilder,
+			Map<String, String> columnNameMap) throws SQLException {
+
+		xmlBuilder.append("<ftc:AccountReport>");
+		xmlBuilder.append("<ftc:DocSpec>");
+
+		if (columnNameMap.containsKey("DOCTYPEINDIC")) {
+			tagElement(xmlBuilder, "ftc:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
+		}
+
+		if (columnNameMap.containsKey("DOCREFID")) {
+			tagElement(xmlBuilder, "ftc:DocRefId",
+					rs.getString(columnNameMap.get("DOCREFID")) + CommonUtils.generateRandom32());
+		}
+		xmlBuilder.append("</ftc:DocSpec>");
+
+		String accountNumber = columnNameMap.containsKey("CUSTOMERID") ? rs.getString(columnNameMap.get("CUSTOMERID"))
+				: null;
+
+		String accountType = columnNameMap.containsKey("ACCOUNTTYPE") ? rs.getString(columnNameMap.get("ACCOUNTTYPE"))
+				: "";
+
+		String accountStatus = columnNameMap.containsKey("ACCOUNTSTATUS")
+				? rs.getString(columnNameMap.get("ACCOUNTSTATUS"))
+				: null;
+
+		if (accountNumber != null) {
+			tagElement(xmlBuilder, "ftc:AccountNumber", accountNumber);
+		}
+		if (accountNumber != null && accountStatus != null) {
+			if (accountStatus.equalsIgnoreCase("0")) {
+				tagElement(xmlBuilder, "ftc:AccountClosed", "false");
+			} else {
+				tagElement(xmlBuilder, "ftc:AccountClosed", "true");
+			}
+		}
+		xmlBuilder.append("<sfa:Address>");
+
+		// CountryCode
+		if (columnNameMap.containsKey("COUNTRYCODE")) {
+			tagElement(xmlBuilder, "sfa:CountryCode", rs.getString(columnNameMap.get("COUNTRYCODE")));
+		}
 //			if (columnNameMap.containsKey("ADDRESSFREE")) {
 //				String street = rs.getString(columnNameMap.get("ADDRESSFREE"));
 //				tagElement(xmlBuilder, "sfa:AddressFree", street != null ? street : "");
 //			}
-			xmlBuilder.append("<sfa:AddressFix>");
-			if (columnNameMap.containsKey("STREET")) {
-				tagElement(xmlBuilder, "sfa:Street", rs.getString(columnNameMap.get("STREET")));
-			}
-			if (columnNameMap.containsKey("USZIPCODE")) {
-				tagElement(xmlBuilder, "sfa:PostCode", rs.getString(columnNameMap.get("USZIPCODE")));
-			}
-			if (columnNameMap.containsKey("USCITY")) {
-				tagElement(xmlBuilder, "sfa:City", rs.getString(columnNameMap.get("USCITY")));
-			}
-			if (columnNameMap.containsKey("COUNTRYSUBENTITY")) {
-				tagElement(xmlBuilder, "sfa:CountrySubentity", rs.getString(columnNameMap.get("COUNTRYSUBENTITY")));
-			}
-			xmlBuilder.append("</sfa:AddressFix>");
-			if (columnNameMap.containsKey("ADDRESSFREE")) {
-				tagElement(xmlBuilder, "sfa:AddressFree", rs.getString(columnNameMap.get("ADDRESSFREE")));
-			}
-			xmlBuilder.append("</sfa:Address>");
+		xmlBuilder.append("<sfa:AddressFix>");
+		if (columnNameMap.containsKey("STREET")) {
+			tagElement(xmlBuilder, "sfa:Street", rs.getString(columnNameMap.get("STREET")));
+		}
+		if (columnNameMap.containsKey("USZIPCODE")) {
+			tagElement(xmlBuilder, "sfa:PostCode", rs.getString(columnNameMap.get("USZIPCODE")));
+		}
+		if (columnNameMap.containsKey("USCITY")) {
+			tagElement(xmlBuilder, "sfa:City", rs.getString(columnNameMap.get("USCITY")));
+		}
+		if (columnNameMap.containsKey("COUNTRYSUBENTITY")) {
+			tagElement(xmlBuilder, "sfa:CountrySubentity", rs.getString(columnNameMap.get("COUNTRYSUBENTITY")));
+		}
+		xmlBuilder.append("</sfa:AddressFix>");
+		if (columnNameMap.containsKey("ADDRESSFREE")) {
+			tagElement(xmlBuilder, "sfa:AddressFree", rs.getString(columnNameMap.get("ADDRESSFREE")));
+		}
+		xmlBuilder.append("</sfa:Address>");
 
-			// BirthInfo
+		// Account Holder
+		xmlAccountHolderFooterBuilder(rs, xmlBuilder, columnNameMap);
+
+		// Substantial Owner
+		xmlSubstantialOwnerBuilder(rs, xmlBuilder, columnNameMap);
+
+		// Account Balance
+		String accountBalance = columnNameMap.containsKey("ACCOUNTBALANCE")
+				? rs.getString(columnNameMap.get("ACCOUNTBALANCE"))
+				: null;
+
+		String acctCurrency = columnNameMap.containsKey("CURRENCYCODE")
+				? rs.getString(columnNameMap.get("CURRENCYCODE"))
+				: null;
+
+		if (accountBalance != null) {
+			tagElementWithAttribute(xmlBuilder, "ftc:AccountBalance", accountBalance, "currCode",
+					acctCurrency != null ? acctCurrency : "");
+		}
+
+		// Payment Builder
+		xmlPaymentBuilder(rs, xmlBuilder, columnNameMap);
+
+		xmlBuilder.append("</ftc:AccountReport>");
+	}
+
+	private void xmlSubstantialOwnerBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
+			throws SQLException {
+		xmlBuilder.append("<ftc:SubstantialOwner>");
+		xmlBuilder.append("<ftc:Individual>");
+
+		if (columnNameMap.containsKey("TIN") && rs.getString(columnNameMap.get("TIN")) != null)
+			tagElementWithAttribute(xmlBuilder, "sfa:TIN", rs.getString(columnNameMap.get("TIN")), "issuedBy",
+					rs.getString(columnNameMap.get("TINISSUEDJURISDICTION")));
+
+		xmlBuilder.append("<sfa:Name>");
+
+		if (columnNameMap.containsKey("CUSTOMERNAME"))
+			tagElement(xmlBuilder, "sfa:FirstName", rs.getString(columnNameMap.get("CUSTOMERNAME")));
+		if (columnNameMap.containsKey("MIDDLENAME"))
+			tagElement(xmlBuilder, "sfa:MiddleName", rs.getString(columnNameMap.get("MIDDLENAME")));
+		if (columnNameMap.containsKey("LASTNAME"))
+			tagElement(xmlBuilder, "sfa:LastName", rs.getString(columnNameMap.get("LASTNAME")));
+
+		xmlBuilder.append("</sfa:Name>");
+
+		xmlBuilder.append("<sfa:Address>");
+
+		// CountryCode
+		if (columnNameMap.containsKey("COUNTRYCODE")) {
+			tagElement(xmlBuilder, "sfa:CountryCode", rs.getString(columnNameMap.get("COUNTRYCODE")));
+		}
+		if (columnNameMap.containsKey("ADDRESSFREE")) {
+			String street = rs.getString(columnNameMap.get("ADDRESSFREE"));
+			tagElement(xmlBuilder, "sfa:AddressFree", street != null ? street : "");
+		}
+		xmlBuilder.append("</sfa:Address>");
+		xmlBuilder.append("</ftc:Individual>");
+		xmlBuilder.append("</ftc:SubstantialOwner>");
+	}
+
+	private void xmlAccountHolderFooterBuilder(ResultSet rs, StringBuilder xmlBuilder,
+			Map<String, String> columnNameMap) throws SQLException {
+		xmlBuilder.append("<ftc:AccountHolder>");
+		xmlBuilder.append("<ftc:Individual>");
+		// ResCountryCode
+		if (columnNameMap.containsKey("RESCOUNTRYCODE")) {
+			tagElement(xmlBuilder, "sfa:ResCountryCode", rs.getString(columnNameMap.get("RESCOUNTRYCODE")));
+		}
+		// TIN with attribute "issuedBy"
+		String taxIdNumber = columnNameMap.containsKey("TIN") ? rs.getString(columnNameMap.get("TIN")) : null;
+		String resCountryCode = columnNameMap.containsKey("RESCOUNTRYCODE")
+				? rs.getString(columnNameMap.get("RESCOUNTRYCODE"))
+				: null;
+
+		if (taxIdNumber != null) {
+			tagElementWithAttribute(xmlBuilder, "sfa:TIN", taxIdNumber, "issuedBy",
+					resCountryCode != null ? resCountryCode : "");
+		}
+		// Name section
+		xmlBuilder.append("<sfa:Name>");
+		if (columnNameMap.containsKey("CUSTOMERNAME")) {
+			tagElement(xmlBuilder, "sfa:FirstName", rs.getString(columnNameMap.get("CUSTOMERNAME")));
+		}
+		if (columnNameMap.containsKey("MIDDLENAME")) {
+			tagElement(xmlBuilder, "sfa:MiddleName", rs.getString(columnNameMap.get("MIDDLENAME")));
+		}
+		if (columnNameMap.containsKey("LASTNAME")) {
+			tagElement(xmlBuilder, "sfa:LastName", rs.getString(columnNameMap.get("LASTNAME")));
+		}
+		xmlBuilder.append("</sfa:Name>");
+
+		// address
+
+		// address
+		xmlBuilder.append("<sfa:Address>");
+
+		// CountryCode
+		if (columnNameMap.containsKey("COUNTRYCODE")) {
+			tagElement(xmlBuilder, "sfa:CountryCode", rs.getString(columnNameMap.get("COUNTRYCODE")));
+		}
+//			if (columnNameMap.containsKey("ADDRESSFREE")) {
+//				String street = rs.getString(columnNameMap.get("ADDRESSFREE"));
+//				tagElement(xmlBuilder, "sfa:AddressFree", street != null ? street : "");
+//			}
+		xmlBuilder.append("<sfa:AddressFix>");
+		if (columnNameMap.containsKey("STREET")) {
+			tagElement(xmlBuilder, "sfa:Street", rs.getString(columnNameMap.get("STREET")));
+		}
+		if (columnNameMap.containsKey("USZIPCODE")) {
+			tagElement(xmlBuilder, "sfa:PostCode", rs.getString(columnNameMap.get("USZIPCODE")));
+		}
+		if (columnNameMap.containsKey("USCITY")) {
+			tagElement(xmlBuilder, "sfa:City", rs.getString(columnNameMap.get("USCITY")));
+		}
+		if (columnNameMap.containsKey("COUNTRYSUBENTITY")) {
+			tagElement(xmlBuilder, "sfa:CountrySubentity", rs.getString(columnNameMap.get("COUNTRYSUBENTITY")));
+		}
+		xmlBuilder.append("</sfa:AddressFix>");
+		if (columnNameMap.containsKey("ADDRESSFREE")) {
+			tagElement(xmlBuilder, "sfa:AddressFree", rs.getString(columnNameMap.get("ADDRESSFREE")));
+		}
+		xmlBuilder.append("</sfa:Address>");
+
+		// BirthInfo
 //			if(columnNameMap.containsKey("DATEOFBIRTH") || columnNameMap.containsKey("BIRTHCOUNTRYCODE")) {
 //			xmlBuilder.append("<sfa:BirthInfo>");
 //			if (columnNameMap.containsKey("DATEOFBIRTH")) {
@@ -4777,334 +4827,451 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 //			xmlBuilder.append("</sfa:CountryInfo>");
 //			xmlBuilder.append("</sfa:BirthInfo>");
 //			}
-			xmlBuilder.append("</ftc:Individual>");
-			xmlBuilder.append("</ftc:AccountHolder>");
+		xmlBuilder.append("</ftc:Individual>");
+		xmlBuilder.append("</ftc:AccountHolder>");
+	}
+
+	private void xmlPaymentBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
+			throws SQLException {
+		xmlBuilder.append("<ftc:Payment>");
+		if (columnNameMap.containsKey("PAYMENTTYPE"))
+			tagElement(xmlBuilder, "ftc:Type", rs.getString(columnNameMap.get("PAYMENTTYPE")));
+
+		String fdIntPaid = columnNameMap.containsKey("PAYMENT") ? rs.getString(columnNameMap.get("PAYMENT")) : null;
+
+		String Currency = columnNameMap.containsKey("CURRENCYCODE") ? rs.getString(columnNameMap.get("CURRENCYCODE"))
+				: null;
+
+		if (fdIntPaid != null) {
+			tagElementWithAttribute(xmlBuilder, "ftc:PaymentAmnt", fdIntPaid, "currCode",
+					Currency != null ? Currency : "");
 		}
 
-		private void xmlPaymentBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
-				throws SQLException {
-			xmlBuilder.append("<ftc:Payment>");
-			if (columnNameMap.containsKey("PAYMENTTYPE"))
-				tagElement(xmlBuilder, "ftc:Type", rs.getString(columnNameMap.get("PAYMENTTYPE")));
+		xmlBuilder.append("</ftc:Payment>");
+	}
 
-			String fdIntPaid = columnNameMap.containsKey("PAYMENT") ? rs.getString(columnNameMap.get("PAYMENT"))
-					: null;
+	private void xmlAccountHolderBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
+			throws SQLException {
+		// Account Number
+		if (columnNameMap.containsKey("ACCOUNTNUMBER"))
+			tagElement(xmlBuilder, "ftc:AccountNumber", rs.getString(columnNameMap.get("ACCOUNTNUMBER")));
 
-			String Currency = columnNameMap.containsKey("CURRENCYCODE")
-					? rs.getString(columnNameMap.get("CURRENCYCODE"))
-					: null;
+		// Account Holder
+		xmlBuilder.append("<ftc:AccountHolder>");
+		xmlBuilder.append("<ftc:Individual>");
 
-			if (fdIntPaid != null) {
-				tagElementWithAttribute(xmlBuilder, "ftc:PaymentAmnt", fdIntPaid, "currCode",
-						Currency != null ? Currency : "");
-			}
+		if (columnNameMap.containsKey("RESCOUNTRYCODE"))
+			tagElement(xmlBuilder, "sfa:ResCountryCode", rs.getString(columnNameMap.get("RESCOUNTRYCODE")));
 
-			xmlBuilder.append("</ftc:Payment>");
+		if (columnNameMap.containsKey("TINISSUEDJURISDICTION"))
+			tagElementWithAttribute(xmlBuilder, "sfa:TIN", rs.getString(columnNameMap.get("TIN")), "issuedBy",
+					rs.getString(columnNameMap.get("TINISSUEDJURISDICTION")));
+
+		xmlBuilder.append("<sfa:Name>");
+		if (columnNameMap.containsKey("CUSTOMERNAME"))
+			tagElement(xmlBuilder, "sfa:FirstName", rs.getString(columnNameMap.get("CUSTOMERNAME")));
+		if (columnNameMap.containsKey("MIDDLENAME"))
+			tagElement(xmlBuilder, "sfa:MiddleName", rs.getString(columnNameMap.get("MIDDLENAME")));
+		if (columnNameMap.containsKey("LASTNAME"))
+			tagElement(xmlBuilder, "sfa:LastName", rs.getString(columnNameMap.get("LASTNAME")));
+		xmlBuilder.append("</sfa:Name>");
+
+		// address
+		xmlBuilder.append("<sfa:Address>");
+
+		if (columnNameMap.containsKey("COUNTRYCODE")) {
+			tagElement(xmlBuilder, "sfa:CountryCode", rs.getString(columnNameMap.get("COUNTRYCODE")));
 		}
+		xmlBuilder.append("<sfa:AddressFix>");
+		if (columnNameMap.containsKey("STREET")) {
+			tagElement(xmlBuilder, "sfa:Street", rs.getString(columnNameMap.get("STREET")));
+		}
+		if (columnNameMap.containsKey("USZIPCODE")) {
+			tagElement(xmlBuilder, "sfa:PostCode", rs.getString(columnNameMap.get("USZIPCODE")));
+		}
+		if (columnNameMap.containsKey("USCITY")) {
+			tagElement(xmlBuilder, "sfa:City", rs.getString(columnNameMap.get("USCITY")));
+		}
+		if (columnNameMap.containsKey("COUNTRYSUBENTITY")) {
+			tagElement(xmlBuilder, "sfa:CountrySubentity", rs.getString(columnNameMap.get("COUNTRYSUBENTITY")));
+		}
+		xmlBuilder.append("</sfa:AddressFix>");
+		if (columnNameMap.containsKey("ADDRESSFREE")) {
+			tagElement(xmlBuilder, "sfa:AddressFree", rs.getString(columnNameMap.get("ADDRESSFREE")));
+		}
+		xmlBuilder.append("</sfa:Address>");
 
-		private void xmlAccountHolderBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
-				throws SQLException {
-			// Account Number
-			if (columnNameMap.containsKey("ACCOUNTNUMBER"))
-				tagElement(xmlBuilder, "ftc:AccountNumber", rs.getString(columnNameMap.get("ACCOUNTNUMBER")));
+		xmlBuilder.append("</ftc:Individual>");
+		xmlBuilder.append("</ftc:AccountHolder>");
 
-			// Account Holder
-			xmlBuilder.append("<ftc:AccountHolder>");
-			xmlBuilder.append("<ftc:Individual>");
-
-			if (columnNameMap.containsKey("RESCOUNTRYCODE"))
-				tagElement(xmlBuilder, "sfa:ResCountryCode", rs.getString(columnNameMap.get("RESCOUNTRYCODE")));
-
-			if (columnNameMap.containsKey("TINISSUEDJURISDICTION"))
-				tagElementWithAttribute(xmlBuilder, "sfa:TIN", rs.getString(columnNameMap.get("TIN")),
-						"issuedBy", rs.getString(columnNameMap.get("TINISSUEDJURISDICTION")));
-
-			xmlBuilder.append("<sfa:Name>");
-			if (columnNameMap.containsKey("CUSTOMERNAME"))
-				tagElement(xmlBuilder, "sfa:FirstName", rs.getString(columnNameMap.get("CUSTOMERNAME")));
-			if (columnNameMap.containsKey("MIDDLENAME"))
-				tagElement(xmlBuilder, "sfa:MiddleName", rs.getString(columnNameMap.get("MIDDLENAME")));
-			if (columnNameMap.containsKey("LASTNAME"))
-				tagElement(xmlBuilder, "sfa:LastName", rs.getString(columnNameMap.get("LASTNAME")));
-			xmlBuilder.append("</sfa:Name>");
-
-			//address
-			xmlBuilder.append("<sfa:Address>");
-
-			if (columnNameMap.containsKey("COUNTRYCODE")) {
-				tagElement(xmlBuilder, "sfa:CountryCode", rs.getString(columnNameMap.get("COUNTRYCODE")));
-			}
-			xmlBuilder.append("<sfa:AddressFix>");
-			if (columnNameMap.containsKey("STREET")) {
-				tagElement(xmlBuilder, "sfa:Street", rs.getString(columnNameMap.get("STREET")));
-			}
-			if (columnNameMap.containsKey("USZIPCODE")) {
-				tagElement(xmlBuilder, "sfa:PostCode", rs.getString(columnNameMap.get("USZIPCODE")));
-			}
-			if (columnNameMap.containsKey("USCITY")) {
-				tagElement(xmlBuilder, "sfa:City", rs.getString(columnNameMap.get("USCITY")));
-			}
-			if (columnNameMap.containsKey("COUNTRYSUBENTITY")) {
-				tagElement(xmlBuilder, "sfa:CountrySubentity", rs.getString(columnNameMap.get("COUNTRYSUBENTITY")));
-			}
-			xmlBuilder.append("</sfa:AddressFix>");
-			if (columnNameMap.containsKey("ADDRESSFREE")) {
-				tagElement(xmlBuilder, "sfa:AddressFree", rs.getString(columnNameMap.get("ADDRESSFREE")));
-			}
-			xmlBuilder.append("</sfa:Address>");
-			
-			xmlBuilder.append("</ftc:Individual>");
-			xmlBuilder.append("</ftc:AccountHolder>");
-
-			// Birth Info
+		// Birth Info
 //			xmlBuilder.append("<sfa:BirthInfo>");
 //			if (columnNameMap.containsKey("DATEOFBIRTH"))
 //				tagElement(xmlBuilder, "ftc:BirthDate", rs.getString(columnNameMap.get("DATEOFBIRTH")));
 //			xmlBuilder.append("</sfa:BirthInfo>");
-			xmlSubstantialOwnerBuilder(rs, xmlBuilder, columnNameMap);
+		xmlSubstantialOwnerBuilder(rs, xmlBuilder, columnNameMap);
 
-			// Account Balance
-			String accountBalance = columnNameMap.containsKey("ACCOUNTBALANCE")
-					? rs.getString(columnNameMap.get("ACCOUNTBALANCE"))
-					: null;
+		// Account Balance
+		String accountBalance = columnNameMap.containsKey("ACCOUNTBALANCE")
+				? rs.getString(columnNameMap.get("ACCOUNTBALANCE"))
+				: null;
 
-			String acctCurrency = columnNameMap.containsKey("CURRENCYCODE")
-					? rs.getString(columnNameMap.get("CURRENCYCODE"))
-					: null;
+		String acctCurrency = columnNameMap.containsKey("CURRENCYCODE")
+				? rs.getString(columnNameMap.get("CURRENCYCODE"))
+				: null;
 
-			if (accountBalance != null) {
-				tagElementWithAttribute(xmlBuilder, "ftc:AccountBalance", accountBalance, "currCode",
-						acctCurrency != null ? acctCurrency : "");
-			}
-			
-
+		if (accountBalance != null) {
+			tagElementWithAttribute(xmlBuilder, "ftc:AccountBalance", accountBalance, "currCode",
+					acctCurrency != null ? acctCurrency : "");
 		}
 
-		private void xmldocSpecBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
-				throws SQLException {
-			xmlBuilder.append("<ftc:DocSpec>");
+	}
 
-			if (columnNameMap.containsKey("DOCTYPEINDIC"))
-				tagElement(xmlBuilder, "ftc:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
+	private void xmldocSpecBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
+			throws SQLException {
+		xmlBuilder.append("<ftc:DocSpec>");
 
-			if (columnNameMap.containsKey("DOCREFID"))
-				tagElement(xmlBuilder, "ftc:DocRefId",
-						rs.getString(columnNameMap.get("DOCREFID")) +"." + CommonUtils.generateRandom32());
+		if (columnNameMap.containsKey("DOCTYPEINDIC"))
+			tagElement(xmlBuilder, "ftc:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
 
-			xmlBuilder.append("</ftc:DocSpec>");
-			String accountNumber = columnNameMap.containsKey("CUSTOMERID")
-					? rs.getString(columnNameMap.get("CUSTOMERID"))
-					: null;
+		if (columnNameMap.containsKey("DOCREFID"))
+			tagElement(xmlBuilder, "ftc:DocRefId",
+					rs.getString(columnNameMap.get("DOCREFID")) + "." + CommonUtils.generateRandom32());
+
+		xmlBuilder.append("</ftc:DocSpec>");
+		String accountNumber = columnNameMap.containsKey("CUSTOMERID") ? rs.getString(columnNameMap.get("CUSTOMERID"))
+				: null;
 
 //			String accountType = columnNameMap.containsKey("ACCOUNTTYPE")
 //					? rs.getString(columnNameMap.get("ACCOUNTTYPE"))
 //					: "";
 
-			String accountStatus = columnNameMap.containsKey("ACCOUNTSTATUS")
-					? rs.getString(columnNameMap.get("ACCOUNTSTATUS"))
-					: null;
+		String accountStatus = columnNameMap.containsKey("ACCOUNTSTATUS")
+				? rs.getString(columnNameMap.get("ACCOUNTSTATUS"))
+				: null;
 
-			if (accountNumber != null) {
-				tagElement(xmlBuilder, "ftc:AccountNumber", accountNumber);
-			}
-			if (accountNumber != null && accountStatus !=null ) {
-				if (accountStatus.equalsIgnoreCase("0")) {
-					tagElement(xmlBuilder, "ftc:AccountClosed", "false");
-				}else {
-					tagElement(xmlBuilder, "ftc:AccountClosed", "true");
-				}
+		if (accountNumber != null) {
+			tagElement(xmlBuilder, "ftc:AccountNumber", accountNumber);
+		}
+		if (accountNumber != null && accountStatus != null) {
+			if (accountStatus.equalsIgnoreCase("0")) {
+				tagElement(xmlBuilder, "ftc:AccountClosed", "false");
+			} else {
+				tagElement(xmlBuilder, "ftc:AccountClosed", "true");
 			}
 		}
+	}
 
-		private void xmlAddressTagBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
-				throws SQLException {
-			xmlBuilder.append("<sfa:Address>");
+	private void xmlAddressTagBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
+			throws SQLException {
+		xmlBuilder.append("<sfa:Address>");
 
-			if (columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
-				tagElement(xmlBuilder, "sfa:CountryCode",
-						rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
-			}
-
-			xmlBuilder.append("<sfa:AddressFix>");
-
-			if (columnNameMap.containsKey("ENTITYSTREET")) {
-				tagElement(xmlBuilder, "sfa:Street", rs.getString(columnNameMap.get("ENTITYSTREET")));
-			}
-
-			if (columnNameMap.containsKey("ENTITYPOSTALCODE")) {
-				tagElement(xmlBuilder, "sfa:PostCode",
-						rs.getString(columnNameMap.get("ENTITYPOSTALCODE")));
-			}
-
-			if (columnNameMap.containsKey("ENTITYCITY")) {
-				tagElement(xmlBuilder, "sfa:City", rs.getString(columnNameMap.get("ENTITYCITY")));
-			}
-			if (columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
-				tagElement(xmlBuilder, "sfa:CountrySubentity", rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
-			}
-			
-			xmlBuilder.append("</sfa:AddressFix>");
-			if (columnNameMap.containsKey("ENTITYADDRESSFREE")) {
-				tagElement(xmlBuilder, "sfa:AddressFree", rs.getString(columnNameMap.get("ENTITYADDRESSFREE")));
-			}
-			xmlBuilder.append("</sfa:Address>");
+		if (columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
+			tagElement(xmlBuilder, "sfa:CountryCode", rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
 		}
 
-		private void xmlMessageSpecBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
-				throws SQLException {
-			xmlBuilder.append("<ftc:MessageSpec>");
-			if (columnNameMap.containsKey("SENDINGCOMPANYIN")) {
-				tagElement(xmlBuilder, "sfa:SendingCompanyIN",
-						rs.getString(columnNameMap.get("SENDINGCOMPANYIN")));
-			}
-			if (columnNameMap.containsKey("TRANSMITTINGCOUNTRY")) {
-				tagElement(xmlBuilder, "sfa:TransmittingCountry",
-						rs.getString(columnNameMap.get("TRANSMITTINGCOUNTRY")));
-			}
-			if (columnNameMap.containsKey("RECEIVINGCOUNTRY")) {
-				tagElement(xmlBuilder, "sfa:ReceivingCountry",
-						rs.getString(columnNameMap.get("RECEIVINGCOUNTRY")));
-			}
-			if (columnNameMap.containsKey("MESSAGETYPE")) {
-				tagElement(xmlBuilder, "sfa:MessageType", rs.getString(columnNameMap.get("MESSAGETYPE")));
-			}
+		xmlBuilder.append("<sfa:AddressFix>");
+
+		if (columnNameMap.containsKey("ENTITYSTREET")) {
+			tagElement(xmlBuilder, "sfa:Street", rs.getString(columnNameMap.get("ENTITYSTREET")));
+		}
+
+		if (columnNameMap.containsKey("ENTITYPOSTALCODE")) {
+			tagElement(xmlBuilder, "sfa:PostCode", rs.getString(columnNameMap.get("ENTITYPOSTALCODE")));
+		}
+
+		if (columnNameMap.containsKey("ENTITYCITY")) {
+			tagElement(xmlBuilder, "sfa:City", rs.getString(columnNameMap.get("ENTITYCITY")));
+		}
+		if (columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
+			tagElement(xmlBuilder, "sfa:CountrySubentity", rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
+		}
+
+		xmlBuilder.append("</sfa:AddressFix>");
+		if (columnNameMap.containsKey("ENTITYADDRESSFREE")) {
+			tagElement(xmlBuilder, "sfa:AddressFree", rs.getString(columnNameMap.get("ENTITYADDRESSFREE")));
+		}
+		xmlBuilder.append("</sfa:Address>");
+	}
+
+	private void xmlMessageSpecBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
+			throws SQLException {
+		xmlBuilder.append("<ftc:MessageSpec>");
+		if (columnNameMap.containsKey("SENDINGCOMPANYIN")) {
+			tagElement(xmlBuilder, "sfa:SendingCompanyIN", rs.getString(columnNameMap.get("SENDINGCOMPANYIN")));
+		}
+		if (columnNameMap.containsKey("TRANSMITTINGCOUNTRY")) {
+			tagElement(xmlBuilder, "sfa:TransmittingCountry", rs.getString(columnNameMap.get("TRANSMITTINGCOUNTRY")));
+		}
+		if (columnNameMap.containsKey("RECEIVINGCOUNTRY")) {
+			tagElement(xmlBuilder, "sfa:ReceivingCountry", rs.getString(columnNameMap.get("RECEIVINGCOUNTRY")));
+		}
+		if (columnNameMap.containsKey("MESSAGETYPE")) {
+			tagElement(xmlBuilder, "sfa:MessageType", rs.getString(columnNameMap.get("MESSAGETYPE")));
+		}
 //			if (columnNameMap.containsKey("WARNING")) {
 //				tagElement(xmlBuilder, "sfa:Warning", rs.getString(columnNameMap.get("WARNING")));
 //			}
 //			if (columnNameMap.containsKey("CONTACT")) {
 //				tagElement(xmlBuilder, "sfa:Contact", rs.getString(columnNameMap.get("CONTACT")));
 //			}
-			if (columnNameMap.containsKey("MESSAGEREFID")) {
-				tagElement(xmlBuilder, "sfa:MessageRefId",
-						rs.getString(columnNameMap.get("MESSAGEREFID")) + CommonUtils.generateRandom32());
-			}
+		if (columnNameMap.containsKey("MESSAGEREFID")) {
+			tagElement(xmlBuilder, "sfa:MessageRefId",
+					rs.getString(columnNameMap.get("MESSAGEREFID")) + CommonUtils.generateRandom32());
+		}
 //			if (columnNameMap.containsKey("MESSAGETYPEINDIC")) {
 //				tagElement(xmlBuilder, "sfa:MessageTypeIndic",
 //						rs.getString(columnNameMap.get("MESSAGETYPEINDIC")));
 //			}
-			if (columnNameMap.containsKey("REPORTINGPERIOD")) {
-				tagElement(xmlBuilder, "sfa:ReportingPeriod",
-						rs.getString(columnNameMap.get("REPORTINGPERIOD")));
+		if (columnNameMap.containsKey("REPORTINGPERIOD")) {
+			tagElement(xmlBuilder, "sfa:ReportingPeriod", rs.getString(columnNameMap.get("REPORTINGPERIOD")));
+		}
+		if (columnNameMap.containsKey("TIMESTAMP")) {
+			tagElement(xmlBuilder, "sfa:Timestamp", rs.getString(columnNameMap.get("TIMESTAMP")));
+		}
+
+		xmlBuilder.append("</ftc:MessageSpec>");
+	}
+
+	private void buildDefaultXmlBuilder(StringBuilder xmlBuilder) {
+		xmlBuilder.append("<Signature xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><SignedInfo>")
+				.append("<CanonicalizationMethod Algorithm=\"http://www.w3.org/2001/10/xml-exc-c14n#\" />")
+				.append("<SignatureMethod Algorithm=\"http://www.w3.org/2001/04/xmldsig-more#rsa-sha256\" />")
+				.append("<Reference URI=\"#FATCA\">").append("<Transforms>")
+				.append("<Transform Algorithm=\"http://www.w3.org/2001/10/xml-exc-c14n#\" />").append("</Transforms>")
+				.append("<DigestMethod Algorithm=\"http://www.w3.org/2001/04/xmlenc#sha256\" />")
+				.append("<DigestValue>cnuCEsWY4TwQTjv2z6JxZLpVHTKVly6j/CtaE48QfDc=</DigestValue>")
+				.append("</Reference>").append("</SignedInfo>")
+				.append("<SignatureValue>qZ544/xV/Z5LH36vKRYL3mo+ql7/PKqRlooXZUqUWfYH5aXxgE1zuCR7gVipCwhFYJYFJAFxMbVs1oQlTkWO0AwubpeJxZfK8JEEp5W9rzNrT3dpyGXqJmh1sEysWumqXRKNeF8+6ij99MY0Zzu4sg+UtZkb67WYZwpDEZFRehkd9MoyJS6Tk7gbdu5VVhBx5uRz22O2gQE/Nj1Fxkkz/Zs4C8tVY4E14nLXZjarjprAGecpTAezIOhDDkv2AHVMZkR14vgsJHeTTKbUDfHThbclMH6mTM7HjH0vdXn2zOQd+PJbt0JCaQmFWow+3L7ICgQGsE2nYum8LY2kOK+xPQ==</SignatureValue>")
+				.append("<KeyInfo><X509Data><X509SubjectName>CN=fatca.ncbagroup.com, O=NCBA Bank Kenya PLC, L=Nairobi, C=KE</X509SubjectName><X509Certificate>MIIGzjCCBbagAwIBAgIQC/r5QgbUlK3AvK4hy2CDTTANBgkqhkiG9w0BAQsFADBZMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMTMwMQYDVQQDEypEaWdpQ2VydCBHbG9iYWwgRzIgVExTIFJTQSBTSEEyNTYgMjAyMCBDQTEwHhcNMjUwMzI3MDAwMDAwWhcNMjYwMzI3MjM1OTU5WjBbMQswCQYDVQQGEwJLRTEQMA4GA1UEBxMHTmFpcm9iaTEcMBoGA1UEChMTTkNCQSBCYW5rIEtlbnlhIFBMQzEcMBoGA1UEAxMTZmF0Y2EubmNiYWdyb3VwLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANMMKxlAPHLk2ENeilsdM7MopaTFT11wh9AMYDpSBx9KBb2Wuhr79Nq8rH40AQTAXm4TBuskqQxGdyy91G8DJkmfBuY2eTmVNDipWzqCV7j4Pyzw159WIvGdr2oH/3rdb5ItUOHAPCtFGEEbnEh+7KKZqnrrgwF/RlPyjqEazi2RCMoyuIU/Nyw6/PwKRS7wqCIsb1kwdYCRXRHqVarKkcmGbV7zo3FBzOculOB1omXFFCJY5V+yts20Bbc41voBrxCFNANuw10HDDxgTMpTb9Eu1NuJii5aKJRPHxnjEkvKfYLFzblvOzHujad5lKL6eX3ZZJfV4T/R5qaIwkxOLykCAwEAAaOCA44wggOKMB8GA1UdIwQYMBaAFHSFgMBmx9833s+9KTeqAx2+7c0XMB0GA1UdDgQWBBQhojq5sJhRsZSPWxptjuyytzX72zAeBgNVHREEFzAVghNmYXRjYS5uY2JhZ3JvdXAuY29tMD4GA1UdIAQ3MDUwMwYGZ4EMAQICMCkwJwYIKwYBBQUHAgEWG2h0dHA6Ly93d3cuZGlnaWNlcnQuY29tL0NQUzAOBgNVHQ8BAf8EBAMCBaAwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMIGfBgNVHR8EgZcwgZQwSKBGoESGQmh0dHA6Ly9jcmwzLmRpZ2ljZXJ0LmNvbS9EaWdpQ2VydEdsb2JhbEcyVExTUlNBU0hBMjU2MjAyMENBMS0xLmNybDBIoEagRIZCaHR0cDovL2NybDQuZGlnaWNlcnQuY29tL0RpZ2lDZXJ0R2xvYmFsRzJUTFNSU0FTSEEyNTYyMDIwQ0ExLTEuY3JsMIGHBggrBgEFBQcBAQR7MHkwJAYIKwYBBQUHMAGGGGh0dHA6Ly9vY3NwLmRpZ2ljZXJ0LmNvbTBRBggrBgEFBQcwAoZFaHR0cDovL2NhY2VydHMuZGlnaWNlcnQuY29tL0RpZ2lDZXJ0R2xvYmFsRzJUTFNSU0FTSEEyNTYyMDIwQ0ExLTEuY3J0MAwGA1UdEwEB/wQCMAAwggF9BgorBgEEAdZ5AgQCBIIBbQSCAWkBZwB3AA5XlLzzrqk+MxssmQez95Dfm8I9cTIl3SGpJaxhxU4hAAABldbe0DwAAAQDAEgwRgIhAMQsh5ews5NzU4PWWs0Pg19f4dfgXUg/zaVjBGknE9emAiEAkajVsIYjEdnB0cQVFM2Vb3JYVWhFD3evPxcr56jQdaMAdQDLOPcViXyEoURfW8Hd+8lu8ppZzUcKaQWFsMsUwxRY5wAAAZXW3tBIAAAEAwBGMEQCIEoUni1NXR8jxTEtYDwgYQpNAeyVgz9E9uN78996MUijAiBiBRrWp+sXqdAMuxS63n3bH/gxs9aRVTpT2lT/RoQHDwB1AJaXZL9VWJet90OHaDcIQnfp8DrV9qTzNm5GpD8PyqnGAAABldbe0I0AAAQDAEYwRAIgJL0jxygIYHye43xqcqrAp+wVjVSXWyA9pwd+NlEM2xICIFQqe2GE2cYBM8fhNSWoEVb575Si7E4AMHxnKvrKodVXMA0GCSqGSIb3DQEBCwUAA4IBAQAdtEa1vhsRe+4NZNbkrpW7iChK1q5Dw3UHrcdin+z1jTObepVMbjCgxECW+SdRYa1+LatSQb4uUaLAR1gb25Y5ZqHJ8sWLz5EG8b7Hdhjh1Ml10bX6Sdsz0yt1s0UKlib1+IWICDLBywSaInbJVET0yZwWTLwpAR76Oc6j6uzIe3GNuxUAVo7KV+b6Zg8WreYjstOWl+naeMyS2/FiwptOy0SnHDzIHCaYWYsLJRrAx9gbCVZiYSIePqXiGDGei0lj22ztFReIpVf4/2zKT+Pc3F8+ZJJlp2L9cmDEeGm7XTw0s2mB/Hfa4a3jzGGmIcqBNgPASzerookGnRkmpz+P</X509Certificate></X509Data></KeyInfo>")
+				.append("<Object Id=\"FATCA\">").append("<ftc:FATCA_OECD ")
+				.append(" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"urn:oecd:ties:fatca:v2\"  ")
+				.append("xmlns:iso=\"urn:oecd:ties:isofatcatypes:v1\" ").append("xmlns:ftc=\"urn:oecd:ties:fatca:v2\" ")
+				.append("xmlns:stf=\"urn:oecd:ties:stf:v4\" ")
+				.append("xmlns:sfa=\"urn:oecd:ties:stffatcatypes:v2\" version=\"2.0\">");
+	}
+
+	public ExceptionCode writeXlsData(String filePath, List<ColumnHeadersVb> headers, List<Map<String, Object>> dataLst,
+			String xlName) {
+		ExceptionCode exceptionCode = new ExceptionCode();
+		try (Workbook workbook = new XSSFWorkbook()) {
+			String tempDir = System.getProperty("java.io.tmpdir");
+			String fileName = xlName + ".xlsx";
+			String filePathwithName = filePath + File.separator + fileName;
+
+			Sheet sheet = workbook.createSheet("Extracted Data");
+			int rowIndex = 0;
+
+			// ================================
+			// 1️⃣ HEADER ROW
+			// ================================
+			Row headerRow = sheet.createRow(rowIndex++);
+
+			CellStyle headerStyle = workbook.createCellStyle();
+			Font headerFont = workbook.createFont();
+			headerFont.setBold(true);
+			headerStyle.setFont(headerFont);
+
+			for (int i = 0; i < headers.size(); i++) {
+				Cell c = headerRow.createCell(i);
+				c.setCellValue(headers.get(i).getCaption());
+				c.setCellStyle(headerStyle);
 			}
-			if (columnNameMap.containsKey("TIMESTAMP")) {
-				tagElement(xmlBuilder, "sfa:Timestamp", rs.getString(columnNameMap.get("TIMESTAMP")));
+
+			// ================================
+			// 2️⃣ DATA ROWS
+			// ================================
+			for (Map<String, Object> rowData : dataLst) {
+
+				Row row = sheet.createRow(rowIndex++);
+				int colIndex = 0;
+
+				for (ColumnHeadersVb colHeader : headers) {
+
+					String colName = colHeader.getDbColumnName();
+					Object value = rowData.get(colName);
+
+					Cell cell = row.createCell(colIndex++);
+
+					if (value == null) {
+						cell.setCellValue("");
+						continue;
+					}
+
+					// Numeric type
+					if ("N".equalsIgnoreCase(colHeader.getColType())) {
+						try {
+							cell.setCellValue(Double.parseDouble(value.toString().replace(",", "")));
+						} catch (Exception e) {
+							cell.setCellValue(value.toString()); // fallback
+						}
+					}
+					// Date type
+					else if ("D".equalsIgnoreCase(colHeader.getColType())) {
+						cell.setCellValue(value.toString()); // if needed format can be added
+					}
+					// Text type
+					else {
+						cell.setCellValue(value.toString());
+					}
+				}
 			}
 
-			xmlBuilder.append("</ftc:MessageSpec>");
-		}
+			// Auto-size
+			for (int i = 0; i < headers.size(); i++) {
+				sheet.autoSizeColumn(i);
+			}
 
-		private void buildDefaultXmlBuilder(StringBuilder xmlBuilder) {
-			xmlBuilder.append("<Signature xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><SignedInfo>")
-					.append("<CanonicalizationMethod Algorithm=\"http://www.w3.org/2001/10/xml-exc-c14n#\" />")
-					.append("<SignatureMethod Algorithm=\"http://www.w3.org/2001/04/xmldsig-more#rsa-sha256\" />")
-					.append("<Reference URI=\"#FATCA\">").append("<Transforms>")
-					.append("<Transform Algorithm=\"http://www.w3.org/2001/10/xml-exc-c14n#\" />")
-					.append("</Transforms>")
-					.append("<DigestMethod Algorithm=\"http://www.w3.org/2001/04/xmlenc#sha256\" />")
-					.append("<DigestValue>cnuCEsWY4TwQTjv2z6JxZLpVHTKVly6j/CtaE48QfDc=</DigestValue>")
-					.append("</Reference>").append("</SignedInfo>")
-					.append("<SignatureValue>qZ544/xV/Z5LH36vKRYL3mo+ql7/PKqRlooXZUqUWfYH5aXxgE1zuCR7gVipCwhFYJYFJAFxMbVs1oQlTkWO0AwubpeJxZfK8JEEp5W9rzNrT3dpyGXqJmh1sEysWumqXRKNeF8+6ij99MY0Zzu4sg+UtZkb67WYZwpDEZFRehkd9MoyJS6Tk7gbdu5VVhBx5uRz22O2gQE/Nj1Fxkkz/Zs4C8tVY4E14nLXZjarjprAGecpTAezIOhDDkv2AHVMZkR14vgsJHeTTKbUDfHThbclMH6mTM7HjH0vdXn2zOQd+PJbt0JCaQmFWow+3L7ICgQGsE2nYum8LY2kOK+xPQ==</SignatureValue>")
-					.append("<KeyInfo><X509Data><X509SubjectName>CN=fatca.ncbagroup.com, O=NCBA Bank Kenya PLC, L=Nairobi, C=KE</X509SubjectName><X509Certificate>MIIGzjCCBbagAwIBAgIQC/r5QgbUlK3AvK4hy2CDTTANBgkqhkiG9w0BAQsFADBZMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMTMwMQYDVQQDEypEaWdpQ2VydCBHbG9iYWwgRzIgVExTIFJTQSBTSEEyNTYgMjAyMCBDQTEwHhcNMjUwMzI3MDAwMDAwWhcNMjYwMzI3MjM1OTU5WjBbMQswCQYDVQQGEwJLRTEQMA4GA1UEBxMHTmFpcm9iaTEcMBoGA1UEChMTTkNCQSBCYW5rIEtlbnlhIFBMQzEcMBoGA1UEAxMTZmF0Y2EubmNiYWdyb3VwLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANMMKxlAPHLk2ENeilsdM7MopaTFT11wh9AMYDpSBx9KBb2Wuhr79Nq8rH40AQTAXm4TBuskqQxGdyy91G8DJkmfBuY2eTmVNDipWzqCV7j4Pyzw159WIvGdr2oH/3rdb5ItUOHAPCtFGEEbnEh+7KKZqnrrgwF/RlPyjqEazi2RCMoyuIU/Nyw6/PwKRS7wqCIsb1kwdYCRXRHqVarKkcmGbV7zo3FBzOculOB1omXFFCJY5V+yts20Bbc41voBrxCFNANuw10HDDxgTMpTb9Eu1NuJii5aKJRPHxnjEkvKfYLFzblvOzHujad5lKL6eX3ZZJfV4T/R5qaIwkxOLykCAwEAAaOCA44wggOKMB8GA1UdIwQYMBaAFHSFgMBmx9833s+9KTeqAx2+7c0XMB0GA1UdDgQWBBQhojq5sJhRsZSPWxptjuyytzX72zAeBgNVHREEFzAVghNmYXRjYS5uY2JhZ3JvdXAuY29tMD4GA1UdIAQ3MDUwMwYGZ4EMAQICMCkwJwYIKwYBBQUHAgEWG2h0dHA6Ly93d3cuZGlnaWNlcnQuY29tL0NQUzAOBgNVHQ8BAf8EBAMCBaAwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMIGfBgNVHR8EgZcwgZQwSKBGoESGQmh0dHA6Ly9jcmwzLmRpZ2ljZXJ0LmNvbS9EaWdpQ2VydEdsb2JhbEcyVExTUlNBU0hBMjU2MjAyMENBMS0xLmNybDBIoEagRIZCaHR0cDovL2NybDQuZGlnaWNlcnQuY29tL0RpZ2lDZXJ0R2xvYmFsRzJUTFNSU0FTSEEyNTYyMDIwQ0ExLTEuY3JsMIGHBggrBgEFBQcBAQR7MHkwJAYIKwYBBQUHMAGGGGh0dHA6Ly9vY3NwLmRpZ2ljZXJ0LmNvbTBRBggrBgEFBQcwAoZFaHR0cDovL2NhY2VydHMuZGlnaWNlcnQuY29tL0RpZ2lDZXJ0R2xvYmFsRzJUTFNSU0FTSEEyNTYyMDIwQ0ExLTEuY3J0MAwGA1UdEwEB/wQCMAAwggF9BgorBgEEAdZ5AgQCBIIBbQSCAWkBZwB3AA5XlLzzrqk+MxssmQez95Dfm8I9cTIl3SGpJaxhxU4hAAABldbe0DwAAAQDAEgwRgIhAMQsh5ews5NzU4PWWs0Pg19f4dfgXUg/zaVjBGknE9emAiEAkajVsIYjEdnB0cQVFM2Vb3JYVWhFD3evPxcr56jQdaMAdQDLOPcViXyEoURfW8Hd+8lu8ppZzUcKaQWFsMsUwxRY5wAAAZXW3tBIAAAEAwBGMEQCIEoUni1NXR8jxTEtYDwgYQpNAeyVgz9E9uN78996MUijAiBiBRrWp+sXqdAMuxS63n3bH/gxs9aRVTpT2lT/RoQHDwB1AJaXZL9VWJet90OHaDcIQnfp8DrV9qTzNm5GpD8PyqnGAAABldbe0I0AAAQDAEYwRAIgJL0jxygIYHye43xqcqrAp+wVjVSXWyA9pwd+NlEM2xICIFQqe2GE2cYBM8fhNSWoEVb575Si7E4AMHxnKvrKodVXMA0GCSqGSIb3DQEBCwUAA4IBAQAdtEa1vhsRe+4NZNbkrpW7iChK1q5Dw3UHrcdin+z1jTObepVMbjCgxECW+SdRYa1+LatSQb4uUaLAR1gb25Y5ZqHJ8sWLz5EG8b7Hdhjh1Ml10bX6Sdsz0yt1s0UKlib1+IWICDLBywSaInbJVET0yZwWTLwpAR76Oc6j6uzIe3GNuxUAVo7KV+b6Zg8WreYjstOWl+naeMyS2/FiwptOy0SnHDzIHCaYWYsLJRrAx9gbCVZiYSIePqXiGDGei0lj22ztFReIpVf4/2zKT+Pc3F8+ZJJlp2L9cmDEeGm7XTw0s2mB/Hfa4a3jzGGmIcqBNgPASzerookGnRkmpz+P</X509Certificate></X509Data></KeyInfo>")
-					.append("<Object Id=\"FATCA\">")
-					.append("<ftc:FATCA_OECD ")
-					.append(" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"urn:oecd:ties:fatca:v2\"  ")
-					.append("xmlns:iso=\"urn:oecd:ties:isofatcatypes:v1\" ")
-					.append("xmlns:ftc=\"urn:oecd:ties:fatca:v2\" ")
-					.append("xmlns:stf=\"urn:oecd:ties:stf:v4\" ")
-					.append("xmlns:sfa=\"urn:oecd:ties:stffatcatypes:v2\" version=\"2.0\">");
-		}	
-		
-		public ExceptionCode writeXlsData(String filePath,  List<ColumnHeadersVb> headers,  List<Map<String, Object>> dataLst,String xlName) {
-			ExceptionCode exceptionCode =new ExceptionCode();
-		    try (Workbook workbook = new XSSFWorkbook()) {
-		    	String tempDir = System.getProperty("java.io.tmpdir");
-		    	String fileName =xlName+".xlsx";
-		    	 String filePathwithName = filePath + File.separator +fileName;
+			// ================================
+			// 3️⃣ WRITE TO FILE
+			// ================================
+			FileOutputStream out = new FileOutputStream(filePathwithName);
+			workbook.write(out);
+			out.close();
 
-		        Sheet sheet = workbook.createSheet("Extracted Data");
-		        int rowIndex = 0;
-
-		        // ================================
-		        // 1️⃣ HEADER ROW
-		        // ================================
-		        Row headerRow = sheet.createRow(rowIndex++);
-
-		        CellStyle headerStyle = workbook.createCellStyle();
-		        Font headerFont = workbook.createFont();
-		        headerFont.setBold(true);
-		        headerStyle.setFont(headerFont);
-
-		        for (int i = 0; i < headers.size(); i++) {
-		            Cell c = headerRow.createCell(i);
-		            c.setCellValue(headers.get(i).getCaption()); 
-		            c.setCellStyle(headerStyle);
-		        }
-
-		        // ================================
-		        // 2️⃣ DATA ROWS
-		        // ================================
-		        for (Map<String, Object> rowData : dataLst) {
-
-		            Row row = sheet.createRow(rowIndex++);
-		            int colIndex = 0;
-
-		            for (ColumnHeadersVb colHeader : headers) {
-
-		                String colName = colHeader.getDbColumnName();
-		                Object value = rowData.get(colName);
-
-		                Cell cell = row.createCell(colIndex++);
-
-		                if (value == null) {
-		                    cell.setCellValue("");
-		                    continue;
-		                }
-
-		                // Numeric type
-		                if ("N".equalsIgnoreCase(colHeader.getColType())) {
-		                    try {
-		                        cell.setCellValue(Double.parseDouble(value.toString().replace(",", "")));
-		                    } catch (Exception e) {
-		                        cell.setCellValue(value.toString()); // fallback
-		                    }
-		                }
-		                // Date type
-		                else if ("D".equalsIgnoreCase(colHeader.getColType())) {
-		                    cell.setCellValue(value.toString()); // if needed format can be added
-		                }
-		                // Text type
-		                else {
-		                    cell.setCellValue(value.toString());
-		                }
-		            }
-		        }
-
-		        // Auto-size
-		        for (int i = 0; i < headers.size(); i++) {
-		            sheet.autoSizeColumn(i);
-		        }
-
-		        // ================================
-		        // 3️⃣ WRITE TO FILE
-		        // ================================
-		        FileOutputStream out = new FileOutputStream(filePathwithName);
-		        workbook.write(out);
-		        out.close();
-
-		        exceptionCode.setResponse(filePath);
-		        exceptionCode.setOtherInfo(fileName);
-		        exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
-		      return  exceptionCode;
-
-		    } catch (Exception e) {
-		        e.printStackTrace();
-		    }
+			exceptionCode.setResponse(filePath);
+			exceptionCode.setOtherInfo(fileName);
+			exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
 			return exceptionCode;
+
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		public ExceptionCode getEmailScheduleDet(TemplateScheduleVb templateScheduleVb) {
-			ExceptionCode exceptionCode = new ExceptionCode();
-			String Status = "";
-			String query ="";
-			return exceptionCode;
+		return exceptionCode;
+	}
+
+	public EmailProcessControlVb getDetailsForEmailAlert(TemplateScheduleVb vObject, String status, String emailGorup) {
+		List<EmailProcessControlVb> list = new ArrayList<EmailProcessControlVb>();
+		EmailProcessControlVb result = null;
+		try {
+			String query = " SELECT  t1.COUNTRY,t1.LE_BOOK,t1.TEMPLATE_ID,"
+					+ dbFunctionFormats("t1.REPORTING_DATE", "DATE_FORMAT", null)
+					+ " AS REPORTING_DATE,t1.CATEGORY_TYPE, " + " t1.EVENT_TYPE,t2." + emailGorup + " as EMAIL_GROUP"
+					+ ",t3.EMAIL_SUBJECT,t3.EMAIL_BODY,t1.TEMPLATE_STATUS_AT, "
+					+ " t1.TEMPLATE_STATUS,t1.EMAIL_TRIGGER_STATUS_AT,t1.EMAIL_TRIGGER_STATUS, " + "t1.STATUS, "
+					+ " t1.RECORD_INDICATOR,t1.MAKER,t1.VERIFIER,t1.INTERNAL_STATUS FROM RG_EMAIL_PROCESS_CONTROLS t1 "
+					+ " JOIN  RG_EMAIL_ALERT t2 ON "
+					+ " t2.country =T1.country and t2.le_book =T1.le_book and T2.template_id =T1.template_id  "
+					+ " JOIN  RG_EMAIL_ALERT_SUBJECT_DETAILS  t3 ON  t3.EVENT_TYPE = '" + status
+					+ "' AND  t1.COUNTRY = ? AND t1.LE_BOOK = ? AND t1.TEMPLATE_ID =? AND "
+					+ dbFunctionFormats("t1.REPORTING_DATE", "DATE_FORMAT", null) + " =" + dateConvert + "  ";
+			Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getTemplateId(),
+					vObject.getReportingDate() };
+			list = getJdbcTemplate().query(query, args, getDetailsForEmailAlertMapper());
+			if (!list.isEmpty()) {
+				result = list.get(0);
+			}
+		} catch (DataAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
+		return result;
+	}
+
+	protected RowMapper getDetailsForEmailAlertMapper() {
+		RowMapper mapper = new RowMapper() {
+			@Override
+			public Object mapRow(ResultSet rs, int rowNum) throws SQLException {
+				EmailProcessControlVb vObject = new EmailProcessControlVb();
+				vObject.setCountry(rs.getString("COUNTRY"));
+				vObject.setLeBook(rs.getString("LE_BOOK"));
+				vObject.setTemplateId(rs.getString("TEMPLATE_ID"));
+				vObject.setCategoryType(rs.getString("CATEGORY_TYPE"));
+				vObject.setReportingDate(rs.getString("REPORTING_DATE"));
+				vObject.setEventType(rs.getString("EVENT_TYPE"));
+				vObject.setEmailGroup(rs.getString("EMAIL_GROUP"));
+				vObject.setEmailSubject(rs.getString("EMAIL_SUBJECT"));
+				vObject.setEmailBody(rs.getString("EMAIL_BODY"));
+				vObject.setTemplateStatus(rs.getString("TEMPLATE_STATUS"));
+				vObject.setEmailtriggerStatus(rs.getString("EMAIL_TRIGGER_STATUS"));
+				vObject.setDbStatus(rs.getInt("STATUS"));
+				vObject.setDbStatus(rs.getInt("STATUS"));
+				vObject.setRecordIndicator(rs.getInt("RECORD_INDICATOR"));
+				vObject.setMaker(rs.getInt("MAKER"));
+				vObject.setVerifier(rs.getInt("VERIFIER"));
+				vObject.setInternalStatus(rs.getInt("INTERNAL_STATUS"));
+				return vObject;
+			}
+		};
+		return mapper;
+	}
+
+	public int insertEmailProcessAudit(EmailProcessControlVb vObject, String status) {
+		try {
+			String query = " INSERT INTO RG_EMAIL_PROCESS_CONTROLS ( COUNTRY,LE_BOOK,TEMPLATE_ID,REPORTING_DATE,CATEGORY_TYPE_AT,CATEGORY_TYPE,EVENT_TYPE_AT,"
+					+ "	EVENT_TYPE,EMAIL_GROUP,EMAIL_SUBJECT,EMAIL_BODY,TEMPLATE_STATUS_AT, "
+					+ "	TEMPLATE_STATUS,EMAIL_TRIGGER_STATUS_AT,EMAIL_TRIGGER_STATUS,STATUS_NT, STATUS,RECORD_INDICATOR_NT,"
+					+ "	RECORD_INDICATOR,MAKER,VERIFIER,INTERNAL_STATUS,DATE_CREATION,DATE_LAST_MODIFIED )  "
+					+ " VALUES (?,?,?," + dateConvert + ",?,?, ?,?,?,?,?,?,?,?,?,?,?,?,?,? ,?,?," + systemDate + ","
+					+ systemDate + ")";
+			Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getTemplateId(),
+					vObject.getReportingDate(), vObject.getCategoryTypeAt(), vObject.getCategoryType(),
+					vObject.getEventTypeAt(), vObject.getEventType(), vObject.getEmailGroup(),
+					vObject.getEmailSubject(), vObject.getEmailBody(), vObject.getTemplateStatusAt(), status,
+					vObject.getEmailtriggerStatusAt(), "YTP", vObject.getStatusNt(), vObject.getDbStatus(),
+					vObject.getRecordIndicatorNt(), vObject.getRecordIndicator(), vObject.getMaker(),
+					vObject.getVerifier(), vObject.getInternalStatus() };
+			return getJdbcTemplate().update(query, args);
+		} catch (DataAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return -1;
+		}
+	}
+
+	public int getCountMailAlert(EmailProcessControlVb templateAlertdetail, String status) {
+		try {
+			String query = " SELECT COUNT(1) FROM RG_EMAIL_PROCESS_CONTROLS  WHERE COUNTRY = ? AND LE_BOOK = ? "
+					+ " AND TEMPLATE_ID = ? AND " + dbFunctionFormats("REPORTING_DATE", "DATE_FORMAT", null) + " = "
+					+ dateConvert + " AND TEMPLATE_STATUS ='" + status + "'   ";
+
+			Object[] args = { templateAlertdetail.getCountry(), templateAlertdetail.getLeBook(),
+					templateAlertdetail.getTemplateId(), templateAlertdetail.getReportingDate() };
+			return getJdbcTemplate().queryForObject(query, args, Integer.class);
+		} catch (Exception e) {
+			return 0;
+		}
+	}
+
+	public int doUpdateEmailProcessAudit(EmailProcessControlVb templateAlertdetail, String status) {
+		try {
+			String query = " UPDATE  RG_EMAIL_PROCESS_CONTROLS SET EMAIL_TRIGGER_STATUS = 'YTP' , EMAIL_GROUP =?  ,DATE_LAST_MODIFIED ="
+					+ getDbFunction("SYSDATE") + "  WHERE COUNTRY = ? AND LE_BOOK = ? AND TEMPLATE_ID = ? AND "
+					+ dbFunctionFormats("REPORTING_DATE", "DATE_FORMAT", null) + "= " + dateConvert
+					+ " AND TEMPLATE_STATUS = ? ";
+
+			Object[] args = { templateAlertdetail.getEmailGroup(), templateAlertdetail.getCountry(),
+					templateAlertdetail.getLeBook(), templateAlertdetail.getTemplateId(),
+					templateAlertdetail.getReportingDate(), status };
+			return getJdbcTemplate().update(query, args);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return -1;
+		}
+	}
+
+	public int insertEscalationEmailAudit(EmailProcessControlVb vObject, String status, int cnt) {
+		try {
+			String query = " INSERT INTO RG_EMAIL_PROCESS_CONTROLS ( COUNTRY,LE_BOOK,TEMPLATE_ID,REPORTING_DATE,CATEGORY_TYPE_AT,CATEGORY_TYPE,EVENT_TYPE_AT,"
+					+ "	EVENT_TYPE,EMAIL_GROUP,EMAIL_SUBJECT,EMAIL_BODY,TEMPLATE_STATUS_AT, "
+					+ "	TEMPLATE_STATUS,EMAIL_TRIGGER_STATUS_AT,EMAIL_TRIGGER_STATUS,STATUS_NT, STATUS,RECORD_INDICATOR_NT,"
+					+ "	RECORD_INDICATOR,MAKER,VERIFIER,INTERNAL_STATUS,DATE_CREATION,DATE_LAST_MODIFIED,ITERATION_COUNT,SEQUENCE_NO )  "
+					+ " VALUES (?,?,?," + dateConvert + ",?,?, ?,?,?,?,?,?,?,?,?,?,?,?,?,? ,?,?," + systemDate + ","
+					+ systemDate + ",?,?)";
+			Object[] args = { vObject.getCountry(), vObject.getLeBook(), vObject.getTemplateId(),
+					vObject.getReportingDate(), vObject.getCategoryTypeAt(), vObject.getCategoryType(),
+					vObject.getEventTypeAt(), vObject.getEventType(), vObject.getEmailGroup(),
+					vObject.getEmailSubject(), vObject.getEmailBody(), vObject.getTemplateStatusAt(), status,
+					vObject.getEmailtriggerStatusAt(), "YTP", vObject.getStatusNt(), vObject.getDbStatus(),
+					vObject.getRecordIndicatorNt(), vObject.getRecordIndicator(), vObject.getMaker(),
+					vObject.getVerifier(), vObject.getInternalStatus(), cnt, cnt };
+			return getJdbcTemplate().update(query, args);
+		} catch (DataAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return -1;
+		}
+	}
+
 }

@@ -179,7 +179,7 @@ public class ReportsDao extends AbstractDao<ReportsVb> {
 		return mapper;
 	}
 
-	public ExceptionCode extractReportData(ReportsVb vObj,Connection conExt,Boolean exportFlag) {
+	public ExceptionCode extractReportData(ReportsVb vObj, Connection conExt, Boolean exportFlag) {
 		ArrayList datalst = new ArrayList();
 		ExceptionCode exceptionCode = new ExceptionCode();
 		int totalRows = 0;
@@ -187,147 +187,163 @@ public class ReportsDao extends AbstractDao<ReportsVb> {
 		String resultFetchTable = "";
 		String sqlQuery = "";
 		Paginationhelper<ReportsVb> paginationhelper = new Paginationhelper<ReportsVb>();
-		String tmpTableOrg = String.valueOf("TMP"+System.currentTimeMillis())+vObj.getSubReportId();
-		String tmpTableGrp = String.valueOf("TMPG"+System.currentTimeMillis())+vObj.getSubReportId();
+		String tmpTableOrg = String.valueOf("TMP" + System.currentTimeMillis()) + vObj.getSubReportId();
+		String tmpTableGrp = String.valueOf("TMPG" + System.currentTimeMillis()) + vObj.getSubReportId();
 		String finalTmpTable = "";
 		Boolean tempTableAlreadyAvail = false;
-		if(ValidationUtil.isValid(vObj.getActionType())){
+		if (ValidationUtil.isValid(vObj.getActionType())) {
 			tempTableAlreadyAvail = true;
 		}
-								
+
 		try {
-			stmt1 = conExt.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, 
-					    ResultSet.CONCUR_READ_ONLY);
-			if(!tempTableAlreadyAvail) {
-				
+			stmt1 = conExt.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+			if (!tempTableAlreadyAvail) {
+
 				sqlQuery = vObj.getFinalExeQuery();
-				//totalRows = (int) vObj.getTotalRows();
-				String createTabScript= "";
-				createTabScript = "SELECT * FROM ("+sqlQuery+") TA1";
-				
+				// totalRows = (int) vObj.getTotalRows();
+				String createTabScript = "";
+				createTabScript = "SELECT * FROM (" + sqlQuery + ") TA1";
+
 				Boolean formatTypeAvail = false;
 				ResultSet rsFormatCnt = null;
-				if("ORACLE".equalsIgnoreCase(databaseType)) {
-					totalRows = stmt1.executeUpdate("CREATE TABLE "+tmpTableOrg+" AS ("+createTabScript+")");
-					
-					rsFormatCnt = stmt1.executeQuery("SELECT * FROM USER_TAB_COLS WHERE "
-							+ "TABLE_NAME = '"+tmpTableOrg+"' AND COLUMN_NAME = 'FORMAT_TYPE' ");
-					
-					while(rsFormatCnt.next()) {
+				if ("ORACLE".equalsIgnoreCase(databaseType)) {
+					totalRows = stmt1.executeUpdate("CREATE TABLE " + tmpTableOrg + " AS (" + createTabScript + ")");
+
+					rsFormatCnt = stmt1.executeQuery("SELECT * FROM USER_TAB_COLS WHERE " + "TABLE_NAME = '"
+							+ tmpTableOrg + "' AND COLUMN_NAME = 'FORMAT_TYPE' ");
+
+					while (rsFormatCnt.next()) {
 						formatTypeAvail = true;
 					}
-				}else if("MSSQL".equalsIgnoreCase(databaseType)) {
-					totalRows = stmt1.executeUpdate("Select * into "+tmpTableOrg+" FROM ("+createTabScript+") A");
-					
+				} else if ("MSSQL".equalsIgnoreCase(databaseType)) {
+					totalRows = stmt1
+							.executeUpdate("Select * into " + tmpTableOrg + " FROM (" + createTabScript + ") A");
+
 					rsFormatCnt = stmt1.executeQuery("SELECT * FROM INFORMATION_SCHEMA.columns WHERE "
-							+ "TABLE_NAME = '"+tmpTableOrg+"' AND COLUMN_NAME = 'FORMAT_TYPE' ");
-					
-					while(rsFormatCnt.next()) {
+							+ "TABLE_NAME = '" + tmpTableOrg + "' AND COLUMN_NAME = 'FORMAT_TYPE' ");
+
+					while (rsFormatCnt.next()) {
 						formatTypeAvail = true;
 					}
 				}
 				rsFormatCnt.close();
-				
+
 				resultFetchTable = tmpTableOrg;
 				String formatTypeCond = "";
-				if(formatTypeAvail && "Y".equalsIgnoreCase(vObj.getApplyGrouping()))
+				if (formatTypeAvail && "Y".equalsIgnoreCase(vObj.getApplyGrouping()))
 					formatTypeCond = "WHERE FORMAT_TYPE NOT IN ('S','FT') ";
 				else
-					formatTypeCond= "";
+					formatTypeCond = "";
 				if ("Y".equalsIgnoreCase(vObj.getApplyGrouping())) {
 					String showMeasures = "";
-					if(ValidationUtil.isValid(vObj.getShowMeasures())) {
-						showMeasures = ","+vObj.getShowMeasures();
-					}else
+					if (ValidationUtil.isValid(vObj.getShowMeasures())) {
+						showMeasures = "," + vObj.getShowMeasures();
+					} else
 						showMeasures = "";
-						
-					String query = "SELECT " + vObj.getShowDimensions() + showMeasures + " FROM "+tmpTableOrg+ " "+formatTypeCond+ " GROUP BY " + vObj.getShowDimensions();
-					if("ORACLE".equalsIgnoreCase(databaseType)) {
-						totalRows = stmt1.executeUpdate("CREATE TABLE "+tmpTableGrp+" AS ("+query+")");
-					}else if("MSSQL".equalsIgnoreCase(databaseType)) {
-						totalRows = stmt1.executeUpdate("Select * into "+tmpTableGrp+" FROM ("+query+") A");
+
+					String query = "SELECT " + vObj.getShowDimensions() + showMeasures + " FROM " + tmpTableOrg + " "
+							+ formatTypeCond + " GROUP BY " + vObj.getShowDimensions();
+					if ("ORACLE".equalsIgnoreCase(databaseType)) {
+						totalRows = stmt1.executeUpdate("CREATE TABLE " + tmpTableGrp + " AS (" + query + ")");
+					} else if ("MSSQL".equalsIgnoreCase(databaseType)) {
+						totalRows = stmt1.executeUpdate("Select * into " + tmpTableGrp + " FROM (" + query + ") A");
 					}
 					resultFetchTable = tmpTableGrp;
 				}
-				if(totalRows == 0) {
+				if (totalRows == 0) {
 					exceptionCode.setErrorCode(Constants.NO_RECORDS_FOUND);
 					exceptionCode.setErrorMsg("No Records Found!!");
 					return exceptionCode;
 				}
-				/*Report Suite having the functionality of Pagination for every 5000 rows
-				(Rows per page in parameterized in Vision_Variable PRD_REPORT_MAXROW/PRD_REPORT_MAX_PERPAGE */
-				if(exportFlag) {
-					finalTmpTable = String.valueOf("TMPF"+System.currentTimeMillis())+vObj.getSubReportId(); 
-					String sqlTempTable = ValidationUtil.convertQuery("SELECT * FROM "+resultFetchTable,vObj.getSortField());
-					if("ORACLE".equalsIgnoreCase(databaseType)) {
-						totalRows = stmt1.executeUpdate("CREATE TABLE "+finalTmpTable+" AS ("+sqlTempTable+")");
-						sqlTempTable = finalTmpTable;
-					}else if("MSSQL".equalsIgnoreCase(databaseType)) {
-						totalRows = stmt1.executeUpdate("Select * into "+finalTmpTable+" FROM ("+sqlTempTable+") A");
-						sqlTempTable = "Select * from "+finalTmpTable+" ";
-					}
-					sqlQuery = paginationhelper.reportFetchPage(sqlTempTable,vObj.getCurrentPage(), vObj.getMaxRecords(),totalRows);
-					vObj.setActionType(finalTmpTable);
+				/*
+				 * Report Suite having the functionality of Pagination for every 5000 rows (Rows
+				 * per page in parameterized in Vision_Variable
+				 * PRD_REPORT_MAXROW/PRD_REPORT_MAX_PERPAGE
+				 */
+				if (exportFlag) {
+					// finalTmpTable = String.valueOf("TMPF" + System.currentTimeMillis()) +
+					// vObj.getSubReportId();
+					String sqlTempTable = ValidationUtil.convertQuery("SELECT * FROM " + resultFetchTable,
+							vObj.getSortField());
+					/*
+					 * if ("ORACLE".equalsIgnoreCase(databaseType)) { totalRows =
+					 * stmt1.executeUpdate("CREATE TABLE " + finalTmpTable + " AS (" + sqlTempTable
+					 * + ")"); sqlTempTable = finalTmpTable; } else if
+					 * ("MSSQL".equalsIgnoreCase(databaseType)) { totalRows = stmt1
+					 * .executeUpdate("Select * into " + finalTmpTable + " FROM (" + sqlTempTable +
+					 * ") A"); sqlTempTable = "Select * from " + finalTmpTable + " "; }
+					 */
+					sqlQuery = paginationhelper.reportFetchPage(sqlTempTable, vObj.getCurrentPage(),
+							vObj.getMaxRecords(), totalRows);
+					vObj.setActionType(resultFetchTable);
 					vObj.setTotalRows(totalRows);
-				}else {
-					String sqlTempTable = "SELECT * FROM "+resultFetchTable+"";
-					sqlQuery = paginationhelper.reportFetchPage(ValidationUtil.convertQuery(sqlTempTable, vObj.getSortField()),vObj.getCurrentPage(), vObj.getMaxRecords(),totalRows);
+				} else {
+					String sqlTempTable = "SELECT * FROM " + resultFetchTable + "";
+					sqlQuery = paginationhelper.reportFetchPage(
+							ValidationUtil.convertQuery(sqlTempTable, vObj.getSortField()), vObj.getCurrentPage(),
+							vObj.getMaxRecords(), totalRows);
 				}
-				
-			}else {
-				if(exportFlag) {
+
+			} else {
+				if (exportFlag) {
 					finalTmpTable = vObj.getActionType();
-					String sqlTempTable = "Select * from "+finalTmpTable+" ";
-					sqlQuery = paginationhelper.reportFetchPage(sqlTempTable,vObj.getCurrentPage(), vObj.getMaxRecords(),(int)vObj.getTotalRows());
+					String sqlTempTable = "Select * from " + finalTmpTable + " ";
+					sqlQuery = paginationhelper.reportFetchPage(
+							ValidationUtil.convertQuery(sqlTempTable, vObj.getSortField()), vObj.getCurrentPage(),
+							vObj.getMaxRecords(), (int) vObj.getTotalRows());
 					vObj.setActionType(finalTmpTable);
 					vObj.setTotalRows(vObj.getTotalRows());
-					float noOfPages = (float)vObj.getTotalRows()/(float)vObj.getMaxRecPerPage();
+					float noOfPages = (float) vObj.getTotalRows() / (float) vObj.getMaxRecPerPage();
 					int MaxPageNo = Math.round(noOfPages);
-					if(vObj.getCurrentPage() > MaxPageNo)
+					if (vObj.getCurrentPage() > MaxPageNo)
 						exportFlag = false;
 				}
 			}
-			
-			logger.info("Final Result Data Extraction start Report Id["+vObj.getReportId()+"]SubReport["+vObj.getSubReportId()+"]");
+
+			logger.info("Final Result Data Extraction start Report Id[" + vObj.getReportId() + "]SubReport["
+					+ vObj.getSubReportId() + "]");
 			ResultSet rsData = stmt1.executeQuery(sqlQuery);// Final Result Data Query Execution
-			logger.info("Final Result Data Extraction End Report Id["+vObj.getReportId()+"]SubReport["+vObj.getSubReportId()+"]");
-			
+			logger.info("Final Result Data Extraction End Report Id[" + vObj.getReportId() + "]SubReport["
+					+ vObj.getSubReportId() + "]");
+
 			ResultSetMetaData metaData = rsData.getMetaData();
 			int colCount = metaData.getColumnCount();
-			HashMap<String,String> columns = new HashMap<String,String>();
-			ArrayList<String> collst =new ArrayList<>();
+			HashMap<String, String> columns = new HashMap<String, String>();
+			ArrayList<String> collst = new ArrayList<>();
 			ArrayList<ColumnHeadersVb> colHeadersDetLst = new ArrayList<>();
 			String reportUnusedColumns = commonDao.findVisionVariableValue("PRD_REPORT_UNUSED_COLS");
 			String reportcolTypes = commonDao.findVisionVariableValue("PRD_REPORT_COL_TYPES");
 			Boolean columnHeaderFetch = false;
 			int rowNum = 1;
 			int ctr = 0;
-			while(rsData.next()){
-				columns = new HashMap<String,String>();
-				for(int cn = 1;cn <= colCount;cn++) {
+			while (rsData.next()) {
+				columns = new HashMap<String, String>();
+				for (int cn = 1; cn <= colCount; cn++) {
 					ColumnHeadersVb colHeader = new ColumnHeadersVb();
 					String columnName = metaData.getColumnName(cn);
 					String colType = metaData.getColumnTypeName(cn);
 					ctr++;
-					if("DD_KEY_ID".equalsIgnoreCase(columnName.toUpperCase())) {
+					if ("DD_KEY_ID".equalsIgnoreCase(columnName.toUpperCase())) {
 						columns.put("DDKEYID", rsData.getString(columnName));
-					}else{
+					} else {
 						columns.put(columnName.toUpperCase(), rsData.getString(columnName));
 					}
-					if(!columnHeaderFetch) {
+					if (!columnHeaderFetch) {
 						collst.add(columnName.toUpperCase());
-						if(vObj.getColumnHeaderslst() == null || vObj.getColumnHeaderslst().isEmpty()) {
-							if (ValidationUtil.isValid(reportUnusedColumns) 
+						if (vObj.getColumnHeaderslst() == null || vObj.getColumnHeaderslst().isEmpty()) {
+							if (ValidationUtil.isValid(reportUnusedColumns)
 									&& reportUnusedColumns.toUpperCase().contains(columnName.toUpperCase())) {
 								ctr = ctr - 1;
 								continue;
 							}
 							colHeader.setLabelColNum(ctr);
 							colHeader.setLabelRowNum(1);
-							//colHeader.setCaption(WordUtils.capitalizeFully(columnName.replaceAll("_", " ")));
+							// colHeader.setCaption(WordUtils.capitalizeFully(columnName.replaceAll("_", "
+							// ")));
 							colHeader.setCaption(columnName);
 							colHeader.setDbColumnName(columnName.toUpperCase());
-							if(ValidationUtil.isValid(reportcolTypes) && reportcolTypes.toUpperCase().contains(colType.toUpperCase()))
+							if (ValidationUtil.isValid(reportcolTypes)
+									&& reportcolTypes.toUpperCase().contains(colType.toUpperCase()))
 								colHeader.setColType("T");
 							else
 								colHeader.setColType("N");
@@ -336,67 +352,70 @@ public class ReportsDao extends AbstractDao<ReportsVb> {
 							colHeader.setDrillDownLabel(false);
 							colHeadersDetLst.add(colHeader);
 						}
-						
+
 					}
 				}
 				columnHeaderFetch = true;
-				if(!columnHeaderFetch) {
+				if (!columnHeaderFetch) {
 					StringJoiner missingColumns = new StringJoiner(",");
 					vObj.getColumnHeaderslst().forEach(colHeadersDataVb -> {
-						if(!collst.contains(colHeadersDataVb.getDbColumnName())) {
+						if (!collst.contains(colHeadersDataVb.getDbColumnName())) {
 							missingColumns.add(colHeadersDataVb.getDbColumnName());
 						}
 					});
-					if(ValidationUtil.isValid(missingColumns.toString())) {
-						exceptionCode.setErrorMsg(missingColumns+"these Source columns are not maintained  in the Result set");
+					if (ValidationUtil.isValid(missingColumns.toString())) {
+						exceptionCode.setErrorMsg(
+								missingColumns + "these Source columns are not maintained  in the Result set");
 						exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
 						break;
 					}
 				}
-				columns.put("INDEXING",""+rowNum);//This is only for front-end scroll purpose not used anywhere in report.
+				columns.put("INDEXING", "" + rowNum);// This is only for front-end scroll purpose not used anywhere in
+														// report.
 				datalst.add(columns);
-				if(rsData.getRow() == vObj.getMaxRecords())
+				if (rsData.getRow() == vObj.getMaxRecords())
 					break;
-				
+
 				columnHeaderFetch = true;
 				rowNum++;
 			}
 			rsData.close();
-			//HashMap<String,String> columns = (HashMap<String,String>)getJdbcTemplate().query(sqlQuery, mapper);
-			if(totalRows != 0) {
+			// HashMap<String,String> columns =
+			// (HashMap<String,String>)getJdbcTemplate().query(sqlQuery, mapper);
+			if (totalRows != 0) {
 				vObj.setTotalRows(totalRows);
-				exceptionCode.setRequest((int)totalRows);
-			}else {
+				exceptionCode.setRequest((int) totalRows);
+			} else {
 				vObj.setTotalRows(vObj.getTotalRows());
-				exceptionCode.setRequest((int)vObj.getTotalRows());
+				exceptionCode.setRequest((int) vObj.getTotalRows());
 			}
-				
+
 			exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
 			exceptionCode.setResponse(datalst);
 			exceptionCode.setOtherInfo(vObj);
-			if(colHeadersDetLst !=null && colHeadersDetLst.size() > 0)
+			if (colHeadersDetLst != null && colHeadersDetLst.size() > 0)
 				exceptionCode.setResponse1(colHeadersDetLst);
-		}catch(Exception e) {
+		} catch (Exception e) {
 			exceptionCode.setErrorMsg(e.getMessage());
 			exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
-			if(!ValidationUtil.isValid(exceptionCode.getErrorMsg())) {
+			if (!ValidationUtil.isValid(exceptionCode.getErrorMsg())) {
 				exceptionCode.setErrorMsg(e.getMessage());
 			}
 			return exceptionCode;
-		}finally {
-			if(!exportFlag) {
+		} finally {
+			if (!exportFlag) {
 				try {
-					if("ORACLE".equalsIgnoreCase(databaseType)) {
-						if(ValidationUtil.isValid(resultFetchTable))
-							stmt1.executeUpdate("DROP TABLE "+resultFetchTable+" PURGE ");
-						if(ValidationUtil.isValid(finalTmpTable))
-							stmt1.executeUpdate("DROP TABLE "+finalTmpTable+" PURGE ");
+					if ("ORACLE".equalsIgnoreCase(databaseType)) {
+						if (ValidationUtil.isValid(resultFetchTable))
+							stmt1.executeUpdate("DROP TABLE " + resultFetchTable + " PURGE ");
+						if (ValidationUtil.isValid(finalTmpTable))
+							stmt1.executeUpdate("DROP TABLE " + finalTmpTable + " PURGE ");
 						vObj.setActionType("");
-					}else if("MSSQL".equalsIgnoreCase(databaseType)) {
-						if(ValidationUtil.isValid(resultFetchTable))
-							stmt1.executeUpdate("DROP TABLE "+resultFetchTable);
-						if(ValidationUtil.isValid(finalTmpTable))
-							stmt1.executeUpdate("DROP TABLE "+finalTmpTable);
+					} else if ("MSSQL".equalsIgnoreCase(databaseType)) {
+						if (ValidationUtil.isValid(resultFetchTable))
+							stmt1.executeUpdate("DROP TABLE " + resultFetchTable);
+						if (ValidationUtil.isValid(finalTmpTable))
+							stmt1.executeUpdate("DROP TABLE " + finalTmpTable);
 						vObj.setActionType("");
 					}
 					stmt1.close();
@@ -769,7 +788,8 @@ public class ReportsDao extends AbstractDao<ReportsVb> {
 		return mapper;
 	}
 
-	public ExceptionCode getChartReportData(ReportsVb vObject,  String orginalQuery,Connection conExt) throws SQLException {
+	public ExceptionCode getChartReportData(ReportsVb vObject, String orginalQuery, Connection conExt)
+			throws SQLException {
 		ExceptionCode exceptionCode = new ExceptionCode();
 		Statement stmt = null;
 		List collTemp = new ArrayList();
@@ -784,12 +804,12 @@ public class ReportsDao extends AbstractDao<ReportsVb> {
 			rsChild.populate(rs);
 			exceptionCode = chartUtils.getChartXML(vObject.getChartType(), vObject.getColHeaderXml(), rs, rsChild,
 					vObject.getWidgetTheme());
-			if(exceptionCode.getErrorCode() != Constants.SUCCESSFUL_OPERATION) {
+			if (exceptionCode.getErrorCode() != Constants.SUCCESSFUL_OPERATION) {
 				exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
 				return exceptionCode;
 			}
 			String chartResultXml = exceptionCode.getResponse().toString();
-			if(ValidationUtil.isValid(chartResultXml)) {
+			if (ValidationUtil.isValid(chartResultXml)) {
 				chartResultXml = replaceTagValues(chartResultXml);
 			}
 			exceptionCode.setResponse(chartResultXml);
@@ -798,7 +818,7 @@ public class ReportsDao extends AbstractDao<ReportsVb> {
 		} catch (Exception e) {
 			exceptionCode.setErrorMsg(e.getCause().getMessage());
 			exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
-			if(!ValidationUtil.isValid(exceptionCode.getErrorMsg())) {
+			if (!ValidationUtil.isValid(exceptionCode.getErrorMsg())) {
 				exceptionCode.setErrorMsg(e.getMessage());
 			}
 			e.printStackTrace();
@@ -1196,105 +1216,111 @@ public class ReportsDao extends AbstractDao<ReportsVb> {
 		}
 	}
 
-	
-	public ExceptionCode getResultData(ReportsVb vObject,Boolean exportFlag) {
+	public ExceptionCode getResultData(ReportsVb vObject, Boolean exportFlag) {
 		ExceptionCode exceptionCode = new ExceptionCode();
 		int totalRecords = 0;
 		List datalst = new ArrayList();
-		Connection conExt =null;
+		Connection conExt = null;
 		try {
-			ExceptionCode exConnection = commonDao.getReqdConnection(conExt,vObject.getDbConnection());
-			if(exConnection.getErrorCode() != Constants.ERRONEOUS_OPERATION && exConnection.getResponse() != null) {
-				conExt = (Connection)exConnection.getResponse();
-			}else {
+			ExceptionCode exConnection = commonDao.getReqdConnection(conExt, vObject.getDbConnection());
+			if (exConnection.getErrorCode() != Constants.ERRONEOUS_OPERATION && exConnection.getResponse() != null) {
+				conExt = (Connection) exConnection.getResponse();
+			} else {
 				exceptionCode.setErrorCode(exConnection.getErrorCode());
 				exceptionCode.setErrorMsg(exConnection.getErrorMsg());
 				exceptionCode.setResponse(exConnection.getResponse());
 				return exceptionCode;
 			}
 			if ("G".equalsIgnoreCase(vObject.getObjectType())) {
-				if(exportFlag) {
-					exceptionCode = extractReportData(vObject,conExt,exportFlag);
-				}else {
-					exceptionCode = extractReportData(vObject,conExt);
+				if (exportFlag) {
+					exceptionCode = extractReportData(vObject, conExt, exportFlag);
+				} else {
+					exceptionCode = extractReportData(vObject, conExt);
 				}
-				if(exceptionCode.getErrorCode() == Constants.SUCCESSFUL_OPERATION) {
+				if (exceptionCode.getErrorCode() == Constants.SUCCESSFUL_OPERATION) {
 					datalst = (ArrayList) exceptionCode.getResponse();
 					vObject.setGridDataSet(datalst);
-					if(exceptionCode.getResponse1() != null)
-						vObject.setColumnHeaderslst((ArrayList<ColumnHeadersVb>)exceptionCode.getResponse1());
-					//Filter the Data which doensnot contains Format Type S
+					if (exceptionCode.getResponse1() != null)
+						vObject.setColumnHeaderslst((ArrayList<ColumnHeadersVb>) exceptionCode.getResponse1());
+					// Filter the Data which doensnot contains Format Type S
 					List datalstNew = new ArrayList<>();
 					for (Map<String, Object> dataLstMap : (List<Map<String, Object>>) datalst) {
-						if(dataLstMap.containsKey("FORMAT_TYPE")) {
-							if(dataLstMap.get("FORMAT_TYPE") == null)
+						if (dataLstMap.containsKey("FORMAT_TYPE")) {
+							if (dataLstMap.get("FORMAT_TYPE") == null)
 								dataLstMap.put("FORMAT_TYPE", "D");
 						}
 						datalstNew.add(dataLstMap);
 					}
-					List<Map<String, Object>> finalDatalst = (List<Map<String, Object>>)datalstNew.stream()
-			                .filter(hashmap -> ((HashMap<String, String>) hashmap).containsKey("FORMAT_TYPE"))
-			                .filter(hashmap -> !((HashMap<String, String>) hashmap).get("FORMAT_TYPE").equalsIgnoreCase("S"))
-			                .collect(Collectors.toList());
-					if(finalDatalst != null && !finalDatalst.isEmpty())
+					List<Map<String, Object>> finalDatalst = (List<Map<String, Object>>) datalstNew.stream()
+							.filter(hashmap -> ((HashMap<String, String>) hashmap).containsKey("FORMAT_TYPE"))
+							.filter(hashmap -> !((HashMap<String, String>) hashmap).get("FORMAT_TYPE")
+									.equalsIgnoreCase("S"))
+							.collect(Collectors.toList());
+					if (finalDatalst != null && !finalDatalst.isEmpty())
 						vObject.setGridDataSet(finalDatalst);
-					
+
 					totalRecords = (int) exceptionCode.getRequest();
 					vObject.setTotalRows(totalRecords);
-					if(vObject.getCurrentPage() == 1) {
-						List<Map<String, Object>> totallst = (List<Map<String, Object>>)datalst.stream()
-					                .filter(hashmap -> ((HashMap<String, String>) hashmap).containsKey("FORMAT_TYPE"))
-					                .filter(hashmap -> ((HashMap<String, String>) hashmap).get("FORMAT_TYPE").equalsIgnoreCase("S"))
-					                .collect(Collectors.toList());
+					if (vObject.getCurrentPage() == 1) {
+						List<Map<String, Object>> totallst = (List<Map<String, Object>>) datalst.stream()
+								.filter(hashmap -> ((HashMap<String, String>) hashmap).containsKey("FORMAT_TYPE"))
+								.filter(hashmap -> ((HashMap<String, String>) hashmap).get("FORMAT_TYPE")
+										.equalsIgnoreCase("S"))
+								.collect(Collectors.toList());
 						vObject.setTotal(totallst);
-						if(totallst == null || totallst.isEmpty()) {
+						if (totallst == null || totallst.isEmpty()) {
 							List<ReportsVb> sumStringLst = new ArrayList<>();
 							StringJoiner sumString = new StringJoiner(",");
 							vObject.getColumnHeaderslst().forEach(colHeadersVb -> {
-								if(!"T".equalsIgnoreCase(colHeadersVb.getColType()) && (colHeadersVb.getColspan() == 0 || colHeadersVb.getColspan() == 1) 
-											&& "Y".equalsIgnoreCase(colHeadersVb.getSumFlag())) {
-									sumString.add("SUM("+colHeadersVb.getDbColumnName()+") " +colHeadersVb.getDbColumnName());
+								if (!"T".equalsIgnoreCase(colHeadersVb.getColType())
+										&& (colHeadersVb.getColspan() == 0 || colHeadersVb.getColspan() == 1)
+										&& "Y".equalsIgnoreCase(colHeadersVb.getSumFlag())) {
+									sumString.add("SUM(" + colHeadersVb.getDbColumnName() + ") "
+											+ colHeadersVb.getDbColumnName());
 								}
 							});
 							ExceptionCode exceptionCode1 = new ExceptionCode();
 							String query = null;
-							if(sumString.length() > 0) {
-								query = "SELECT "+sumString.toString()+",'S' FORMAT_TYPE FROM (" +vObject.getFinalExeQuery() + ") TOT ";
-								exceptionCode1 = commonApiDao.getCommonResultDataQuery(query,conExt);
-								if(exceptionCode1.getResponse() != null) {
-									sumStringLst  =  (List<ReportsVb>) exceptionCode1.getResponse();
+							if (sumString.length() > 0) {
+								query = "SELECT " + sumString.toString() + ",'S' FORMAT_TYPE FROM ("
+										+ vObject.getFinalExeQuery() + ") TOT ";
+								exceptionCode1 = commonApiDao.getCommonResultDataQuery(query, conExt);
+								if (exceptionCode1.getResponse() != null) {
+									sumStringLst = (List<ReportsVb>) exceptionCode1.getResponse();
 									vObject.setTotal(sumStringLst);
 								}
 							}
 						}
 					}
-				}else {
+				} else {
 					exceptionCode.setResponse(vObject);
 					return exceptionCode;
 				}
-		}else if ("C".equalsIgnoreCase(vObject.getObjectType())) {
-				exceptionCode = getChartReportData(vObject, vObject.getFinalExeQuery(),conExt);
-			if(exceptionCode.getErrorCode() == Constants.SUCCESSFUL_OPERATION) {
-				vObject.setChartData(exceptionCode.getResponse().toString());
+			} else if ("C".equalsIgnoreCase(vObject.getObjectType())) {
+				exceptionCode = getChartReportData(vObject, vObject.getFinalExeQuery(), conExt);
+				if (exceptionCode.getErrorCode() == Constants.SUCCESSFUL_OPERATION) {
+					vObject.setChartData(exceptionCode.getResponse().toString());
+				}
+			} else if ("T".equalsIgnoreCase(vObject.getObjectType()) || "SC".equalsIgnoreCase(vObject.getObjectType())
+					|| "S".equalsIgnoreCase(vObject.getObjectType())) {
+				exceptionCode = getTilesReportData(vObject, vObject.getFinalExeQuery(), conExt);
+				if (exceptionCode.getErrorCode() == Constants.SUCCESSFUL_OPERATION) {
+					vObject.setTileData(exceptionCode.getResponse().toString());
+				}
 			}
-		}else if("T".equalsIgnoreCase(vObject.getObjectType()) || "SC".equalsIgnoreCase(vObject.getObjectType()) || "S".equalsIgnoreCase(vObject.getObjectType())) {
-			exceptionCode = getTilesReportData(vObject, vObject.getFinalExeQuery(),conExt);
-			if(exceptionCode.getErrorCode() == Constants.SUCCESSFUL_OPERATION) {
-				vObject.setTileData(exceptionCode.getResponse().toString());
-			}
-		}
-		exceptionCode.setResponse(vObject);
-		exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
-		exceptionCode.setErrorMsg("Success");
-		}catch(Exception e) {
+			exceptionCode.setResponse(vObject);
+			exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
+			exceptionCode.setErrorMsg("Success");
+		} catch (Exception e) {
+			e.printStackTrace();
 			exceptionCode.setOtherInfo(vObject);
 			exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
 			exceptionCode.setErrorMsg(e.getMessage());
 			return exceptionCode;
-		}finally {
+		} finally {
 			try {
 				conExt.close();
-			}catch(Exception e) {
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
@@ -1625,19 +1651,20 @@ public class ReportsDao extends AbstractDao<ReportsVb> {
 		}
 		return exceptionCode;
 	}
-	
+
 	private String replaceTagValues(String chartXml) {
 		String chartReplaceXml = chartXml;
-		chartReplaceXml=chartReplaceXml.replaceAll("categoryL1", "category");
-		chartReplaceXml=chartReplaceXml.replaceAll("categoryL2", "category");
-		chartReplaceXml=chartReplaceXml.replaceAll("categoryL3", "category");
+		chartReplaceXml = chartReplaceXml.replaceAll("categoryL1", "category");
+		chartReplaceXml = chartReplaceXml.replaceAll("categoryL2", "category");
+		chartReplaceXml = chartReplaceXml.replaceAll("categoryL3", "category");
 		return chartReplaceXml;
 	}
-	
-	public ExceptionCode getTilesReportData(ReportsVb vObject,String orginalQuery,Connection conExt) throws SQLException{
-		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss"); 
+
+	public ExceptionCode getTilesReportData(ReportsVb vObject, String orginalQuery, Connection conExt)
+			throws SQLException {
+		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
 		setServiceDefaults();
-		Statement stmt = null; 
+		Statement stmt = null;
 		ResultSet rs = null;
 		String resultData = "";
 		DecimalFormat dfDec = new DecimalFormat("0.00");
@@ -1646,18 +1673,16 @@ public class ReportsDao extends AbstractDao<ReportsVb> {
 		PrdQueryConfig prdQueryConfig = new PrdQueryConfig();
 		ExceptionCode exceptionCode = new ExceptionCode();
 		Statement stmt1 = null;
-		try
-		{	
-			stmt1 = conExt.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, 
-				    ResultSet.CONCUR_READ_ONLY);
-			
+		try {
+			stmt1 = conExt.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+
 			ResultSet rsData = stmt1.executeQuery(orginalQuery);
 			ResultSetMetaData metaData = rsData.getMetaData();
 			int colCount = metaData.getColumnCount();
-			HashMap<String,String> columns = new HashMap<String,String>();
+			HashMap<String, String> columns = new HashMap<String, String>();
 			Boolean dataAvail = false;
-			while(rsData.next()){
-				for(int cn = 1;cn <= colCount;cn++) {
+			while (rsData.next()) {
+				for (int cn = 1; cn <= colCount; cn++) {
 					String columnName = metaData.getColumnName(cn);
 					columns.put(columnName.toUpperCase(), rsData.getString(columnName));
 				}
@@ -1665,64 +1690,66 @@ public class ReportsDao extends AbstractDao<ReportsVb> {
 				break;
 			}
 			rsData.close();
-			if(!dataAvail) {
+			if (!dataAvail) {
 				exceptionCode.setErrorCode(Constants.NO_RECORDS_FOUND);
 				exceptionCode.setErrorMsg("No Records Found");
 				return exceptionCode;
 			}
 			String fieldProp = vObject.getColHeaderXml();
-			fieldProp = ValidationUtil.isValid(fieldProp)?fieldProp.replaceAll("\n", "").replaceAll("\r", ""):"";
-			for(int ctr = 1;ctr <= 5;ctr++) {
-				String placeHolder = CommonUtils.getValueForXmlTag(fieldProp, "PLACEHOLDER"+ctr);
+			fieldProp = ValidationUtil.isValid(fieldProp) ? fieldProp.replaceAll("\n", "").replaceAll("\r", "") : "";
+			for (int ctr = 1; ctr <= 5; ctr++) {
+				String placeHolder = CommonUtils.getValueForXmlTag(fieldProp, "PLACEHOLDER" + ctr);
 				String sourceCol = CommonUtils.getValueForXmlTag(placeHolder, "SOURCECOL");
 				String dataType = CommonUtils.getValueForXmlTag(placeHolder, "DATA_TYPE");
 				String numberFormat = CommonUtils.getValueForXmlTag(placeHolder, "NUMBERFORMAT");
 				String scaling = CommonUtils.getValueForXmlTag(placeHolder, "SCALING");
-				if(!ValidationUtil.isValid(placeHolder) || !ValidationUtil.isValid(sourceCol)) {
+				if (!ValidationUtil.isValid(placeHolder) || !ValidationUtil.isValid(sourceCol)) {
 					continue;
 				}
-				if(ValidationUtil.isValid(sourceCol)) {
+				if (ValidationUtil.isValid(sourceCol)) {
 					String fieldValue = columns.get(sourceCol);
-					if(!ValidationUtil.isValid(fieldValue))
+					if (!ValidationUtil.isValid(fieldValue))
 						continue;
-					/*Double val = 0.00;*/
-					String prefix="";
-					if(ValidationUtil.isValid(scaling) && "Y".equalsIgnoreCase(scaling) && ValidationUtil.isValid(fieldValue)) {
+					/* Double val = 0.00; */
+					String prefix = "";
+					if (ValidationUtil.isValid(scaling) && "Y".equalsIgnoreCase(scaling)
+							&& ValidationUtil.isValid(fieldValue)) {
 						Double dbValue = Math.abs(Double.parseDouble(fieldValue));
-						if(dbValue > 1000000000) {
-							dbValue = Double.parseDouble(fieldValue)/1000000000;
+						if (dbValue > 1000000000) {
+							dbValue = Double.parseDouble(fieldValue) / 1000000000;
 							prefix = "B";
-						}else if(dbValue > 1000000) {
-							dbValue = Double.parseDouble(fieldValue)/1000000;
+						} else if (dbValue > 1000000) {
+							dbValue = Double.parseDouble(fieldValue) / 1000000;
 							prefix = "M";
-						}else if(dbValue > 10000) {
-							dbValue = Double.parseDouble(fieldValue)/1000;
+						} else if (dbValue > 10000) {
+							dbValue = Double.parseDouble(fieldValue) / 1000;
 							prefix = "K";
 						}
 						String afterDecimalVal = String.valueOf(dbValue);
-						if(!afterDecimalVal.contains("E")) {
-							afterDecimalVal = afterDecimalVal.substring(afterDecimalVal.indexOf ( "." )+1);
-							if(Double.parseDouble(afterDecimalVal) > 0)
-								fieldValue = dfDec.format(dbValue)+" "+prefix;
+						if (!afterDecimalVal.contains("E")) {
+							afterDecimalVal = afterDecimalVal.substring(afterDecimalVal.indexOf(".") + 1);
+							if (Double.parseDouble(afterDecimalVal) > 0)
+								fieldValue = dfDec.format(dbValue) + " " + prefix;
 							else
-								fieldValue = dfNoDec.format(dbValue)+" "+prefix;
-						}else {
+								fieldValue = dfNoDec.format(dbValue) + " " + prefix;
+						} else {
 							fieldValue = "0.00";
 						}
 					}
-					if(ValidationUtil.isValid(fieldValue) && ValidationUtil.isValid(numberFormat) && "Y".equalsIgnoreCase(numberFormat) && !ValidationUtil.isValid(prefix)) {
+					if (ValidationUtil.isValid(fieldValue) && ValidationUtil.isValid(numberFormat)
+							&& "Y".equalsIgnoreCase(numberFormat) && !ValidationUtil.isValid(prefix)) {
 						DecimalFormat decimalFormat = new DecimalFormat("#,###.##");
 						double tmpVal = Double.parseDouble(fieldValue);
 						fieldValue = decimalFormat.format(tmpVal);
 					}
-					/*if(ValidationUtil.isValid(fieldValue))*/
+					/* if(ValidationUtil.isValid(fieldValue)) */
 					fieldProp = fieldProp.replaceAll(sourceCol, fieldValue);
 				}
 			}
-			String drillDownKey = CommonUtils.getValueForXmlTag(fieldProp,"DRILLDOWN_KEY");
-			if(ValidationUtil.isValid(drillDownKey) && "DD_KEY_ID".equalsIgnoreCase(drillDownKey)) {
+			String drillDownKey = CommonUtils.getValueForXmlTag(fieldProp, "DRILLDOWN_KEY");
+			if (ValidationUtil.isValid(drillDownKey) && "DD_KEY_ID".equalsIgnoreCase(drillDownKey)) {
 				String value = columns.get(drillDownKey);
-				if(ValidationUtil.isValid(value))
+				if (ValidationUtil.isValid(value))
 					fieldProp = fieldProp.replaceAll(drillDownKey, value);
 				else
 					fieldProp = fieldProp.replaceAll(drillDownKey, "");
@@ -1732,23 +1759,23 @@ public class ReportsDao extends AbstractDao<ReportsVb> {
 			resultData = xmlJSONObj.toString(PRETTY_PRINT_INDENT_FACTOR).replaceAll("[\\n\\t ]", "");
 			exceptionCode.setResponse(resultData);
 			exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
-		}catch(Exception ex){
+		} catch (Exception ex) {
 			exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
 			exceptionCode.setErrorMsg(ex.getMessage());
-		}finally {
-			if(stmt1 != null)
+		} finally {
+			if (stmt1 != null)
 				stmt1.close();
-			if(conExt != null)
+			if (conExt != null)
 				conExt.close();
 		}
 		return exceptionCode;
 	}
-	
-	public ExceptionCode extractReportData(ReportsVb vObj,Connection conExt) {
+
+	public ExceptionCode extractReportData(ReportsVb vObj, Connection conExt) {
 		ExceptionCode exceptionCode = new ExceptionCode();
 		try {
-			exceptionCode = extractReportData(vObj,conExt,false);
-		}catch(Exception e) {
+			exceptionCode = extractReportData(vObj, conExt, false);
+		} catch (Exception e) {
 			exceptionCode.setErrorMsg(e.getMessage());
 			exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
 		}
