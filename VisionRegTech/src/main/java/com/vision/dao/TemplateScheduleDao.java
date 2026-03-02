@@ -9,6 +9,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.PublicKey;
 import java.sql.CallableStatement;
 import java.sql.Clob;
 import java.sql.Connection;
@@ -19,7 +22,9 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -35,6 +40,8 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.Vector;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -74,10 +81,13 @@ import org.w3c.dom.Element;
 import com.vision.authentication.SessionContextHolder;
 import com.vision.exception.ExceptionCode;
 import com.vision.exception.RuntimeCustomException;
+import com.vision.util.AESCryptoUtils;
 import com.vision.util.CommonUtils;
 import com.vision.util.Constants;
 import com.vision.util.ExcelExportUtil;
+import com.vision.util.RsaUtils;
 import com.vision.util.ValidationUtil;
+import com.vision.util.ZipUtils;
 import com.vision.vb.ColumnHeadersVb;
 import com.vision.vb.CommonVb;
 import com.vision.vb.EmailProcessControlVb;
@@ -102,6 +112,9 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 
 	@Value("${app.decimal.precision}")
 	private String precisionFlag;
+
+	@Value("${fatca.encrypt.xml}")
+	private String xmlEncryptFlag;
 	private ServletContext servletContext;
 
 	@Value("${email.alerts}")
@@ -3068,110 +3081,110 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 				.replace("'", "&apos;");
 	}
 
-	public ExceptionCode extractDataToXml(TemplateConfigVb vObject, String filter) {
-		ExceptionCode exceptionCode = new ExceptionCode();
-		try {
-			Boolean isFatca = Constants.FATCA.equalsIgnoreCase(vObject.getCategoryType());
-
-			String query = "SELECT ";
-			String versionNo = "  t1.VERSION_NO = (SELECT MAX(VERSION_NO ) FROM " + vObject.getSourceTable()
-					+ " WHERE COUNTRY = '" + vObject.getCountry() + "' AND LE_BOOK = '" + vObject.getLeBook() + "' )";
-
-			String cols = buildSelectColumns(vObject.getMappinglst());
-
-			String headerQuery = "ENTITY_BUILDING_IDENTIFIER,ENTITY_STREET,ENTITY_COUNTRY_CODE,LEGAL_ADDRESS_TYPE,ENTITY_NAME,ENTITY_CITY,"
-					+ "SENDING_COMPANY_IN,TRANSMITTING_COUNTRY, RECEIVING_COUNTRY, MESSAGE_TYPE, WARNING, CONTACT, MESSAGE_TYPE_INDIC, DOC_TYPE_IN,MESSAGE_REF_ID ";
-			if (isFatca) {
-				headerQuery = "T3.SENDING_COMPANY_IN,T3.TRANSMITTING_COUNTRY, T3.RECEIVING_COUNTRY, T3.MESSAGE_TYPE,T3.MESSAGE_REF_ID,T3.ENTITY_NAME,T3.ENTITY_COUNTRY_CODE,"
-						+ "T3.ENTITY_POSTAL_CODE,T3.ENTITY_CITY,T3.ENTITY_ADDRESS_FREE,T3.FILER_CATEGORY,T3.ENTITY_STREET";
-			}
-
-			if (cloud.equalsIgnoreCase("Y")) {
-				headerQuery = "T3.ENTITY_BUILDING_IDENTIFIER, T3.ENTITY_STREET, T3.ENTITY_COUNTRY_CODE, "
-						+ "T3.LEGAL_ADDRESS_TYPE, T3.ENTITY_NAME, T3.ENTITY_CITY, "
-						+ "T3.SENDING_COMPANY_IN AS SENDING_COMPANY_T3, "
-						+ "T3.TRANSMITTING_COUNTRY AS TRANSMITTING_COUNTRY_T3, "
-						+ "T3.RECEIVING_COUNTRY AS RECEIVING_COUNTRY_T3, " + "T3.MESSAGE_TYPE AS MESSAGE_TYPE_T3, "
-						+ "T3.WARNING AS WARNING_T3, " + "T3.CONTACT AS CONTACT_T3, "
-						+ "T3.MESSAGE_TYPE_INDIC AS MESSAGE_TYPE_INDIC_T3, " + "T3.DOC_TYPE_IN AS DOC_TYPE_IN_T3,"
-						+ "T3.MESSAGE_REF_ID AS MESSAGE_REF_ID_T3 ";
-				;
-
-			}
-			if (!cloud.equalsIgnoreCase("Y")) {
-				query += cols.toString() + " ," + headerQuery + " FROM " + vObject.getSourceTable() + " T1,"
-						+ vObject.getCbkFileName() + " ";
-
-				String cond = " T1.COUNTRY = T3.COUNTRY AND T1.LE_BOOK = T3.LE_BOOK ";
-				query += " WHERE " + cond;
-			} else {
-				query += cols.toString() + " ," + headerQuery + " FROM " + vObject.getSourceTable() + " T1, "
-						+ vObject.getCbkFileName() + " ";
-				String cond = " T1.COUNTRY = T3.COUNTRY AND T1.LE_BOOK = T3.LE_BOOK ";
-				query += " WHERE " + cond;
-			}
-
-			// Add filter condition
-			if (ValidationUtil.isValid(filter)) {
-				if (query.toLowerCase().contains(" where ")) {
-					query += " AND " + filter;
-				} else {
-					query += " WHERE " + filter;
-				}
-			}
-
-			// Add source table filter condition
-			if (ValidationUtil.isValid(vObject.getSourceTableFilter())
-					&& !"NA".equalsIgnoreCase(vObject.getSourceTableFilter())) {
-				if (query.toLowerCase().contains(" where ")) {
-					query += " AND " + vObject.getSourceTableFilter();
-				} else {
-					query += " WHERE " + vObject.getSourceTableFilter();
-				}
-			}
-			if (query.toLowerCase().contains(" where ")) {
-				query += " AND " + versionNo;
-			} else {
-				query += " WHERE " + versionNo;
-			}
-			String orderBy = " ORDER BY t1.ROW_ID";
-			query = query.concat(orderBy);
-
-			String tmpFilePath = System.getProperty("java.io.tmpdir");
-			String xml = "";
-
-			String sql = "Select Count(*) FROM " + vObject.getSourceTable() + " WHERe COUNTRY = ? AND LE_BOOK = ?";
-
-			Object objParams[] = { vObject.getCountry(), vObject.getLeBook() };
-			int cnt = getJdbcTemplate().queryForObject(sql, objParams, Integer.class);
-			if (cnt == 0) {
-				query = "SELECT " + headerQuery + " From " + vObject.getCbkFileName() + " where COUNTRY = '"
-						+ vObject.getCountry() + "' AND LE_BOOK = '" + vObject.getLeBook() + "' ";
-			}
-
-			xml = getJdbcTemplate().query(query,
-					(ResultSetExtractor<String>) rs -> isFatca ? generateFatcaXml(rs, cnt, vObject.getInternalStatus())
-							: generateCrsXml(rs, cnt));
-
-			String path = System.getProperty("java.io.tmpdir") + File.separator + vObject.getSourceTable() + ".xml";
-
-			String beautified = beautifyXML(xml, vObject.getCategoryType());
-
-			try (BufferedWriter bw = new BufferedWriter(new FileWriter(path))) {
-				bw.write(beautified);
-			}
-			// Set the response details in the exception code
-			exceptionCode.setOtherInfo(vObject.getSourceTable());
-			exceptionCode.setResponse(tmpFilePath); // Return the path of the generated XML file
-			exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
-
-		} catch (Exception e) {
-			exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
-			exceptionCode.setErrorMsg(e.getMessage());
-		}
-
-		return exceptionCode;
-	}
+//	public ExceptionCode extractDataToXml(TemplateConfigVb vObject, String filter) {
+//		ExceptionCode exceptionCode = new ExceptionCode();
+//		try {
+//			Boolean isFatca = Constants.FATCA.equalsIgnoreCase(vObject.getCategoryType());
+//
+//			String query = "SELECT ";
+//			String versionNo = "  t1.VERSION_NO = (SELECT MAX(VERSION_NO ) FROM " + vObject.getSourceTable()
+//					+ " WHERE COUNTRY = '" + vObject.getCountry() + "' AND LE_BOOK = '" + vObject.getLeBook() + "' )";
+//
+//			String cols = buildSelectColumns(vObject.getMappinglst());
+//
+//			String headerQuery = "ENTITY_BUILDING_IDENTIFIER,ENTITY_STREET,ENTITY_COUNTRY_CODE,LEGAL_ADDRESS_TYPE,ENTITY_NAME,ENTITY_CITY,"
+//					+ "SENDING_COMPANY_IN,TRANSMITTING_COUNTRY, RECEIVING_COUNTRY, MESSAGE_TYPE, WARNING, CONTACT, MESSAGE_TYPE_INDIC, DOC_TYPE_IN,MESSAGE_REF_ID ";
+//			if (isFatca) {
+//				headerQuery = "T3.SENDING_COMPANY_IN,T3.TRANSMITTING_COUNTRY, T3.RECEIVING_COUNTRY, T3.MESSAGE_TYPE,T3.MESSAGE_REF_ID,T3.ENTITY_NAME,T3.ENTITY_COUNTRY_CODE,"
+//						+ "T3.ENTITY_POSTAL_CODE,T3.ENTITY_CITY,T3.ENTITY_ADDRESS_FREE,T3.FILER_CATEGORY,T3.ENTITY_STREET";
+//			}
+//
+//			if (cloud.equalsIgnoreCase("Y")) {
+//				headerQuery = "T3.ENTITY_BUILDING_IDENTIFIER, T3.ENTITY_STREET, T3.ENTITY_COUNTRY_CODE, "
+//						+ "T3.LEGAL_ADDRESS_TYPE, T3.ENTITY_NAME, T3.ENTITY_CITY, "
+//						+ "T3.SENDING_COMPANY_IN AS SENDING_COMPANY_T3, "
+//						+ "T3.TRANSMITTING_COUNTRY AS TRANSMITTING_COUNTRY_T3, "
+//						+ "T3.RECEIVING_COUNTRY AS RECEIVING_COUNTRY_T3, " + "T3.MESSAGE_TYPE AS MESSAGE_TYPE_T3, "
+//						+ "T3.WARNING AS WARNING_T3, " + "T3.CONTACT AS CONTACT_T3, "
+//						+ "T3.MESSAGE_TYPE_INDIC AS MESSAGE_TYPE_INDIC_T3, " + "T3.DOC_TYPE_IN AS DOC_TYPE_IN_T3,"
+//						+ "T3.MESSAGE_REF_ID AS MESSAGE_REF_ID_T3 ";
+//				;
+//
+//			}
+//			if (!cloud.equalsIgnoreCase("Y")) {
+//				query += cols.toString() + " ," + headerQuery + " FROM " + vObject.getSourceTable() + " T1,"
+//						+ vObject.getCbkFileName() + " ";
+//
+//				String cond = " T1.COUNTRY = T3.COUNTRY AND T1.LE_BOOK = T3.LE_BOOK ";
+//				query += " WHERE " + cond;
+//			} else {
+//				query += cols.toString() + " ," + headerQuery + " FROM " + vObject.getSourceTable() + " T1, "
+//						+ vObject.getCbkFileName() + " ";
+//				String cond = " T1.COUNTRY = T3.COUNTRY AND T1.LE_BOOK = T3.LE_BOOK ";
+//				query += " WHERE " + cond;
+//			}
+//
+//			// Add filter condition
+//			if (ValidationUtil.isValid(filter)) {
+//				if (query.toLowerCase().contains(" where ")) {
+//					query += " AND " + filter;
+//				} else {
+//					query += " WHERE " + filter;
+//				}
+//			}
+//
+//			// Add source table filter condition
+//			if (ValidationUtil.isValid(vObject.getSourceTableFilter())
+//					&& !"NA".equalsIgnoreCase(vObject.getSourceTableFilter())) {
+//				if (query.toLowerCase().contains(" where ")) {
+//					query += " AND " + vObject.getSourceTableFilter();
+//				} else {
+//					query += " WHERE " + vObject.getSourceTableFilter();
+//				}
+//			}
+//			if (query.toLowerCase().contains(" where ")) {
+//				query += " AND " + versionNo;
+//			} else {
+//				query += " WHERE " + versionNo;
+//			}
+//			String orderBy = " ORDER BY t1.ROW_ID";
+//			query = query.concat(orderBy);
+//
+//			String tmpFilePath = System.getProperty("java.io.tmpdir");
+//			String xml = "";
+//
+//			String sql = "Select Count(*) FROM " + vObject.getSourceTable() + " WHERe COUNTRY = ? AND LE_BOOK = ?";
+//
+//			Object objParams[] = { vObject.getCountry(), vObject.getLeBook() };
+//			int cnt = getJdbcTemplate().queryForObject(sql, objParams, Integer.class);
+//			if (cnt == 0) {
+//				query = "SELECT " + headerQuery + " From " + vObject.getCbkFileName() + " where COUNTRY = '"
+//						+ vObject.getCountry() + "' AND LE_BOOK = '" + vObject.getLeBook() + "' ";
+//			}
+//
+//			xml = getJdbcTemplate().query(query,
+//					(ResultSetExtractor<String>) rs -> isFatca ? generateFatcaXml(rs, cnt, vObject.getInternalStatus())
+//							: generateCrsXml(rs, cnt));
+//
+//			String path = System.getProperty("java.io.tmpdir") + File.separator + vObject.getSourceTable() + ".xml";
+//
+//			String beautified = beautifyXML(xml, vObject.getCategoryType());
+//
+//			try (BufferedWriter bw = new BufferedWriter(new FileWriter(path))) {
+//				bw.write(beautified);
+//			}
+//			// Set the response details in the exception code
+//			exceptionCode.setOtherInfo(vObject.getSourceTable());
+//			exceptionCode.setResponse(tmpFilePath); // Return the path of the generated XML file
+//			exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
+//
+//		} catch (Exception e) {
+//			exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
+//			exceptionCode.setErrorMsg(e.getMessage());
+//		}
+//
+//		return exceptionCode;
+//	}
 
 	private static void tagElement(StringBuilder builder, String tag, String content) {
 		if (content != null) {
@@ -3971,7 +3984,7 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 				String xmlFilePath = tmpFilePath + File.separator + vObject.getSourceTable() + ".xml";
 
 				StringBuilder xmlData = new StringBuilder();
-				System.out.println("xml Query :" + finalQuery);
+//				System.out.println("xml Query :" + finalQuery);
 				getJdbcTemplate().query(finalQuery, new RowCallbackHandler() {
 
 					@Override
@@ -4469,7 +4482,7 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 	 * @return
 	 * @throws SQLException
 	 */
-	private String generateFatcaXml(ResultSet rs, int cnt, int internalStatus) throws SQLException {
+	private String generateFatcaXml(ResultSet rs, int cnt, int internalStatus, Object[] params) throws SQLException {
 
 		StringBuilder xmlBuilder = new StringBuilder();
 		boolean isFirstRow = true;
@@ -4488,7 +4501,7 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 			if (isFirstRow) {
 
 				// Start root element
-				buildDefaultXmlBuilder(xmlBuilder);
+				buildDefaultXmlBuilder(xmlBuilder, params);
 
 				// Message Spec
 				xmlMessageSpecBuilder(rs, xmlBuilder, columnNameMap);
@@ -4536,16 +4549,11 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 					createDefaultStructure(rs, xmlBuilder, columnNameMap);
 				}
 			}
-			// DocSpec
 			if (cnt != 0) {
 				xmlBuilder.append("<ftc:AccountReport>");
 				xmldocSpecBuilder(rs, xmlBuilder, columnNameMap);
-				// Account Holder Xml
 				xmlAccountHolderBuilder(rs, xmlBuilder, columnNameMap);
 				xmlBuilder.append("</ftc:AccountReport>");
-				// ---------------- FOOTER ----------------
-				// AccountReport
-//					xmlFooterAccountReportBuilder(rs, xmlBuilder, columnNameMap);
 				xmlPaymentBuilder(rs, xmlBuilder, columnNameMap);
 			}
 		}
@@ -5033,22 +5041,62 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 		xmlBuilder.append("</ftc:MessageSpec>");
 	}
 
-	private void buildDefaultXmlBuilder(StringBuilder xmlBuilder) {
-		xmlBuilder.append("<Signature xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><SignedInfo>")
-				.append("<CanonicalizationMethod Algorithm=\"http://www.w3.org/2001/10/xml-exc-c14n#\" />")
-				.append("<SignatureMethod Algorithm=\"http://www.w3.org/2001/04/xmldsig-more#rsa-sha256\" />")
-				.append("<Reference URI=\"#FATCA\">").append("<Transforms>")
-				.append("<Transform Algorithm=\"http://www.w3.org/2001/10/xml-exc-c14n#\" />").append("</Transforms>")
-				.append("<DigestMethod Algorithm=\"http://www.w3.org/2001/04/xmlenc#sha256\" />")
-				.append("<DigestValue>cnuCEsWY4TwQTjv2z6JxZLpVHTKVly6j/CtaE48QfDc=</DigestValue>")
-				.append("</Reference>").append("</SignedInfo>")
-				.append("<SignatureValue>qZ544/xV/Z5LH36vKRYL3mo+ql7/PKqRlooXZUqUWfYH5aXxgE1zuCR7gVipCwhFYJYFJAFxMbVs1oQlTkWO0AwubpeJxZfK8JEEp5W9rzNrT3dpyGXqJmh1sEysWumqXRKNeF8+6ij99MY0Zzu4sg+UtZkb67WYZwpDEZFRehkd9MoyJS6Tk7gbdu5VVhBx5uRz22O2gQE/Nj1Fxkkz/Zs4C8tVY4E14nLXZjarjprAGecpTAezIOhDDkv2AHVMZkR14vgsJHeTTKbUDfHThbclMH6mTM7HjH0vdXn2zOQd+PJbt0JCaQmFWow+3L7ICgQGsE2nYum8LY2kOK+xPQ==</SignatureValue>")
-				.append("<KeyInfo><X509Data><X509SubjectName>CN=fatca.ncbagroup.com, O=NCBA Bank Kenya PLC, L=Nairobi, C=KE</X509SubjectName><X509Certificate>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</X509Certificate></X509Data></KeyInfo>")
-				.append("<Object Id=\"FATCA\">").append("<ftc:FATCA_OECD ")
-				.append(" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"urn:oecd:ties:fatca:v2\"  ")
+	private void buildDefaultXmlBuilder(StringBuilder xmlBuilder, Object[] params) {
+
+		// Defaults → used if DB fails
+		String refUri = "";
+		String digestValue = "";
+		String signatureValue = "";
+		String x509Subject = "";
+		String x509Certificate = "";
+
+		String country = (String) params[0];
+		String leBook = (String) params[1];
+
+		String query = String.format(
+				"SELECT DIGEST_VALUE, SIGNATURE, REFERENCE_URI, X509_CERT, X509_SUBJECT "
+						+ "FROM RG_FATCA_SIGNATURE_DETAIL " + "WHERE COUNTRY = '%s' AND LE_BOOK = '%s'",
+				country, leBook);
+
+		ExceptionCode ec = commonApiDao.getCommonResultDataQuery(query);
+
+		if (ec.getResponse() != null || Constants.SUCCESSFUL_OPERATION == (ec.getErrorCode())) {
+			@SuppressWarnings("unchecked")
+			ArrayList<LinkedHashMap<String, String>> list = (ArrayList<LinkedHashMap<String, String>>) ec.getResponse();
+
+			if (list != null && !list.isEmpty()) {
+				LinkedHashMap<String, String> fatcaData = list.get(0);
+
+				refUri = fatcaData.getOrDefault("REFERENCE_URI", "");
+				digestValue = fatcaData.getOrDefault("DIGEST_VALUE", "");
+				signatureValue = fatcaData.getOrDefault("SIGNATURE", "");
+				x509Subject = fatcaData.getOrDefault("X509_SUBJECT", "");
+				x509Certificate = fatcaData.getOrDefault("X509_CERT", "");
+			}
+		} else {
+			logger.warn("FATCA signature data not found. Proceeding with empty values.");
+		}
+
+		xmlBuilder.append("<Signature xmlns=\"http://www.w3.org/2000/09/xmldsig#\">").append("<SignedInfo>")
+				.append("<CanonicalizationMethod Algorithm=\"http://www.w3.org/2001/10/xml-exc-c14n#\"/>")
+				.append("<SignatureMethod Algorithm=\"http://www.w3.org/2001/04/xmldsig-more#rsa-sha256\"/>")
+				.append("<Reference URI=\"").append(refUri).append("\">").append("<Transforms>")
+				.append("<Transform Algorithm=\"http://www.w3.org/2001/10/xml-exc-c14n#\"/>").append("</Transforms>")
+				.append("<DigestMethod Algorithm=\"http://www.w3.org/2001/04/xmlenc#sha256\"/>").append("<DigestValue>")
+				.append(digestValue).append("</DigestValue>").append("</Reference>").append("</SignedInfo>")
+				.append("<SignatureValue>").append(signatureValue).append("</SignatureValue>").append("<KeyInfo>")
+				.append("<X509Data>").append("<X509SubjectName>").append(x509Subject).append("</X509SubjectName>")
+				.append("<X509Certificate>").append(x509Certificate).append("</X509Certificate>").append("</X509Data>")
+				.append("</KeyInfo>").append("<Object Id=\"FATCA\">").append("<ftc:FATCA_OECD ")
+				.append("xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" ")
+				.append("xsi:schemaLocation=\"urn:oecd:ties:fatca:v2\" ")
 				.append("xmlns:iso=\"urn:oecd:ties:isofatcatypes:v1\" ").append("xmlns:ftc=\"urn:oecd:ties:fatca:v2\" ")
-				.append("xmlns:stf=\"urn:oecd:ties:stf:v4\" ")
-				.append("xmlns:sfa=\"urn:oecd:ties:stffatcatypes:v2\" version=\"2.0\">");
+				.append("xmlns:stf=\"urn:oecd:ties:stf:v4\" ").append("xmlns:sfa=\"urn:oecd:ties:stffatcatypes:v2\" ")
+				.append("version=\"2.0\">");
+
+		/*
+		 * Append FATCA body AFTER this and BEFORE closing tags
+		 */
 	}
 
 	public ExceptionCode writeXlsData(String filePath, List<ColumnHeadersVb> headers, List<Map<String, Object>> dataLst,
@@ -5272,6 +5320,328 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 			e.printStackTrace();
 			return -1;
 		}
+	}
+
+	public ExceptionCode extractDataToXml(TemplateConfigVb vObject, String filter) {
+		ExceptionCode exceptionCode = new ExceptionCode();
+		try {
+			Boolean isFatca = Constants.FATCA.equalsIgnoreCase(vObject.getCategoryType());
+
+			String query = "SELECT ";
+			String versionNo = "  t1.VERSION_NO = (SELECT MAX(VERSION_NO ) FROM " + vObject.getSourceTable()
+					+ " WHERE COUNTRY = '" + vObject.getCountry() + "' AND LE_BOOK = '" + vObject.getLeBook() + "' )";
+
+			String cols = buildSelectColumns(vObject.getMappinglst());
+
+			String headerQuery = "ENTITY_BUILDING_IDENTIFIER,ENTITY_STREET,ENTITY_COUNTRY_CODE,LEGAL_ADDRESS_TYPE,ENTITY_NAME,ENTITY_CITY,"
+					+ "SENDING_COMPANY_IN,TRANSMITTING_COUNTRY, RECEIVING_COUNTRY, MESSAGE_TYPE, WARNING, CONTACT, MESSAGE_TYPE_INDIC, DOC_TYPE_IN,MESSAGE_REF_ID ";
+			if (isFatca) {
+				headerQuery = "T3.SENDING_COMPANY_IN,T3.TRANSMITTING_COUNTRY, T3.RECEIVING_COUNTRY, T3.MESSAGE_TYPE,T3.MESSAGE_REF_ID,T3.ENTITY_NAME,T3.ENTITY_COUNTRY_CODE,"
+						+ "T3.ENTITY_POSTAL_CODE,T3.ENTITY_CITY,T3.ENTITY_ADDRESS_FREE,T3.FILER_CATEGORY,T3.ENTITY_STREET";
+			}
+
+			if (cloud.equalsIgnoreCase("Y")) {
+				headerQuery = "T3.ENTITY_BUILDING_IDENTIFIER, T3.ENTITY_STREET, T3.ENTITY_COUNTRY_CODE, "
+						+ "T3.LEGAL_ADDRESS_TYPE, T3.ENTITY_NAME, T3.ENTITY_CITY, "
+						+ "T3.SENDING_COMPANY_IN AS SENDING_COMPANY_T3, "
+						+ "T3.TRANSMITTING_COUNTRY AS TRANSMITTING_COUNTRY_T3, "
+						+ "T3.RECEIVING_COUNTRY AS RECEIVING_COUNTRY_T3, " + "T3.MESSAGE_TYPE AS MESSAGE_TYPE_T3, "
+						+ "T3.WARNING AS WARNING_T3, " + "T3.CONTACT AS CONTACT_T3, "
+						+ "T3.MESSAGE_TYPE_INDIC AS MESSAGE_TYPE_INDIC_T3, " + "T3.DOC_TYPE_IN AS DOC_TYPE_IN_T3,"
+						+ "T3.MESSAGE_REF_ID AS MESSAGE_REF_ID_T3 ";
+			}
+
+			if (!cloud.equalsIgnoreCase("Y")) {
+				query += cols.toString() + " ," + headerQuery + " FROM " + vObject.getSourceTable() + " T1,"
+						+ vObject.getCbkFileName() + " ";
+
+				String cond = " T1.COUNTRY = T3.COUNTRY AND T1.LE_BOOK = T3.LE_BOOK ";
+				query += " WHERE " + cond;
+			} else {
+				query += cols.toString() + " ," + headerQuery + " FROM " + vObject.getSourceTable() + " T1, "
+						+ vObject.getCbkFileName() + " ";
+				String cond = " T1.COUNTRY = T3.COUNTRY AND T1.LE_BOOK = T3.LE_BOOK ";
+				query += " WHERE " + cond;
+			}
+
+			// Add filter condition
+			if (ValidationUtil.isValid(filter)) {
+				if (query.toLowerCase().contains(" where ")) {
+					query += " AND " + filter;
+				} else {
+					query += " WHERE " + filter;
+				}
+			}
+
+			// Add source table filter condition
+			if (ValidationUtil.isValid(vObject.getSourceTableFilter())
+					&& !"NA".equalsIgnoreCase(vObject.getSourceTableFilter())) {
+				if (query.toLowerCase().contains(" where ")) {
+					query += " AND " + vObject.getSourceTableFilter();
+				} else {
+					query += " WHERE " + vObject.getSourceTableFilter();
+				}
+			}
+			if (query.toLowerCase().contains(" where ")) {
+				query += " AND " + versionNo;
+			} else {
+				query += " WHERE " + versionNo;
+			}
+			String orderBy = " ORDER BY t1.ROW_ID";
+			query = query.concat(orderBy);
+
+			String tmpFilePath = System.getProperty("java.io.tmpdir");
+			String xml = "";
+
+			String sql = "Select Count(*) FROM " + vObject.getSourceTable() + " WHERe COUNTRY = ? AND LE_BOOK = ?";
+			Object objParams[] = { vObject.getCountry(), vObject.getLeBook() };
+			int cnt = getJdbcTemplate().queryForObject(sql, objParams, Integer.class);
+			if (cnt == 0) {
+				query = "SELECT " + headerQuery + " From " + vObject.getCbkFileName() + " where COUNTRY = '"
+						+ vObject.getCountry() + "' AND LE_BOOK = '" + vObject.getLeBook() + "' ";
+			}
+
+			xml = getJdbcTemplate().query(query,
+					(ResultSetExtractor<String>) rs -> isFatca
+							? generateFatcaXml(rs, cnt, vObject.getInternalStatus(), objParams)
+							: generateCrsXml(rs, cnt));
+
+			String path = System.getProperty("java.io.tmpdir") + File.separator + vObject.getSourceTable() + ".xml";
+			String beautified = beautifyXML(xml, vObject.getCategoryType());
+
+			// ALWAYS write original XML (old behavior)
+			try (BufferedWriter bw = new BufferedWriter(new FileWriter(path))) {
+				bw.write(beautified);
+			}
+
+//	        // 🔥 Encryption happens AFTER xml creation, without touching old flow
+
+			if ("Y".equalsIgnoreCase(xmlEncryptFlag) && isFatca) {
+				Path zipPath = performEncryption(path, beautified, vObject);
+
+				exceptionCode.setOtherInfo(zipPath.getFileName().toString()); // zip name
+				exceptionCode.setResponse(tmpFilePath);
+			} else {
+				exceptionCode.setOtherInfo(vObject.getSourceTable()); // xml name
+				exceptionCode.setResponse(tmpFilePath);
+			}
+			exceptionCode.setErrorCode(Constants.SUCCESSFUL_OPERATION);
+
+		} catch (Exception e) {
+			exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
+			exceptionCode.setErrorMsg(e.getMessage());
+		}
+		return exceptionCode;
+	}
+
+//	private Path performEncryption(String xmlPath, String beautifiedXml, TemplateConfigVb vObject) throws Exception {
+//
+//		Path inputXml = Path.of(xmlPath);
+//
+//		String publicKeyPath = commonDao.findVisionVariableValue("RG_FATCA_PUBKEY_LOGPATH");
+//
+//		Path cbPublicKeyB64 = Path.of(publicKeyPath.concat("cb_public.b64"));
+//
+//		Path outDir = Path.of(System.getProperty("java.io.tmpdir"));
+//		Files.createDirectories(outDir);
+//
+//		Path payloadZip = outDir.resolve("payload.zip");
+//		Path encryptedPayloadBin = outDir.resolve("encrypted_payload.bin");
+//		Path encryptedKeyFileBin = outDir.resolve("encrypted_keyfile.bin");
+//		Path finalPackageZip = outDir.resolve(vObject.getSourceTable() + "_submission.zip");
+//
+//		// 1. ZIP the XML (MANDATORY)
+//		ZipUtils.zipSingleFile(inputXml, payloadZip);
+//
+//		// 2. Load CB public key
+//		PublicKey cbPub = RsaUtils.loadPublicKeyBase64(cbPublicKeyB64);
+//
+//		// 3. Generate AES key + IV
+//		byte[] aesKey = AESCryptoUtils.randomBytes(32);
+//		byte[] iv = AESCryptoUtils.randomBytes(16);
+//		byte[] aesKeyFile = AESCryptoUtils.buildAesKeyFile(aesKey, iv);
+//
+//		// 4. AES encrypt payload.zip (NOT XML)
+//		byte[] payloadZipBytes = Files.readAllBytes(payloadZip);
+//		byte[] encryptedPayload = AESCryptoUtils.aesCbcEncrypt(payloadZipBytes, aesKey, iv);
+//		Files.write(encryptedPayloadBin, encryptedPayload);
+//
+//		// 5. RSA encrypt AES key file
+//		byte[] encryptedKeyFile = RsaUtils.rsaEncryptPkcs1(aesKeyFile, cbPub);
+//		Files.write(encryptedKeyFileBin, encryptedKeyFile);
+//
+//		// 6. Final ZIP
+//		createFinalZip(finalPackageZip, encryptedPayloadBin, encryptedKeyFileBin);
+//
+//		// Cleanup
+//		Files.deleteIfExists(payloadZip);
+//		Files.deleteIfExists(encryptedPayloadBin);
+//		Files.deleteIfExists(encryptedKeyFileBin);
+//
+//		return finalPackageZip;
+//	}
+
+	private Path performEncryption(String xmlPath, String beautifiedXml, TemplateConfigVb vObject) throws Exception {
+
+		Path inputXml = Path.of(xmlPath);
+
+		// 1) Fetch metadata-driving values from RG_FATCA_SENDER_METADATA
+		String headerSql = "SELECT FATCA_ENTITY_SENDER_ID, FATCA_ENTITY_RECEIVER_ID, COMMUNICATION_TYPE_CD, "
+				+ "       FILE_FORMAT_CD, BINARY_ENCODING_CD, TAX_YEAR, FILE_REVISION_IND "
+				+ "FROM RG_FATCA_SENDER_METADATA WHERE country = ? AND le_book = ?";
+
+		Map<String, Object> hdr = getJdbcTemplate().queryForMap(headerSql, vObject.getCountry(), vObject.getLeBook());
+
+		String senderId = (String) hdr.get("FATCA_ENTITY_SENDER_ID");
+		String receiverId = (String) hdr.get("FATCA_ENTITY_RECEIVER_ID");
+		String commType = (String) hdr.get("COMMUNICATION_TYPE_CD"); // RPT
+		String fileFormatCd = (String) hdr.get("FILE_FORMAT_CD"); // XML
+		String binaryEncCd = (String) hdr.get("BINARY_ENCODING_CD"); // NONE
+		int taxYear = ((Number) hdr.get("TAX_YEAR")).intValue();
+
+		String fileRev = String.valueOf(hdr.get("FILE_REVISION_IND"));
+
+		if (senderId == null || senderId.isBlank())
+			throw new IllegalStateException("FATCA_ENTITY_SENDER_ID missing in RG_FATCA_SENDER_METADATA");
+		if (receiverId == null || receiverId.isBlank())
+			throw new IllegalStateException("FATCA_ENTITY_RECEIVER_ID missing in RG_FATCA_SENDER_METADATA");
+
+		boolean fileRevisionInd = "Y".equalsIgnoreCase(fileRev) || "true".equalsIgnoreCase(fileRev);
+
+		Instant nowUtc = Instant.now();
+
+		// 2) IDES filenames
+		String payloadXmlName = senderId + "_Payload.xml";
+		String payloadZipName = senderId + "_Payload.zip";
+		String encryptedPayloadName = senderId + "_Payload"; // no extension
+		String keyFileName = receiverId + "_Key";
+		String metadataFileName = senderId + "_Metadata.xml";
+		String finalZipName = SENDER_FILE_ID_TS.format(nowUtc) + "_" + senderId + ".zip";
+
+		Path outDir = Path.of(System.getProperty("java.io.tmpdir"));
+		Files.createDirectories(outDir);
+
+		Path payloadZip = outDir.resolve(payloadZipName);
+		Path encryptedPayloadFile = outDir.resolve(encryptedPayloadName);
+		Path encryptedKeyFile = outDir.resolve(keyFileName);
+		Path metadataXml = outDir.resolve(metadataFileName);
+		Path finalZip = outDir.resolve(finalZipName);
+
+		// 3) ZIP signed XML with required entry name
+		ZipUtils.zipSingleFileWithEntryName(inputXml, payloadZip, payloadXmlName);
+
+		// 4) Load public key
+		String publicKeyPath = commonDao.findVisionVariableValue("RG_FATCA_PUBKEY_LOGPATH");
+		Path cbPublicKeyB64 = Path.of(publicKeyPath, "cb_public.b64");
+		PublicKey cbPub = RsaUtils.loadPublicKeyBase64(cbPublicKeyB64);
+
+		// 5) AES key + IV (48 bytes keyfile = key||iv)
+		byte[] aesKey = AESCryptoUtils.randomBytes(32);
+		byte[] iv = AESCryptoUtils.randomBytes(16);
+		byte[] aesKeyFile = AESCryptoUtils.buildAesKeyFile(aesKey, iv);
+
+		// 6) Encrypt ZIP
+		byte[] payloadBytes = Files.readAllBytes(payloadZip);
+		byte[] encryptedPayload = AESCryptoUtils.aesCbcEncrypt(payloadBytes, aesKey, iv);
+		Files.write(encryptedPayloadFile, encryptedPayload);
+
+		// 7) Encrypt AES key file with RSA
+		byte[] encryptedKey = RsaUtils.rsaEncryptPkcs1(aesKeyFile, cbPub);
+		Files.write(encryptedKeyFile, encryptedKey);
+
+		// 8) Metadata XML (use DB-driven values if you extend method signature)
+		writeSenderMetadataXml(outDir, senderId, receiverId, commType, nowUtc, taxYear, fileRevisionInd);
+		// If you enhance: pass fileFormatCd, binaryEncCd too
+
+		// 9) Final ZIP with 3 entries
+		try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(finalZip))) {
+			zos.putNextEntry(new ZipEntry(encryptedPayloadName));
+			Files.copy(encryptedPayloadFile, zos);
+			zos.closeEntry();
+
+			zos.putNextEntry(new ZipEntry(keyFileName));
+			Files.copy(encryptedKeyFile, zos);
+			zos.closeEntry();
+
+			zos.putNextEntry(new ZipEntry(metadataFileName));
+			Files.copy(metadataXml, zos);
+			zos.closeEntry();
+		}
+
+		// Cleanup
+		Files.deleteIfExists(payloadZip);
+		Files.deleteIfExists(encryptedPayloadFile);
+		Files.deleteIfExists(encryptedKeyFile);
+		Files.deleteIfExists(metadataXml);
+
+		return finalZip;
+	}
+
+	private void createFinalZip(Path zipOut, Path encryptedPayloadBin, Path encryptedKeyFileBin) throws Exception {
+		try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(zipOut))) {
+			// encrypted_payload.bin
+			ZipEntry e1 = new ZipEntry("encrypted_payload.bin");
+			zos.putNextEntry(e1);
+			Files.copy(encryptedPayloadBin, zos);
+			zos.closeEntry();
+
+			// encrypted_keyfile.bin
+			ZipEntry e2 = new ZipEntry("encrypted_keyfile.bin");
+			zos.putNextEntry(e2);
+			Files.copy(encryptedKeyFileBin, zos);
+			zos.closeEntry();
+		}
+	}
+
+	// SenderFileId timestamp format: 20161208T174647637Z
+	private static final DateTimeFormatter SENDER_FILE_ID_TS = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssSSS'Z'")
+			.withZone(ZoneOffset.UTC);
+
+	// FileCreateTs format: 2016-12-08T11:46:47Z
+	private static final DateTimeFormatter FILE_CREATE_TS = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
+			.withZone(ZoneOffset.UTC);
+
+	/**
+	 * Builds: <FATCAIDESSenderFileMetadata xmlns="urn:fatca:idessenderfilemetadata"
+	 * ...>
+	 */
+	public static Path writeSenderMetadataXml(Path outDir, String senderFatcaEntityId, // e.g. 000000.00000.TA.152 (or
+																						// GIIN-like)
+			String receiverFatcaEntityId, // e.g. 000000.00000.TA.840
+			String communicationTypeCd, // RPT (usually)
+			Instant fileCreateUtc, // Instant.now()
+			int taxYear, // e.g. 2025
+			boolean fileRevisionInd // false for new
+	) throws Exception {
+
+		Files.createDirectories(outDir);
+
+		String senderFileId = SENDER_FILE_ID_TS.format(fileCreateUtc) + "_" + senderFatcaEntityId;
+		String fileCreateTs = FILE_CREATE_TS.format(fileCreateUtc);
+
+		String xml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+				+ "<FATCAIDESSenderFileMetadata xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
+				+ "xmlns=\"urn:fatca:idessenderfilemetadata\">\n" + "  <FATCAEntitySenderId>" + esc(senderFatcaEntityId)
+				+ "</FATCAEntitySenderId>\n" + "  <FATCAEntityReceiverId>" + esc(receiverFatcaEntityId)
+				+ "</FATCAEntityReceiverId>\n" + "  <FATCAEntCommunicationTypeCd>" + esc(communicationTypeCd)
+				+ "</FATCAEntCommunicationTypeCd>\n" + "  <SenderFileId>" + esc(senderFileId) + "</SenderFileId>\n"
+				+ "  <FileFormatCd>XML</FileFormatCd>\n" + "  <BinaryEncodingSchemeCd>NONE</BinaryEncodingSchemeCd>\n"
+				+ "  <FileCreateTs>" + esc(fileCreateTs) + "</FileCreateTs>\n" + "  <TaxYear>" + taxYear
+				+ "</TaxYear>\n" + "  <FileRevisionInd>" + (fileRevisionInd ? "true" : "false") + "</FileRevisionInd>\n"
+				+ "</FATCAIDESSenderFileMetadata>\n";
+
+		// IDES typical file name convention: <SenderId>_Metadata.xml
+		Path metadataPath = outDir.resolve(senderFatcaEntityId + "_Metadata.xml");
+		Files.writeString(metadataPath, xml);
+
+		return metadataPath;
+	}
+
+	private static String esc(String s) {
+		if (s == null)
+			return "";
+		return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'",
+				"&apos;");
 	}
 
 }

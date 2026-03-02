@@ -5,15 +5,15 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
 import org.springframework.stereotype.Component;
 
 import com.vision.authentication.SessionContextHolder;
 import com.vision.util.ValidationUtil;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 @Component
 public class ExportXlsServlet extends HttpServlet {
@@ -114,6 +114,8 @@ public class ExportXlsServlet extends HttpServlet {
 				lFile = new File(filePath + fileName + fileType);
 			}
 			response.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+			response.setHeader("X-Filename", fileName);
+			response.setHeader("Access-Control-Expose-Headers", "Content-Disposition, X-Filename");
 
 			if (lFile == null || !lFile.exists()) {
 				lFile = lFileNoEncode;

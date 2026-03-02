@@ -112,6 +112,9 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 	@Value("${app.client.scope}")
 	private String scope;
 
+	@Value("${fatca.encrypt.xml}")
+	private String xmlEncryptFlag;
+
 	public String visionRegTechApijar = "VisionRegTechApi.jar";
 	ResourceBundle rsb = CommonUtils.getResourceManger();
 
@@ -190,6 +193,9 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 			arrListLocal.add(collTemp);
 			String xlRecordCount = commonDao.findVisionVariableValue("RG_XL_RECORD_COUNT");
 			arrListLocal.add(xlRecordCount);
+			String xmlEncruptionFlag = xmlEncryptFlag;
+			arrListLocal.add(xmlEncruptionFlag);
+
 			return arrListLocal;
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -833,17 +839,21 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 		ExceptionCode exceptionCode = new ExceptionCode();
 //		OAuth2Client auth2Client = new OAuth2Client();
 		templateScheduleCronDao.insertAuditTrialData(templateConfigVb, "Process Started", "Process Started");
+		logger.info("Process Started");
 //		ExceptionCode authenticationExCode = fetchAuthenticationCode(templateConfigVb);
 		ExceptionCode authenticationExCode = getAuthenticationCode(templateConfigVb);
 		if (authenticationExCode != null && authenticationExCode.getErrorCode() != Constants.SUCCESSFUL_OPERATION) {
 			templateScheduleCronDao.insertAuditTrialData(templateConfigVb, "Fetching Authorization Token Failed ",
 					"Fetching Authorization Token[" + authenticationExCode.getErrorMsg() + "] ");
+			logger.info("Fetching Authorization Token Failed " + "Fetching Authorization Token["
+					+ authenticationExCode.getErrorMsg() + "]");
 			exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
 			exceptionCode.setErrorMsg("Getting Authorization Token Failed ");
 			return exceptionCode;
 		}
 		templateScheduleCronDao.insertAuditTrialData(templateConfigVb, "Fetched Authorization Token Succces ",
 				"Fetched Authorization Token[" + authenticationExCode.getErrorMsg() + "] ");
+		
 
 		ExceptionCode exceptionCode1 = getDataForTheCBApi(templateConfigVb);
 		if (exceptionCode1.getErrorCode() != Constants.SUCCESSFUL_OPERATION) {
@@ -898,6 +908,7 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 				String processStatus = "";
 				templateScheduleCronDao.insertAuditTrialData(templateConfigVb, "Getting Template Schedule Detail ",
 						"Getting Template Schedule Details");
+				logger.info("Getting Template Schedule Detail ");
 				List<TemplateConfigVb> configList = templateScheduleCronDao.getTemplateConfigDetail(templateConfigVb);
 				if (configList != null && configList.size() > 0) {
 					TemplateConfigVb configVb = configList.get(0);
@@ -919,6 +930,8 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 							templateScheduleCronDao.insertAuditTrialData(templateConfigVb,
 									"JSON Formattion for Template[" + configVb.getTemplateDescription() + "] Started",
 									"JSON Formattion for Template[" + configVb.getTemplateDescription() + "] Started");
+							logger.info(
+									"JSON Formattion for Template[" + configVb.getTemplateDescription() + "] Started");
 							lst.get(0).setReportingDate(templateConfigVb.getReportingDate());
 							lst.get(0).setSubmissionDate(templateConfigVb.getSubmissionDate());
 							exceptionCode = formJson(lst.get(0));
@@ -928,6 +941,8 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 												+ "] Finished",
 										"JSON Formattion for Template[" + configVb.getTemplateDescription()
 												+ "] Finished");
+								logger.info("JSON Formattion for Template[" + configVb.getTemplateDescription()
+										+ "] Finised");
 								String json = exceptionCode.getResponse().toString();
 								exceptionCodeFinal.setErrorCode(Constants.SUCCESSFUL_OPERATION);
 								exceptionCodeFinal.setResponse1(exceptionCode.getResponse1());
@@ -989,6 +1004,8 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 							templateScheduleCronDao.insertAuditTrialData(templateConfigVb,
 									"CSV Formattion for Template[" + configVb.getTemplateDescription() + "] Started",
 									"CSV Formattion for Template[" + configVb.getTemplateDescription() + "] Started");
+							logger.info(
+									"CSV Formattion for Template[" + configVb.getTemplateDescription() + "] Started");
 							lst.get(0).setReportingDate(templateConfigVb.getReportingDate());
 							exceptionCode = formCsv(lst.get(0));
 							if (exceptionCode.getErrorCode() == Constants.SUCCESSFUL_OPERATION) {
@@ -997,20 +1014,24 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 												+ "] Finished",
 										"CSV Formattion for Template[" + configVb.getTemplateDescription()
 												+ "] Finished");
+								logger.info("CSV Formattion for Template[" + configVb.getTemplateDescription()
+										+ "] Finished");
 								ArrayList<String> dataLst = (ArrayList<String>) exceptionCode.getResponse();
 								String csvPath = excesPath;
 								excesPath = excesPath + lst.get(0).getCbkFileName() + extension;
-
+								logger.info(" Csv File writer started In " + excesPath);
 								exceptionCode = templateScheduleCronDao.csvFileWriter(dataLst, excesPath,
 										configVb.getCsvDelimiter());
 								String zipFilePath = csvPath + lst.get(0).getCbkFileName() + ".zip"; // Use the same
-																										// name for the
-																										// ZIP file
+								logger.info(" Csv File writer Ended "); // name for the
+								// ZIP file
 								templateScheduleCronDao.insertAuditTrialData(templateConfigVb,
 										"Zip  Formattion for Template[" + configVb.getTemplateDescription()
 												+ "] Started",
 										"Zip Formattion for Template[" + configVb.getTemplateDescription()
 												+ "] Started");
+								logger.info("Zip  Formattion for Template[" + configVb.getTemplateDescription()
+										+ "] Started");
 								try (FileOutputStream fos = new FileOutputStream(zipFilePath);
 										ZipOutputStream zipOut = new ZipOutputStream(fos)) {
 
@@ -1018,11 +1039,14 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 									ZipUtils.addFileToZip(excesPath, zipOut);
 
 									System.out.println("CSV file successfully zipped at: " + zipFilePath);
+									logger.info("CSV file successfully zipped at: " + zipFilePath);
 									templateScheduleCronDao.insertAuditTrialData(templateConfigVb,
 											"Zip Formattion for Template[" + configVb.getTemplateDescription()
 													+ "] Finished",
 											"Zip Formattion for Template[" + configVb.getTemplateDescription()
 													+ "] Finished");
+									logger.info("Zip Formattion for Template[" + configVb.getTemplateDescription()
+											+ "] Finished");
 								} catch (Exception e) {
 									templateScheduleCronDao.insertAuditTrialData(templateConfigVb,
 											"Zip Formattion for Template[" + configVb.getTemplateDescription()
@@ -1726,6 +1750,10 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 		System.out.println("CLIENT_ID :" + clientID);
 		System.out.println("CLIENT_SECRET :" + clientSecret);// your
 
+		logger.info("TOKEN_URL :" + TOKEN_URL);
+		logger.info("CLIENT_ID :" + clientID);
+		logger.info("CLIENT_SECRET :" + clientSecret);// your
+
 		try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
 
 			URI uri = new URIBuilder(TOKEN_URL.trim()).build();
@@ -1758,8 +1786,10 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 					exceptionCode.setErrorMsg(responseBody);
 				} else {
 					System.out.println("Failed to get access token. Response code: " + statusCode);
+					logger.info("Failed to get access token. Response code: " + statusCode);
 					String responseBody = EntityUtils.toString(response.getEntity());
 					System.out.println("Response body: " + responseBody);
+					logger.info("Response body: " + responseBody);
 					exceptionCode.setErrorCode(Constants.ERRONEOUS_OPERATION);
 					exceptionCode.setErrorMsg(responseBody);
 				}
@@ -1834,6 +1864,7 @@ public class TemplateScheduleWb extends AbstractDynaWorkerBean<TemplateScheduleV
 					if (csvFile.exists()) {
 						// Attach the CSV file
 						System.out.println(filePath);
+						logger.info("filePath :" + filePath);
 						JSONObject jsonObject1 = new JSONObject();
 						jsonObject1.put("INSTITUTION_CODE", institutionCode);
 						jsonObject1.put("REQUEST_ID", requestId);

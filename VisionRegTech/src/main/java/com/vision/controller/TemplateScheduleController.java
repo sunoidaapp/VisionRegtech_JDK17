@@ -39,7 +39,8 @@ public class TemplateScheduleController {
 
 	/*-------------------------------------Page Load Values-------------------------------*/
 	@RequestMapping(path = "/pageLoadValues", method = RequestMethod.GET)
-	//@ApiOperation(value = "Page Load Values", notes = "Load AT/NT Values on screen load", response = ResponseEntity.class)
+	// @ApiOperation(value = "Page Load Values", notes = "Load AT/NT Values on
+	// screen load", response = ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> pageOnLoad() {
 		JSONExceptionCode jsonExceptionCode = null;
 		try {
@@ -55,7 +56,8 @@ public class TemplateScheduleController {
 	}
 
 	@RequestMapping(path = "/templateSchedulePanel1", method = RequestMethod.POST)
-	//@ApiOperation(value = "Get All Upload Filling", notes = "Acquistion panel1 based on stakeholder and country", response = ResponseEntity.class)
+	// @ApiOperation(value = "Get All Upload Filling", notes = "Acquistion panel1
+	// based on stakeholder and country", response = ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> acqUploadFilingPanel1(@RequestBody TemplateScheduleVb templateScheduleVb) {
 		JSONExceptionCode jsonExceptionCode = null;
 		try {
@@ -72,7 +74,9 @@ public class TemplateScheduleController {
 	}
 
 	@RequestMapping(path = "/templateSchedulePanel2", method = RequestMethod.POST)
-	//@ApiOperation(value = "Get All Upload Filling", notes = "templateScheduleVb panel2 based on stakeholder,frequency and country", response = ResponseEntity.class)
+	// @ApiOperation(value = "Get All Upload Filling", notes = "templateScheduleVb
+	// panel2 based on stakeholder,frequency and country", response =
+	// ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> acqUploadFilingPanel2(@RequestBody TemplateScheduleVb uploadFilingVb) {
 		JSONExceptionCode jsonExceptionCode = null;
 		try {
@@ -88,7 +92,9 @@ public class TemplateScheduleController {
 	}
 
 	@RequestMapping(path = "/templateSchedulePanel3", method = RequestMethod.POST)
-	//@ApiOperation(value = "Get All Upload Filling", notes = "Acquistion panel3 based on stakeholder,frequency and reportingdate", response = ResponseEntity.class)
+	// @ApiOperation(value = "Get All Upload Filling", notes = "Acquistion panel3
+	// based on stakeholder,frequency and reportingdate", response =
+	// ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> acqUploadFilingPanel3(@RequestBody TemplateScheduleVb uploadFilingVb) {
 		JSONExceptionCode jsonExceptionCode = null;
 		try {
@@ -104,7 +110,8 @@ public class TemplateScheduleController {
 	}
 
 	@RequestMapping(path = "/downloadErrorLog", method = RequestMethod.POST)
-	//@ApiOperation(value = "downloadErrorLog", notes = "Download ErrorLog", response = ResponseEntity.class)
+	// @ApiOperation(value = "downloadErrorLog", notes = "Download ErrorLog",
+	// response = ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> downloadCallReport(@RequestParam("logFileName") String logFileName,
 			HttpServletRequest request, HttpServletResponse response) throws IOException {
 		JSONExceptionCode jsonExceptionCode = null;
@@ -150,7 +157,8 @@ public class TemplateScheduleController {
 
 	/*-------------------------------------Upload Files Rest Service-------------------------------*/
 	@RequestMapping(path = "/uploadFiles", method = RequestMethod.POST)
-	//@ApiOperation(value = "Uploading Multipart files to Server", notes = "Upload files to Server", response = ResponseEntity.class)
+	// @ApiOperation(value = "Uploading Multipart files to Server", notes = "Upload
+	// files to Server", response = ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> uploadFilesToFtp(@RequestParam("file") MultipartFile[] files) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = null;
@@ -208,7 +216,8 @@ public class TemplateScheduleController {
 	}
 
 	@RequestMapping(path = "/modifytemplateScheduleUpload", method = RequestMethod.POST)
-	//@ApiOperation(value = "Modify Acq Upload", notes = "Modify Acq Upload", response = ResponseEntity.class)
+	// @ApiOperation(value = "Modify Acq Upload", notes = "Modify Acq Upload",
+	// response = ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> modifyAcqusitionUpload(@RequestBody List<TemplateScheduleVb> vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
@@ -238,7 +247,8 @@ public class TemplateScheduleController {
 	}
 
 	@RequestMapping(path = "/templateScheduleReview", method = RequestMethod.POST)
-	//@ApiOperation(value = "Review", notes = "Review", response = ResponseEntity.class)
+	// @ApiOperation(value = "Review", notes = "Review", response =
+	// ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> review(@RequestBody TemplateScheduleVb vObject, HttpServletRequest request,
 			HttpServletResponse response) throws IOException {
 		JSONExceptionCode jsonExceptionCode = null;
@@ -281,8 +291,8 @@ public class TemplateScheduleController {
 			} else {
 				if (exceptionCode.getErrorCode() == Constants.SUCCESSFUL_OPERATION) {
 					jsonExceptionCode = new JSONExceptionCode(Constants.SUCCESSFUL_OPERATION,
-							exceptionCode.getErrorMsg(), exceptionCode.getResponse(),exceptionCode.getOtherInfo(), exceptionCode.getResponse1(),exceptionCode.getResponse2(), exceptionCode.getResponse3()
-							);
+							exceptionCode.getErrorMsg(), exceptionCode.getResponse(), exceptionCode.getOtherInfo(),
+							exceptionCode.getResponse1(), exceptionCode.getResponse2(), exceptionCode.getResponse3());
 					return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 				} else {
 					jsonExceptionCode = new JSONExceptionCode(Constants.ERRONEOUS_OPERATION,
@@ -298,7 +308,8 @@ public class TemplateScheduleController {
 	}
 
 	@RequestMapping(path = "/getTemplatesAudit", method = RequestMethod.POST)
-	//@ApiOperation(value = "Get All ACQ Schules", notes = "Fetch all the existing records from the table", response = ResponseEntity.class)
+	// @ApiOperation(value = "Get All ACQ Schules", notes = "Fetch all the existing
+	// records from the table", response = ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> getTemplatesAudit(@RequestBody TemplateScheduleVb vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		try {
@@ -314,7 +325,8 @@ public class TemplateScheduleController {
 	}
 
 	@RequestMapping(path = "/templateScheduleReviewExportToCsv", method = RequestMethod.POST)
-	//@ApiOperation(value = "Review", notes = "Review", response = ResponseEntity.class)
+	// @ApiOperation(value = "Review", notes = "Review", response =
+	// ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> reviewExportToCsv(@RequestBody TemplateScheduleVb vObject,
 			HttpServletRequest request, HttpServletResponse response) throws IOException {
 		JSONExceptionCode jsonExceptionCode = null;
@@ -355,7 +367,8 @@ public class TemplateScheduleController {
 	}
 
 	@RequestMapping(path = "/templateScheduleReviewExportToExcel", method = RequestMethod.POST)
-	//@ApiOperation(value = "Review", notes = "Review", response = ResponseEntity.class)
+	// @ApiOperation(value = "Review", notes = "Review", response =
+	// ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> reviewExportToExcel(@RequestBody TemplateScheduleVb vObject,
 			HttpServletRequest request, HttpServletResponse response) throws IOException {
 		JSONExceptionCode jsonExceptionCode = null;
@@ -394,9 +407,10 @@ public class TemplateScheduleController {
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 		}
 	}
-	
+
 	@RequestMapping(path = "/templateScheduleReviewExportToXML", method = RequestMethod.POST)
-	//@ApiOperation(value = "Review", notes = "Review", response = ResponseEntity.class)
+	// @ApiOperation(value = "Review", notes = "Review", response =
+	// ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> reviewExportToXML(@RequestBody TemplateScheduleVb vObject,
 			HttpServletRequest request, HttpServletResponse response) throws IOException {
 		JSONExceptionCode jsonExceptionCode = null;
@@ -412,8 +426,15 @@ public class TemplateScheduleController {
 			String type = "XML";
 			exceptionCode = templateScheduleWb.exportReviewDetails(vObject, type);
 			if (exceptionCode.getErrorCode() == Constants.SUCCESSFUL_OPERATION) {
-				request.setAttribute("fileExtension", "xml");
-				request.setAttribute("fileName", exceptionCode.getOtherInfo() );
+				String fileName = (String) exceptionCode.getOtherInfo();
+
+				if (fileName.endsWith(".zip")) {
+					request.setAttribute("fileExtension", "zip");
+				} else {
+					request.setAttribute("fileExtension", "xml");
+				}
+
+				request.setAttribute("fileName", fileName);
 				request.setAttribute("filePath", exceptionCode.getResponse());
 				templateScheduleWb.setExportXlsServlet(request, response);
 
@@ -437,7 +458,8 @@ public class TemplateScheduleController {
 	}
 
 	@RequestMapping(path = "/savetemplateScheduleData", method = RequestMethod.POST)
-	//@ApiOperation(value = "Save Acq Data", notes = "Save Acq Data", response = ResponseEntity.class)
+	// @ApiOperation(value = "Save Acq Data", notes = "Save Acq Data", response =
+	// ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> saveReviewData(@RequestBody TemplateScheduleVb vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
@@ -451,8 +473,8 @@ public class TemplateScheduleController {
 			}
 			exceptionCode = templateScheduleWb.insertRecord(vObject);
 			if (exceptionCode.getErrorCode() == Constants.SUCCESSFUL_OPERATION) {
-				jsonExceptionCode = new JSONExceptionCode(Constants.SUCCESSFUL_OPERATION, exceptionCode.getErrorMsg(),exceptionCode.getResponse(),
-						exceptionCode.getOtherInfo());
+				jsonExceptionCode = new JSONExceptionCode(Constants.SUCCESSFUL_OPERATION, exceptionCode.getErrorMsg(),
+						exceptionCode.getResponse(), exceptionCode.getOtherInfo());
 			} else {
 				jsonExceptionCode = new JSONExceptionCode(Constants.ERRONEOUS_OPERATION, exceptionCode.getErrorMsg(),
 						exceptionCode.getOtherInfo());
@@ -466,7 +488,8 @@ public class TemplateScheduleController {
 	}
 
 	@RequestMapping(path = "/templateScheduleDetails", method = RequestMethod.POST)
-	//@ApiOperation(value = "Get All Upload Filling", notes = "Acquistion panel1 based on stakeholder and country", response = ResponseEntity.class)
+	// @ApiOperation(value = "Get All Upload Filling", notes = "Acquistion panel1
+	// based on stakeholder and country", response = ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> templateScheduleDetails(
 			@RequestBody TemplateScheduleVb templateScheduleVb) {
 		JSONExceptionCode jsonExceptionCode = null;
@@ -482,11 +505,11 @@ public class TemplateScheduleController {
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 		}
 	}
-	
+
 	@RequestMapping(path = "/delete", method = RequestMethod.POST)
-	//@ApiOperation(value = "Reject In Adjustments", notes = "Reject In Adjustments", response = ResponseEntity.class)
-	public ResponseEntity<JSONExceptionCode> deleteDetails(
-			@RequestBody TemplateScheduleVb vObject) {
+	// @ApiOperation(value = "Reject In Adjustments", notes = "Reject In
+	// Adjustments", response = ResponseEntity.class)
+	public ResponseEntity<JSONExceptionCode> deleteDetails(@RequestBody TemplateScheduleVb vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
 		try {
@@ -508,10 +531,11 @@ public class TemplateScheduleController {
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 		}
 	}
+
 	@RequestMapping(path = "/templateApproveScheduleDetails", method = RequestMethod.POST)
-	//@ApiOperation(value = "Approve In Adjustments", notes = "Approve In Adjustments", response = ResponseEntity.class)
-	public ResponseEntity<JSONExceptionCode> approveScheduleDetails(
-			@RequestBody List <TemplateScheduleVb> vObjects) {
+	// @ApiOperation(value = "Approve In Adjustments", notes = "Approve In
+	// Adjustments", response = ResponseEntity.class)
+	public ResponseEntity<JSONExceptionCode> approveScheduleDetails(@RequestBody List<TemplateScheduleVb> vObjects) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
 		try {
@@ -525,7 +549,7 @@ public class TemplateScheduleController {
 						exceptionCode.getOtherInfo());
 				return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 			}
-			exceptionCode = templateScheduleWb.bulkApprove(vObjects,templateScheduleVb);
+			exceptionCode = templateScheduleWb.bulkApprove(vObjects, templateScheduleVb);
 			jsonExceptionCode = new JSONExceptionCode(exceptionCode.getErrorCode(), exceptionCode.getErrorMsg(),
 					exceptionCode.getResponse(), exceptionCode.getOtherInfo(), exceptionCode.getResponse1(),
 					exceptionCode.getResponse2(), null);
@@ -535,47 +559,57 @@ public class TemplateScheduleController {
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 		}
 	}
+
 	@RequestMapping(path = "/templateReviewScheduleDetails", method = RequestMethod.POST)
-	//@ApiOperation(value = "Review In Adjustments", notes = "Review In Adjustments", response = ResponseEntity.class)
+	// @ApiOperation(value = "Review In Adjustments", notes = "Review In
+	// Adjustments", response = ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> reviewTemplateSchedule(@RequestBody TemplateScheduleVb vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
 		try {
 			vObject.setActionType("Query");
 			exceptionCode = templateScheduleWb.reviewRecordNew(vObject);
-			jsonExceptionCode = new JSONExceptionCode(exceptionCode.getErrorCode(), exceptionCode.getErrorMsg(),exceptionCode.getResponse(), exceptionCode.getOtherInfo());
+			jsonExceptionCode = new JSONExceptionCode(exceptionCode.getErrorCode(), exceptionCode.getErrorMsg(),
+					exceptionCode.getResponse(), exceptionCode.getOtherInfo());
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 		} catch (RuntimeCustomException rex) {
 			jsonExceptionCode = new JSONExceptionCode(Constants.ERRONEOUS_OPERATION, rex.getMessage(), "");
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.EXPECTATION_FAILED);
 		}
 	}
+
 	/*-------------------------------------Unlock Vision User------------------------------------------*/
 	@RequestMapping(path = "/templateValidate", method = RequestMethod.POST)
-	//@ApiOperation(value = "Validate  ", notes = "Validate", response = ResponseEntity.class)
+	// @ApiOperation(value = "Validate ", notes = "Validate", response =
+	// ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> templateValidate(@RequestBody List<TemplateScheduleVb> vObjects) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
 		try {
 			exceptionCode = templateScheduleWb.Validate(vObjects);
-			jsonExceptionCode = new JSONExceptionCode(exceptionCode.getErrorCode(), exceptionCode.getErrorMsg(),exceptionCode.getResponse(), exceptionCode.getOtherInfo());
+			jsonExceptionCode = new JSONExceptionCode(exceptionCode.getErrorCode(), exceptionCode.getErrorMsg(),
+					exceptionCode.getResponse(), exceptionCode.getOtherInfo());
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 		} catch (RuntimeCustomException rex) {
 			jsonExceptionCode = new JSONExceptionCode(Constants.ERRONEOUS_OPERATION, rex.getMessage(), "");
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.EXPECTATION_FAILED);
 		}
 	}
+
 	@RequestMapping(path = "/templateSubmit", method = RequestMethod.POST)
-	//@ApiOperation(value = "Validate  ", notes = "Validate", response = ResponseEntity.class)
+	// @ApiOperation(value = "Validate ", notes = "Validate", response =
+	// ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> templateSubmit(@RequestBody List<TemplateScheduleVb> vObjects) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
 		try {
 			exceptionCode = templateScheduleWb.Submit(vObjects);
 			if (exceptionCode.getErrorCode() == Constants.SUCCESSFUL_OPERATION) {
-				jsonExceptionCode = new JSONExceptionCode(Constants.SUCCESSFUL_OPERATION, exceptionCode.getErrorMsg(),exceptionCode.getOtherInfo());
+				jsonExceptionCode = new JSONExceptionCode(Constants.SUCCESSFUL_OPERATION, exceptionCode.getErrorMsg(),
+						exceptionCode.getOtherInfo());
 			} else {
-				jsonExceptionCode = new JSONExceptionCode(Constants.ERRONEOUS_OPERATION, exceptionCode.getErrorMsg(),exceptionCode.getOtherInfo());
+				jsonExceptionCode = new JSONExceptionCode(Constants.ERRONEOUS_OPERATION, exceptionCode.getErrorMsg(),
+						exceptionCode.getOtherInfo());
 			}
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 		} catch (RuntimeCustomException rex) {
@@ -583,18 +617,21 @@ public class TemplateScheduleController {
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.EXPECTATION_FAILED);
 		}
 	}
-	
+
 	@RequestMapping(path = "/templateReInitiate", method = RequestMethod.POST)
-	//@ApiOperation(value = "ReInitiate  ", notes = "ReInitiate", response = ResponseEntity.class)
+	// @ApiOperation(value = "ReInitiate ", notes = "ReInitiate", response =
+	// ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> templateReInitiate(@RequestBody List<TemplateScheduleVb> vObjects) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
 		try {
 			exceptionCode = templateScheduleWb.ReInitiate(vObjects);
 			if (exceptionCode.getErrorCode() == Constants.SUCCESSFUL_OPERATION) {
-				jsonExceptionCode = new JSONExceptionCode(Constants.SUCCESSFUL_OPERATION, exceptionCode.getErrorMsg(),exceptionCode.getOtherInfo());
+				jsonExceptionCode = new JSONExceptionCode(Constants.SUCCESSFUL_OPERATION, exceptionCode.getErrorMsg(),
+						exceptionCode.getOtherInfo());
 			} else {
-				jsonExceptionCode = new JSONExceptionCode(Constants.ERRONEOUS_OPERATION, exceptionCode.getErrorMsg(),exceptionCode.getOtherInfo());
+				jsonExceptionCode = new JSONExceptionCode(Constants.ERRONEOUS_OPERATION, exceptionCode.getErrorMsg(),
+						exceptionCode.getOtherInfo());
 			}
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 		} catch (RuntimeCustomException rex) {
@@ -602,8 +639,10 @@ public class TemplateScheduleController {
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.EXPECTATION_FAILED);
 		}
 	}
+
 	@RequestMapping(path = "/getTemplateScheduleAudit", method = RequestMethod.POST)
-	//@ApiOperation(value = "Get All submit Schules", notes = "Fetch all the existing records from the table", response = ResponseEntity.class)
+	// @ApiOperation(value = "Get All submit Schules", notes = "Fetch all the
+	// existing records from the table", response = ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> templateSchedulesAudit(@RequestBody TemplateScheduleVb vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		try {
@@ -617,9 +656,12 @@ public class TemplateScheduleController {
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 		}
 	}
+
 	@RequestMapping(path = "/getTemplateScheduleAuditLog", method = RequestMethod.POST)
-	//@ApiOperation(value = "Get All submit Schules", notes = "Fetch all the existing records from the table", response = ResponseEntity.class)
-	public ResponseEntity<JSONExceptionCode> getTemplateSchedulesAuditLog(@RequestBody TemplateScheduleVb vObject,HttpServletRequest request, HttpServletResponse response) {
+	// @ApiOperation(value = "Get All submit Schules", notes = "Fetch all the
+	// existing records from the table", response = ResponseEntity.class)
+	public ResponseEntity<JSONExceptionCode> getTemplateSchedulesAuditLog(@RequestBody TemplateScheduleVb vObject,
+			HttpServletRequest request, HttpServletResponse response) {
 		JSONExceptionCode jsonExceptionCode = null;
 		try {
 			vObject.setActionType("Query");
@@ -648,8 +690,10 @@ public class TemplateScheduleController {
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 		}
 	}
+
 	@RequestMapping(path = "/downloadJsonLog", method = RequestMethod.POST)
-	//@ApiOperation(value = "downloadJsonLog", notes = "download Json Log", response = ResponseEntity.class)
+	// @ApiOperation(value = "downloadJsonLog", notes = "download Json Log",
+	// response = ResponseEntity.class)
 	public ResponseEntity<JSONExceptionCode> downloadJsonLog(@RequestParam("logFileName") String logFileName,
 			HttpServletRequest request, HttpServletResponse response) throws IOException {
 		JSONExceptionCode jsonExceptionCode = null;
@@ -676,8 +720,8 @@ public class TemplateScheduleController {
 				}
 
 				request.setAttribute("filePath", exceptionCode.getResponse());
-				templateScheduleWb.setExportXlsServlet(request, response);				
-				
+				templateScheduleWb.setExportXlsServlet(request, response);
+
 //				request.setAttribute("filePath", exceptionCode.getResponse());
 //				templateScheduleWb.setExportXlsServlet(request, response);
 				if (response.getStatus() == 404) {
@@ -697,7 +741,7 @@ public class TemplateScheduleController {
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.EXPECTATION_FAILED);
 		}
 	}
-	
+
 //	@RequestMapping(path = "/bulkReject", method = RequestMethod.POST)
 //	//@ApiOperation(value = "Reject In Adjustments", notes = "Reject In Adjustments", response = ResponseEntity.class)
 //	public ResponseEntity<JSONExceptionCode> bulkReject(@RequestBody TemplateScheduleVb vObject) {
@@ -723,9 +767,9 @@ public class TemplateScheduleController {
 //		}
 //	}
 	@RequestMapping(path = "/templateRejectScheduleDetails", method = RequestMethod.POST)
-	//@ApiOperation(value = "Reject In Adjustments", notes = "Reject In Adjustments", response = ResponseEntity.class)
-	public ResponseEntity<JSONExceptionCode> rejectScheduleDetails(
-			@RequestBody TemplateScheduleVb vObject) {
+	// @ApiOperation(value = "Reject In Adjustments", notes = "Reject In
+	// Adjustments", response = ResponseEntity.class)
+	public ResponseEntity<JSONExceptionCode> rejectScheduleDetails(@RequestBody TemplateScheduleVb vObject) {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
 		try {
@@ -746,10 +790,12 @@ public class TemplateScheduleController {
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 		}
 	}
+
 	@RequestMapping(path = "/crsFatcaExportToXL", method = RequestMethod.POST)
-	//@ApiOperation(value = "Review", notes = "Review", response = ResponseEntity.class)
-	public ResponseEntity<JSONExceptionCode> crsFatcaExportExcelXport(@RequestBody TemplateScheduleVb vObject, HttpServletRequest request,
-			HttpServletResponse response) throws IOException {
+	// @ApiOperation(value = "Review", notes = "Review", response =
+	// ResponseEntity.class)
+	public ResponseEntity<JSONExceptionCode> crsFatcaExportExcelXport(@RequestBody TemplateScheduleVb vObject,
+			HttpServletRequest request, HttpServletResponse response) throws IOException {
 		JSONExceptionCode jsonExceptionCode = null;
 		ExceptionCode exceptionCode = new ExceptionCode();
 		try {
@@ -764,23 +810,23 @@ public class TemplateScheduleController {
 			exceptionCode = templateScheduleWb.reviewCrsfatcaDetails(vObject, vObject.getXlName());
 			vObject.setSourceType("XL");
 			if ("XL".equalsIgnoreCase(vObject.getSourceType())) {
-			request.setAttribute("fileExtension", "xlsx");
-			request.setAttribute("fileName", vObject.getTemplateName());
-			request.setAttribute("filePath", exceptionCode.getResponse());
-			templateScheduleWb.setExportXlsServlet(request, response);
-			if (response.getStatus() == 404) {
-				jsonExceptionCode = new JSONExceptionCode(Constants.ERRONEOUS_OPERATION,
-						"Review Data Unable to Export.Contact System Admin!!", null);
-				return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.EXPECTATION_FAILED);
+				request.setAttribute("fileExtension", "xlsx");
+				request.setAttribute("fileName", vObject.getTemplateName());
+				request.setAttribute("filePath", exceptionCode.getResponse());
+				templateScheduleWb.setExportXlsServlet(request, response);
+				if (response.getStatus() == 404) {
+					jsonExceptionCode = new JSONExceptionCode(Constants.ERRONEOUS_OPERATION,
+							"Review Data Unable to Export.Contact System Admin!!", null);
+					return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.EXPECTATION_FAILED);
+				} else {
+					jsonExceptionCode = new JSONExceptionCode(Constants.SUCCESSFUL_OPERATION, "Success", response);
+					return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
+				}
 			} else {
-				jsonExceptionCode = new JSONExceptionCode(Constants.SUCCESSFUL_OPERATION, "Success", response);
+				jsonExceptionCode = new JSONExceptionCode(exceptionCode.getErrorCode(), exceptionCode.getErrorMsg(),
+						exceptionCode.getOtherInfo());
 				return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
 			}
-		} else {
-			jsonExceptionCode = new JSONExceptionCode(exceptionCode.getErrorCode(), exceptionCode.getErrorMsg(),
-					exceptionCode.getOtherInfo());
-			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.OK);
-		}
 		} catch (RuntimeCustomException rex) {
 			jsonExceptionCode = new JSONExceptionCode(Constants.ERRONEOUS_OPERATION, rex.getMessage(), "");
 			return new ResponseEntity<JSONExceptionCode>(jsonExceptionCode, HttpStatus.EXPECTATION_FAILED);
