@@ -120,6 +120,9 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 	@Value("${email.alerts}")
 	private String mailAlertFlag;
 
+	@Value("${app.clientName}")
+	private String clientName;
+
 	public void setServletContext(ServletContext arg0) {
 		servletContext = arg0;
 	}
@@ -4482,88 +4485,494 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 	 * @return
 	 * @throws SQLException
 	 */
+//	private String generateFatcaXml(ResultSet rs, int cnt, int internalStatus, Object[] params) throws SQLException {
+//
+//		StringBuilder xmlBuilder = new StringBuilder();
+//		boolean isFirstRow = true;
+//		ResultSetMetaData md = rs.getMetaData();
+//		int columnCount = md.getColumnCount();
+//		Map<String, String> columnNameMap = new HashMap<>();
+//		// ✅ Build column map once
+//				for (int i = 1; i <= columnCount; i++) {
+//					String dbCol = md.getColumnLabel(i);
+//					columnNameMap.put(dbCol.replace("_", "").toUpperCase(), dbCol);
+//				}
+//
+//		while (rs.next()) {
+//			
+//			if (isFirstRow) {
+//
+//				// Start root element
+//				buildDefaultXmlBuilder(xmlBuilder, params);
+//
+//				// Message Spec
+//				xmlMessageSpecBuilder(rs, xmlBuilder, columnNameMap);
+//
+//				xmlBuilder.append("<ftc:FATCA>");
+//				xmlBuilder.append("<ftc:ReportingFI>");
+//				if (!clientName.equalsIgnoreCase(Constants.EQUITY)) {
+//					if (columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
+//						tagElement(xmlBuilder, "sfa:ResCountryCode",
+//								rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
+//					}
+//				} else {
+//					if (columnNameMap.containsKey("RESCOUNTRYCODE")) {
+//						tagElement(xmlBuilder, "sfa:ResCountryCode", rs.getString(columnNameMap.get("RESCOUNTRYCODE")));
+//					}
+//				}
+//				if (!clientName.equalsIgnoreCase(Constants.EQUITY)) {
+//					if (columnNameMap.containsKey("SENDINGCOMPANYIN")
+//							&& columnNameMap.containsKey("RECEIVINGCOUNTRY")) {
+//						tagElementWithAttribute(xmlBuilder, "sfa:TIN",
+//								rs.getString(columnNameMap.get("SENDINGCOMPANYIN")), "issuedBy",
+//								rs.getString(columnNameMap.get("RECEIVINGCOUNTRY")));
+//					}
+//				} else {
+//					tagElement(xmlBuilder, "sfa:TIN", rs.getString(columnNameMap.get("DOCREFID")));
+//				}
+//				if (columnNameMap.containsKey("ENTITYNAME") && rs.getString(columnNameMap.get("ENTITYNAME")) != null) {
+//					tagElement(xmlBuilder, "sfa:Name", rs.getString(columnNameMap.get("ENTITYNAME")));
+//				}
+//
+//				xmlAddressTagBuilder(rs, xmlBuilder, columnNameMap);
+//
+//				if (columnNameMap.containsKey("FILERCATEGORY")) {
+//					tagElement(xmlBuilder, "ftc:FilerCategory", rs.getString(columnNameMap.get("FILERCATEGORY")));
+//				}
+//				xmlBuilder.append("<ftc:DocSpec>");
+//				if (columnNameMap.containsKey("DOCTYPEINDIC")) {
+//					tagElement(xmlBuilder, "ftc:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
+//				}
+//				if (columnNameMap.containsKey("DOCREFID")) {
+//					tagElement(xmlBuilder, "ftc:DocRefId",
+//							rs.getString(columnNameMap.get("DOCREFID")) + "." + CommonUtils.generateRandom32());
+//				}
+//
+//				xmlBuilder.append("</ftc:DocSpec>");
+//				xmlBuilder.append("</ftc:ReportingFI>");
+//				xmlBuilder.append("<ftc:ReportingGroup>");
+//				isFirstRow = false;
+//				if (internalStatus == 0) {
+//					createPoolReport(rs, xmlBuilder, columnNameMap);
+//					if (!clientName.equalsIgnoreCase(Constants.EQUITY)) {
+//						return xmlBuilder.toString();
+//					}
+//				}
+//				if (cnt == 0) {
+//					createDefaultStructure(rs, xmlBuilder, columnNameMap);
+//				}
+//			}
+//			if (cnt != 0) {
+//				xmlBuilder.append("<ftc:AccountReport>");
+//				xmldocSpecBuilder(rs, xmlBuilder, columnNameMap);
+//				if (internalStatus != 0) {
+//					xmlAccountHolderBuilder(rs, xmlBuilder, columnNameMap);
+//				}
+//				if (!clientName.equalsIgnoreCase(Constants.EQUITY)) {
+//					xmlBuilder.append("</ftc:AccountReport>");
+//					xmlPaymentBuilder(rs, xmlBuilder, columnNameMap);
+//				} else {
+//					if (internalStatus != 0) {
+//						xmlPaymentBuilderMulti(rs, xmlBuilder, columnNameMap);
+//					}
+//					xmlBuilder.append("</ftc:AccountReport>");
+//				}
+//
+//			}
+//		}
+//		xmlBuilder.append("</ftc:ReportingGroup>");
+//		xmlBuilder.append("</ftc:FATCA>");
+//		xmlBuilder.append("</ftc:FATCA_OECD>");
+//		xmlBuilder.append("</Object>");
+//		xmlBuilder.append("</Signature>");
+//
+//		return xmlBuilder.toString();
+//	}
+//	private String generateFatcaXml(ResultSet rs, int cnt, int internalStatus, Object[] params) throws SQLException {
+//
+//		StringBuilder xmlBuilder = new StringBuilder();
+//		boolean isFirstRow = true;
+//
+//		ResultSetMetaData md = rs.getMetaData();
+//		int columnCount = md.getColumnCount();
+//
+//		// ✅ Build column map once (optimized)
+//		Map<String, String> columnNameMap = new HashMap<>(columnCount * 2);
+//		for (int i = 1; i <= columnCount; i++) {
+//			String dbCol = md.getColumnLabel(i);
+//			if (dbCol == null || dbCol.isEmpty()) {
+//				dbCol = md.getColumnName(i);
+//			}
+//			String key = dbCol.replace("_", "").toUpperCase();
+//			columnNameMap.put(key, dbCol);
+//		}
+//
+//		while (rs.next()) {
+//
+//			// ✅ Header + ReportingFI only once
+//			if (isFirstRow) {
+//
+//				buildDefaultXmlBuilder(xmlBuilder, params);
+//
+//				// Message Spec
+//				xmlMessageSpecBuilder(rs, xmlBuilder, columnNameMap);
+//
+//				xmlBuilder.append("<ftc:FATCA>");
+//				xmlBuilder.append("<ftc:ReportingFI>");
+//
+//				// ResCountryCode
+//				if (!clientName.equalsIgnoreCase(Constants.EQUITY)) {
+//					if (columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
+//						tagElement(xmlBuilder, "sfa:ResCountryCode",
+//								rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
+//					}
+//				} else {
+//					if (columnNameMap.containsKey("RESCOUNTRYCODE")) {
+//						tagElement(xmlBuilder, "sfa:ResCountryCode", rs.getString(columnNameMap.get("RESCOUNTRYCODE")));
+//					}
+//				}
+//
+//				// TIN
+//				if (!clientName.equalsIgnoreCase(Constants.EQUITY)) {
+//					if (columnNameMap.containsKey("SENDINGCOMPANYIN")
+//							&& columnNameMap.containsKey("RECEIVINGCOUNTRY")) {
+//						tagElementWithAttribute(xmlBuilder, "sfa:TIN",
+//								rs.getString(columnNameMap.get("SENDINGCOMPANYIN")), "issuedBy",
+//								rs.getString(columnNameMap.get("RECEIVINGCOUNTRY")));
+//					}
+//				} else {
+//					if (columnNameMap.containsKey("DOCREFID")) {
+//						tagElement(xmlBuilder, "sfa:TIN", rs.getString(columnNameMap.get("DOCREFID")));
+//					}
+//				}
+//
+//				// Entity Name
+//				if (columnNameMap.containsKey("ENTITYNAME")) {
+//					String entityName = rs.getString(columnNameMap.get("ENTITYNAME"));
+//					if (entityName != null) {
+//						tagElement(xmlBuilder, "sfa:Name", entityName);
+//					}
+//				}
+//
+//				// Address
+//				xmlAddressTagBuilder(rs, xmlBuilder, columnNameMap);
+//
+//				// FilerCategory
+//				if (columnNameMap.containsKey("FILERCATEGORY")) {
+//					tagElement(xmlBuilder, "ftc:FilerCategory", rs.getString(columnNameMap.get("FILERCATEGORY")));
+//				}
+//
+//				// ReportingFI DocSpec
+//				xmlBuilder.append("<ftc:DocSpec>");
+//				if (columnNameMap.containsKey("DOCTYPEINDIC")) {
+//					tagElement(xmlBuilder, "ftc:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
+//				}
+//				if (columnNameMap.containsKey("DOCREFID")) {
+//					tagElement(xmlBuilder, "ftc:DocRefId",
+//							rs.getString(columnNameMap.get("DOCREFID")) + "." + CommonUtils.generateRandom32());
+//				}
+//				xmlBuilder.append("</ftc:DocSpec>");
+//
+//				xmlBuilder.append("</ftc:ReportingFI>");
+//				xmlBuilder.append("<ftc:ReportingGroup>");
+//
+//				isFirstRow = false;
+//			}
+//
+//			// =========================================================
+//			// ✅ POOL MODE HANDLING
+//			// =========================================================
+//
+//			// ✅ EQUITY: PoolReport for EVERY row, and skip AccountReport
+//			if (internalStatus == 0 && clientName.equalsIgnoreCase(Constants.EQUITY)) {
+//				createPoolReport(rs, xmlBuilder, columnNameMap);
+//				continue; // do NOT create AccountReport in pool mode
+//			}
+//
+//			// ✅ Non-EQUITY: PoolReport only ONCE then return (old behavior)
+//			if (internalStatus == 0 && !clientName.equalsIgnoreCase(Constants.EQUITY)) {
+//				createPoolReport(rs, xmlBuilder, columnNameMap);
+//
+//				// close tags properly before return
+//				xmlBuilder.append("</ftc:ReportingGroup>");
+//				xmlBuilder.append("</ftc:FATCA>");
+//				xmlBuilder.append("</ftc:FATCA_OECD>");
+//				xmlBuilder.append("</Object>");
+//				xmlBuilder.append("</Signature>");
+//
+//				return xmlBuilder.toString();
+//			}
+//
+//			// =========================================================
+//			// ✅ NON-POOL MODE (ACCOUNT REPORTS)
+//			// =========================================================
+//
+//			if (cnt == 0) {
+//				createDefaultStructure(rs, xmlBuilder, columnNameMap);
+//			}
+//
+//			if (cnt != 0) {
+//				xmlBuilder.append("<ftc:AccountReport>");
+//				xmldocSpecBuilder(rs, xmlBuilder, columnNameMap);
+//
+//				// Account Holder only when internalStatus != 0 (your original logic)
+//				if (internalStatus != 0) {
+//					xmlAccountHolderBuilder(rs, xmlBuilder, columnNameMap);
+//				}
+//
+//				if (!clientName.equalsIgnoreCase(Constants.EQUITY)) {
+//					// your current structure: Payment outside AccountReport
+//					xmlBuilder.append("</ftc:AccountReport>");
+//					xmlPaymentBuilder(rs, xmlBuilder, columnNameMap);
+//				} else {
+//					// equity payments inside account report (your original logic)
+//					if (internalStatus != 0) {
+//						xmlPaymentBuilderMulti(rs, xmlBuilder, columnNameMap);
+//					}
+//					xmlBuilder.append("</ftc:AccountReport>");
+//				}
+//			}
+//		}
+//
+//		// ✅ Close document normally (EQUITY pool will come here after loop)
+//		xmlBuilder.append("</ftc:ReportingGroup>");
+//		xmlBuilder.append("</ftc:FATCA>");
+//		xmlBuilder.append("</ftc:FATCA_OECD>");
+//		xmlBuilder.append("</Object>");
+//		xmlBuilder.append("</Signature>");
+//
+//		return xmlBuilder.toString();
+//	}
+
+//	private String generateFatcaXml(ResultSet rs, int cnt, int internalStatus, Object[] params) throws SQLException {
+//
+//		StringBuilder xmlBuilder = new StringBuilder();
+//		boolean isFirstRow = true;
+//		boolean isEquity = clientName.equalsIgnoreCase(Constants.EQUITY);
+//
+//		ResultSetMetaData md = rs.getMetaData();
+//		int columnCount = md.getColumnCount();
+//
+//// Build column map ONCE
+//		Map<String, String> columnNameMap = new HashMap<>(columnCount);
+//		for (int i = 1; i <= columnCount; i++) {
+//			String dbCol = md.getColumnLabel(i);
+//			columnNameMap.put(dbCol.replace("_", "").toUpperCase(), dbCol);
+//		}
+//
+//		while (rs.next()) {
+//
+//// ===== OPEN ROOT STRUCTURE ONLY ONCE =====
+//			if (isFirstRow) {
+//
+//// This MUST open <Signature> and <Object Id="FATCA">
+//				buildDefaultXmlBuilder(xmlBuilder, params);
+//
+//				xmlMessageSpecBuilder(rs, xmlBuilder, columnNameMap);
+//
+//				xmlBuilder.append("<ftc:FATCA>");
+//				xmlBuilder.append("<ftc:ReportingFI>");
+//
+//				buildReportingFI(rs, xmlBuilder, columnNameMap);
+//
+//				xmlBuilder.append("</ftc:ReportingFI>");
+//				xmlBuilder.append("<ftc:ReportingGroup>");
+//
+//				isFirstRow = false;
+//			}
+//
+//// ===== NON-EQUITY LOGIC (POOL ONLY ONCE) =====
+//			if (!isEquity) {
+//
+//				if (internalStatus == 0) {
+//					createPoolReport(rs, xmlBuilder, columnNameMap);
+//				} else if (cnt != 0) {
+//					buildAccountReport(rs, xmlBuilder, columnNameMap, internalStatus);
+//				}
+//
+//// Only first record needed for non-equity
+//				break;
+//			}
+//
+//// ===== EQUITY LOGIC (EVERY RECORD) =====
+//			if (isEquity) {
+//
+//				if (internalStatus == 0) {
+//					createPoolReport(rs, xmlBuilder, columnNameMap);
+//				} else if (cnt != 0) {
+//					buildAccountReport(rs, xmlBuilder, columnNameMap, internalStatus);
+//				}
+//			}
+//		}
+//
+//// ===== CLOSE STRUCTURE ONLY ONCE =====
+//		if (!isFirstRow) { // means at least one record processed
+//
+//			xmlBuilder.append("</ftc:ReportingGroup>");
+//			xmlBuilder.append("</ftc:FATCA>");
+//			xmlBuilder.append("</ftc:FATCA_OECD>");
+//			xmlBuilder.append("</Object>");
+//			xmlBuilder.append("</Signature>");
+//		}
+//
+//		return xmlBuilder.toString();
+//	}
 	private String generateFatcaXml(ResultSet rs, int cnt, int internalStatus, Object[] params) throws SQLException {
 
 		StringBuilder xmlBuilder = new StringBuilder();
-		boolean isFirstRow = true;
+		boolean isEquity = clientName != null && clientName.equalsIgnoreCase(Constants.EQUITY);
+
 		ResultSetMetaData md = rs.getMetaData();
 		int columnCount = md.getColumnCount();
-		Map<String, String> columnNameMap = new HashMap<>();
+
+		Map<String, String> columnNameMap = new HashMap<>(columnCount * 2);
+		for (int i = 1; i <= columnCount; i++) {
+			String dbCol = md.getColumnLabel(i);
+			if (dbCol == null || dbCol.isEmpty()) {
+				dbCol = md.getColumnName(i);
+			}
+			columnNameMap.put(dbCol.replace("_", "").toUpperCase(), dbCol);
+		}
+
+		boolean headerCreated = false;
 
 		while (rs.next()) {
-			// Build column map once per row
-			columnNameMap.clear();
-			for (int i = 1; i <= columnCount; i++) {
-				String dbCol = md.getColumnLabel(i);
-				String key = dbCol.replaceAll("_", "").toUpperCase();
-				columnNameMap.put(key, dbCol);
-			}
-			if (isFirstRow) {
 
-				// Start root element
-				buildDefaultXmlBuilder(xmlBuilder, params);
+// =========================
+// OPEN ROOT STRUCTURE ONCE
+// =========================
+			if (!headerCreated) {
 
-				// Message Spec
+				buildDefaultXmlBuilder(xmlBuilder, params); // Signature + Object + FATCA_OECD
 				xmlMessageSpecBuilder(rs, xmlBuilder, columnNameMap);
 
+				headerCreated = true;
+			}
+
+// ==================================================
+// 🔥 EQUITY CLIENT → SEPARATE FATCA PER RECORD
+// ==================================================
+			if (isEquity) {
+
 				xmlBuilder.append("<ftc:FATCA>");
+
 				xmlBuilder.append("<ftc:ReportingFI>");
-
-				if (columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
-					tagElement(xmlBuilder, "sfa:ResCountryCode", rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
-				}
-				if (columnNameMap.containsKey("SENDINGCOMPANYIN") && columnNameMap.containsKey("RECEIVINGCOUNTRY")) {
-					tagElementWithAttribute(xmlBuilder, "sfa:TIN", rs.getString(columnNameMap.get("SENDINGCOMPANYIN")),
-							"issuedBy", rs.getString(columnNameMap.get("RECEIVINGCOUNTRY")));
-				}
-				if (columnNameMap.containsKey("ENTITYNAME") && rs.getString(columnNameMap.get("ENTITYNAME")) != null) {
-					tagElement(xmlBuilder, "sfa:Name", rs.getString(columnNameMap.get("ENTITYNAME")));
-				}
-
-				// Address
-				if (columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
-					xmlAddressTagBuilder(rs, xmlBuilder, columnNameMap);
-				}
-
-				if (columnNameMap.containsKey("FILERCATEGORY")) {
-					tagElement(xmlBuilder, "ftc:FilerCategory", rs.getString(columnNameMap.get("FILERCATEGORY")));
-				}
-				xmlBuilder.append("<ftc:DocSpec>");
-				if (columnNameMap.containsKey("DOCTYPEINDIC")) {
-					tagElement(xmlBuilder, "ftc:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
-				}
-				if (columnNameMap.containsKey("DOCREFID")) {
-					tagElement(xmlBuilder, "ftc:DocRefId",
-							rs.getString(columnNameMap.get("DOCREFID")) + "." + CommonUtils.generateRandom32());
-				}
-
-				xmlBuilder.append("</ftc:DocSpec>");
+				buildReportingFI(rs, xmlBuilder, columnNameMap);
 				xmlBuilder.append("</ftc:ReportingFI>");
+
 				xmlBuilder.append("<ftc:ReportingGroup>");
-				isFirstRow = false;
+
 				if (internalStatus == 0) {
 					createPoolReport(rs, xmlBuilder, columnNameMap);
-					return xmlBuilder.toString();
+				} else {
+					buildAccountReport(rs, xmlBuilder, columnNameMap, internalStatus);
 				}
-				if (cnt == 0) {
-					createDefaultStructure(rs, xmlBuilder, columnNameMap);
-				}
+
+				xmlBuilder.append("</ftc:ReportingGroup>");
+				xmlBuilder.append("</ftc:FATCA>");
+
+				continue; // move to next record
 			}
-			if (cnt != 0) {
-				xmlBuilder.append("<ftc:AccountReport>");
-				xmldocSpecBuilder(rs, xmlBuilder, columnNameMap);
-				xmlAccountHolderBuilder(rs, xmlBuilder, columnNameMap);
-				xmlBuilder.append("</ftc:AccountReport>");
-				xmlPaymentBuilder(rs, xmlBuilder, columnNameMap);
+
+// ==================================================
+// 🔹 OTHER CLIENTS → OLD LOGIC (SINGLE FATCA)
+// ==================================================
+			if (!isEquity) {
+
+				if (!xmlBuilder.toString().contains("<ftc:FATCA>")) {
+					xmlBuilder.append("<ftc:FATCA>");
+					xmlBuilder.append("<ftc:ReportingFI>");
+					buildReportingFI(rs, xmlBuilder, columnNameMap);
+					xmlBuilder.append("</ftc:ReportingFI>");
+					xmlBuilder.append("<ftc:ReportingGroup>");
+				}
+
+				if (internalStatus == 0) {
+					createPoolReport(rs, xmlBuilder, columnNameMap);
+				} else {
+					buildAccountReport(rs, xmlBuilder, columnNameMap, internalStatus);
+				}
 			}
 		}
-		xmlBuilder.append("</ftc:ReportingGroup>");
-		xmlBuilder.append("</ftc:FATCA>");
-		xmlBuilder.append("</ftc:FATCA_OECD>");
-		xmlBuilder.append("</Object>");
-		xmlBuilder.append("</Signature>");
+
+// =========================
+// CLOSE STRUCTURE
+// =========================
+		if (headerCreated) {
+
+			if (!isEquity) {
+				xmlBuilder.append("</ftc:ReportingGroup>");
+				xmlBuilder.append("</ftc:FATCA>");
+			}
+
+			xmlBuilder.append("</ftc:FATCA_OECD>");
+			xmlBuilder.append("</Object>");
+			xmlBuilder.append("</Signature>");
+		}
 
 		return xmlBuilder.toString();
+	}
+
+	private void buildReportingFI(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
+			throws SQLException {
+
+		String resCountryKey = clientName.equalsIgnoreCase(Constants.EQUITY) ? "RESCOUNTRYCODE" : "ENTITYCOUNTRYCODE";
+
+		if (columnNameMap.containsKey(resCountryKey)) {
+			tagElement(xmlBuilder, "sfa:ResCountryCode", rs.getString(columnNameMap.get(resCountryKey)));
+		}
+
+		if (!clientName.equalsIgnoreCase(Constants.EQUITY) && columnNameMap.containsKey("SENDINGCOMPANYIN")
+				&& columnNameMap.containsKey("RECEIVINGCOUNTRY")) {
+
+			tagElementWithAttribute(xmlBuilder, "sfa:TIN", rs.getString(columnNameMap.get("SENDINGCOMPANYIN")),
+					"issuedBy", rs.getString(columnNameMap.get("RECEIVINGCOUNTRY")));
+
+		} else if (columnNameMap.containsKey("DOCREFID")) {
+
+			tagElement(xmlBuilder, "sfa:TIN", rs.getString(columnNameMap.get("DOCREFID")));
+		}
+
+		if (columnNameMap.containsKey("ENTITYNAME")) {
+			String entityName = rs.getString(columnNameMap.get("ENTITYNAME"));
+			if (entityName != null) {
+				tagElement(xmlBuilder, "sfa:Name", entityName);
+			}
+		}
+
+		xmlAddressTagBuilder(rs, xmlBuilder, columnNameMap);
+
+		if (columnNameMap.containsKey("FILERCATEGORY")) {
+			tagElement(xmlBuilder, "ftc:FilerCategory", rs.getString(columnNameMap.get("FILERCATEGORY")));
+		}
+
+		xmlBuilder.append("<ftc:DocSpec>");
+
+		if (columnNameMap.containsKey("DOCTYPEINDIC")) {
+			tagElement(xmlBuilder, "ftc:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
+		}
+
+		if (columnNameMap.containsKey("DOCREFID")) {
+			tagElement(xmlBuilder, "ftc:DocRefId",
+					rs.getString(columnNameMap.get("DOCREFID")) + "." + CommonUtils.generateRandom32());
+		}
+
+		xmlBuilder.append("</ftc:DocSpec>");
+	}
+
+	private void buildAccountReport(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap,
+			int internalStatus) throws SQLException {
+
+		xmlBuilder.append("<ftc:AccountReport>");
+
+		xmldocSpecBuilder(rs, xmlBuilder, columnNameMap);
+
+		if (internalStatus != 0) {
+			xmlAccountHolderBuilder(rs, xmlBuilder, columnNameMap, internalStatus);
+			xmlPaymentBuilderMulti(rs, xmlBuilder, columnNameMap);
+		}
+
+		xmlBuilder.append("</ftc:AccountReport>");
 	}
 
 	private void createPoolReport(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap) {
@@ -4583,17 +4992,24 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 				tagElement(xmlBuilder, "ftc:AccountCount", rs.getString(columnNameMap.get("ACCOUNTCOUNT")));
 			if (columnNameMap.containsKey("POOLREPORTTYPE"))
 				tagElement(xmlBuilder, "ftc:AccountPoolReportType", rs.getString(columnNameMap.get("POOLREPORTTYPE")));
-			if (columnNameMap.containsKey("TOTALACCOUNTBALANCE"))
-				tagElementWithAttribute(xmlBuilder, "ftc:AccountBalance",
-						"" + rs.getInt(columnNameMap.get("TOTALACCOUNTBALANCE")), "currCode",
-						rs.getString(columnNameMap.get("CURRENCYCODE")));
+			if (!clientName.equalsIgnoreCase(Constants.EQUITY)) {
+				if (columnNameMap.containsKey("TOTALACCOUNTBALANCE"))
+					tagElementWithAttribute(xmlBuilder, "ftc:AccountBalance",
+							"" + rs.getInt(columnNameMap.get("TOTALACCOUNTBALANCE")), "currCode",
+							rs.getString(columnNameMap.get("CURRENCYCODE")));
+			} else {
+				if (columnNameMap.containsKey("POOLBALANCE"))
+					tagElementWithAttribute(xmlBuilder, "ftc:PoolBalance",
+							"" + rs.getInt(columnNameMap.get("POOLBALANCE")), "currCode",
+							rs.getString(columnNameMap.get("CURRENCYCODE")));
+			}
 
 			xmlBuilder.append("</ftc:PoolReport>");
-			xmlBuilder.append("</ftc:ReportingGroup>");
-			xmlBuilder.append(" </ftc:FATCA>");
-			xmlBuilder.append("</ftc:FATCA_OECD>");
-			xmlBuilder.append("</Object>");
-			xmlBuilder.append("</Signature>");
+//			xmlBuilder.append("</ftc:ReportingGroup>");
+//			xmlBuilder.append(" </ftc:FATCA>");
+//			xmlBuilder.append("</ftc:FATCA_OECD>");
+//			xmlBuilder.append("</Object>");
+//			xmlBuilder.append("</Signature>");
 
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
@@ -4627,105 +5043,28 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 
 	}
 
-	private void xmlFooterAccountReportBuilder(ResultSet rs, StringBuilder xmlBuilder,
-			Map<String, String> columnNameMap) throws SQLException {
-
-		xmlBuilder.append("<ftc:AccountReport>");
-		xmlBuilder.append("<ftc:DocSpec>");
-
-		if (columnNameMap.containsKey("DOCTYPEINDIC")) {
-			tagElement(xmlBuilder, "ftc:DocTypeIndic", rs.getString(columnNameMap.get("DOCTYPEINDIC")));
+	private void xmlSubstantialOwnerBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap,
+			int internalStatus) throws SQLException {
+		if (internalStatus != Constants.STATUS_INSERT) {
+			xmlBuilder.append("<ftc:SubstantialOwner>");
+		} else {
+			xmlBuilder.append("<ftc:AccountHolder>");
 		}
-
-		if (columnNameMap.containsKey("DOCREFID")) {
-			tagElement(xmlBuilder, "ftc:DocRefId",
-					rs.getString(columnNameMap.get("DOCREFID")) + CommonUtils.generateRandom32());
-		}
-		xmlBuilder.append("</ftc:DocSpec>");
-
-		String accountNumber = columnNameMap.containsKey("CUSTOMERID") ? rs.getString(columnNameMap.get("CUSTOMERID"))
-				: null;
-
-		String accountType = columnNameMap.containsKey("ACCOUNTTYPE") ? rs.getString(columnNameMap.get("ACCOUNTTYPE"))
-				: "";
-
-		String accountStatus = columnNameMap.containsKey("ACCOUNTSTATUS")
-				? rs.getString(columnNameMap.get("ACCOUNTSTATUS"))
-				: null;
-
-		if (accountNumber != null) {
-			tagElement(xmlBuilder, "ftc:AccountNumber", accountNumber);
-		}
-		if (accountNumber != null && accountStatus != null) {
-			if (accountStatus.equalsIgnoreCase("0")) {
-				tagElement(xmlBuilder, "ftc:AccountClosed", "false");
-			} else {
-				tagElement(xmlBuilder, "ftc:AccountClosed", "true");
+		xmlBuilder.append("<ftc:Individual>");
+		String resCountryKey = clientName.equalsIgnoreCase(Constants.EQUITY) ? "RESCOUNTRYCODE" : "ENTITYCOUNTRYCODE";
+		if (clientName.equalsIgnoreCase(Constants.EQUITY)) {
+			if (columnNameMap.containsKey("RESCOUNTRYCODE")) {
+				tagElement(xmlBuilder, "sfa:ResCountryCode", rs.getString(columnNameMap.get("RESCOUNTRYCODE")));
 			}
 		}
-		xmlBuilder.append("<sfa:Address>");
 
-		// CountryCode
-		if (columnNameMap.containsKey("COUNTRYCODE")) {
-			tagElement(xmlBuilder, "sfa:CountryCode", rs.getString(columnNameMap.get("COUNTRYCODE")));
+		if (!clientName.equalsIgnoreCase(Constants.EQUITY)) {
+			if (columnNameMap.containsKey("TIN") && rs.getString(columnNameMap.get("TIN")) != null)
+				tagElementWithAttribute(xmlBuilder, "sfa:TIN", rs.getString(columnNameMap.get("TIN")), "issuedBy",
+						rs.getString(columnNameMap.get("TINISSUEDJURISDICTION")));
+		} else {
+			tagElement(xmlBuilder, "sfa:TIN", rs.getString(columnNameMap.get("TIN")));
 		}
-//			if (columnNameMap.containsKey("ADDRESSFREE")) {
-//				String street = rs.getString(columnNameMap.get("ADDRESSFREE"));
-//				tagElement(xmlBuilder, "sfa:AddressFree", street != null ? street : "");
-//			}
-		xmlBuilder.append("<sfa:AddressFix>");
-		if (columnNameMap.containsKey("STREET")) {
-			tagElement(xmlBuilder, "sfa:Street", rs.getString(columnNameMap.get("STREET")));
-		}
-		if (columnNameMap.containsKey("USZIPCODE")) {
-			tagElement(xmlBuilder, "sfa:PostCode", rs.getString(columnNameMap.get("USZIPCODE")));
-		}
-		if (columnNameMap.containsKey("USCITY")) {
-			tagElement(xmlBuilder, "sfa:City", rs.getString(columnNameMap.get("USCITY")));
-		}
-		if (columnNameMap.containsKey("COUNTRYSUBENTITY")) {
-			tagElement(xmlBuilder, "sfa:CountrySubentity", rs.getString(columnNameMap.get("COUNTRYSUBENTITY")));
-		}
-		xmlBuilder.append("</sfa:AddressFix>");
-		if (columnNameMap.containsKey("ADDRESSFREE")) {
-			tagElement(xmlBuilder, "sfa:AddressFree", rs.getString(columnNameMap.get("ADDRESSFREE")));
-		}
-		xmlBuilder.append("</sfa:Address>");
-
-		// Account Holder
-		xmlAccountHolderFooterBuilder(rs, xmlBuilder, columnNameMap);
-
-		// Substantial Owner
-		xmlSubstantialOwnerBuilder(rs, xmlBuilder, columnNameMap);
-
-		// Account Balance
-		String accountBalance = columnNameMap.containsKey("ACCOUNTBALANCE")
-				? rs.getString(columnNameMap.get("ACCOUNTBALANCE"))
-				: null;
-
-		String acctCurrency = columnNameMap.containsKey("CURRENCYCODE")
-				? rs.getString(columnNameMap.get("CURRENCYCODE"))
-				: null;
-
-		if (accountBalance != null) {
-			tagElementWithAttribute(xmlBuilder, "ftc:AccountBalance", accountBalance, "currCode",
-					acctCurrency != null ? acctCurrency : "");
-		}
-
-		// Payment Builder
-		xmlPaymentBuilder(rs, xmlBuilder, columnNameMap);
-
-		xmlBuilder.append("</ftc:AccountReport>");
-	}
-
-	private void xmlSubstantialOwnerBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
-			throws SQLException {
-		xmlBuilder.append("<ftc:SubstantialOwner>");
-		xmlBuilder.append("<ftc:Individual>");
-
-		if (columnNameMap.containsKey("TIN") && rs.getString(columnNameMap.get("TIN")) != null)
-			tagElementWithAttribute(xmlBuilder, "sfa:TIN", rs.getString(columnNameMap.get("TIN")), "issuedBy",
-					rs.getString(columnNameMap.get("TINISSUEDJURISDICTION")));
 
 		xmlBuilder.append("<sfa:Name>");
 
@@ -4744,13 +5083,34 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 		if (columnNameMap.containsKey("COUNTRYCODE")) {
 			tagElement(xmlBuilder, "sfa:CountryCode", rs.getString(columnNameMap.get("COUNTRYCODE")));
 		}
+
+		if (clientName.equalsIgnoreCase(Constants.EQUITY)) {
+			xmlBuilder.append("<sfa:AddressFix>");
+			if (columnNameMap.containsKey("STREET")) {
+				tagElement(xmlBuilder, "sfa:Street", rs.getString(columnNameMap.get("ADDRESSFREE")));
+			}
+			if (columnNameMap.containsKey("USZIPCODE")) {
+				tagElement(xmlBuilder, "sfa:PostCode", rs.getString(columnNameMap.get("USZIPCODE")));
+			}
+			if (columnNameMap.containsKey("USCITY")) {
+				tagElement(xmlBuilder, "sfa:City", rs.getString(columnNameMap.get("USCITY")));
+			}
+			if (columnNameMap.containsKey("USSTATE")) {
+				tagElement(xmlBuilder, "sfa:CountrySubentity", rs.getString(columnNameMap.get("USSTATE")));
+			}
+			xmlBuilder.append("</sfa:AddressFix>");
+		}
 		if (columnNameMap.containsKey("ADDRESSFREE")) {
 			String street = rs.getString(columnNameMap.get("ADDRESSFREE"));
 			tagElement(xmlBuilder, "sfa:AddressFree", street != null ? street : "");
 		}
 		xmlBuilder.append("</sfa:Address>");
 		xmlBuilder.append("</ftc:Individual>");
-		xmlBuilder.append("</ftc:SubstantialOwner>");
+		if (internalStatus != Constants.STATUS_INSERT) {
+			xmlBuilder.append("</ftc:SubstantialOwner>");
+		} else {
+			xmlBuilder.append("</ftc:AccountHolder>");
+		}
 	}
 
 	private void xmlAccountHolderFooterBuilder(ResultSet rs, StringBuilder xmlBuilder,
@@ -4858,66 +5218,128 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 		xmlBuilder.append("</ftc:Payment>");
 	}
 
-	private void xmlAccountHolderBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
+	private void xmlPaymentBuilderMulti(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap)
 			throws SQLException {
+
+		// supports PAYMENT_TYPE_01..04, PAYMENT_01..04, PAYMENT_CURRENCY_01..04
+		for (int i = 1; i <= 4; i++) {
+			String idx = String.format("%02d", i);
+
+			String typeKey = "PAYMENTTYPE" + idx; // PAYMENTTYPE01
+			String amtKey = "PAYMENT" + idx; // PAYMENT01
+			String curKey = "PAYMENTCURRENCY" + idx; // PAYMENTCURRENCY01
+
+			String type = columnNameMap.containsKey(typeKey) ? rs.getString(columnNameMap.get(typeKey)) : null;
+			String amt = columnNameMap.containsKey(amtKey) ? rs.getString(columnNameMap.get(amtKey)) : null;
+
+			// currency can be payment-specific; if not present fallback to CURRENCYCODE
+			String curr = columnNameMap.containsKey(curKey) ? rs.getString(columnNameMap.get(curKey)) : null;
+			if (curr == null && columnNameMap.containsKey("CURRENCYCODE")) {
+				curr = rs.getString(columnNameMap.get("CURRENCYCODE"));
+			}
+
+			// create <ftc:Payment> only if something exists
+			if ((type != null && !type.trim().isEmpty()) || (amt != null && !amt.trim().isEmpty())) {
+				xmlBuilder.append("<ftc:Payment>");
+
+				if (type != null && !type.trim().isEmpty()) {
+					tagElement(xmlBuilder, "ftc:Type", type);
+				}
+
+				// In your sample, PaymentAmnt exists even for 0.00; so if column exists but
+				// null, write 0.00 if you want:
+				if (amt != null) {
+					tagElementWithAttribute(xmlBuilder, "ftc:PaymentAmnt", amt, "currCode", curr != null ? curr : "");
+				}
+
+				xmlBuilder.append("</ftc:Payment>");
+			}
+		}
+	}
+
+	private void xmlAccountHolderBuilder(ResultSet rs, StringBuilder xmlBuilder, Map<String, String> columnNameMap,
+			int internalStatus) throws SQLException {
 		// Account Number
 		if (columnNameMap.containsKey("ACCOUNTNUMBER"))
 			tagElement(xmlBuilder, "ftc:AccountNumber", rs.getString(columnNameMap.get("ACCOUNTNUMBER")));
 
 		// Account Holder
-		xmlBuilder.append("<ftc:AccountHolder>");
-		xmlBuilder.append("<ftc:Individual>");
+		if (internalStatus != Constants.STATUS_INSERT) {
+			xmlBuilder.append("<ftc:AccountHolder>");
+			if (!clientName.equalsIgnoreCase(Constants.EQUITY)) {
+				xmlBuilder.append("<ftc:Individual>");
+			} else {
+				xmlBuilder.append("<ftc:organization>");
+			}
 
-		if (columnNameMap.containsKey("RESCOUNTRYCODE"))
-			tagElement(xmlBuilder, "sfa:ResCountryCode", rs.getString(columnNameMap.get("RESCOUNTRYCODE")));
+			if (columnNameMap.containsKey("RESCOUNTRYCODE"))
+				tagElement(xmlBuilder, "sfa:ResCountryCode", rs.getString(columnNameMap.get("RESCOUNTRYCODE")));
 
-		if (columnNameMap.containsKey("TINISSUEDJURISDICTION"))
-			tagElementWithAttribute(xmlBuilder, "sfa:TIN", rs.getString(columnNameMap.get("TIN")), "issuedBy",
-					rs.getString(columnNameMap.get("TINISSUEDJURISDICTION")));
+			if (!clientName.equalsIgnoreCase(Constants.EQUITY)) {
+				if (columnNameMap.containsKey("TIN") && rs.getString(columnNameMap.get("TIN")) != null)
+					tagElementWithAttribute(xmlBuilder, "sfa:TIN", rs.getString(columnNameMap.get("TIN")), "issuedBy",
+							rs.getString(columnNameMap.get("TINISSUEDJURISDICTION")));
+			} else {
+				tagElement(xmlBuilder, "sfa:TIN", rs.getString(columnNameMap.get("TIN")));
+			}
 
-		xmlBuilder.append("<sfa:Name>");
-		if (columnNameMap.containsKey("CUSTOMERNAME"))
-			tagElement(xmlBuilder, "sfa:FirstName", rs.getString(columnNameMap.get("CUSTOMERNAME")));
-		if (columnNameMap.containsKey("MIDDLENAME"))
-			tagElement(xmlBuilder, "sfa:MiddleName", rs.getString(columnNameMap.get("MIDDLENAME")));
-		if (columnNameMap.containsKey("LASTNAME"))
-			tagElement(xmlBuilder, "sfa:LastName", rs.getString(columnNameMap.get("LASTNAME")));
-		xmlBuilder.append("</sfa:Name>");
+//
+//		if (columnNameMap.containsKey("TINISSUEDJURISDICTION"))
+//			tagElementWithAttribute(xmlBuilder, "sfa:TIN", rs.getString(columnNameMap.get("TIN")), "issuedBy",
+//					rs.getString(columnNameMap.get("TINISSUEDJURISDICTION")));
+			if (!clientName.equalsIgnoreCase(Constants.EQUITY)) {
+				xmlBuilder.append("<sfa:Name>");
+				if (columnNameMap.containsKey("CUSTOMERNAME"))
+					tagElement(xmlBuilder, "sfa:FirstName", rs.getString(columnNameMap.get("CUSTOMERNAME")));
+				if (columnNameMap.containsKey("MIDDLENAME"))
+					tagElement(xmlBuilder, "sfa:MiddleName", rs.getString(columnNameMap.get("MIDDLENAME")));
+				if (columnNameMap.containsKey("LASTNAME"))
+					tagElement(xmlBuilder, "sfa:LastName", rs.getString(columnNameMap.get("LASTNAME")));
+				xmlBuilder.append("</sfa:Name>");
+			} else {
+				if (columnNameMap.containsKey("ENTITYNAME"))
+					tagElement(xmlBuilder, "sfa:Name", rs.getString(columnNameMap.get("ENTITYNAME")));
+			}
 
-		// address
-		xmlBuilder.append("<sfa:Address>");
+			// address
+			xmlBuilder.append("<sfa:Address>");
 
-		if (columnNameMap.containsKey("COUNTRYCODE")) {
-			tagElement(xmlBuilder, "sfa:CountryCode", rs.getString(columnNameMap.get("COUNTRYCODE")));
+			if (columnNameMap.containsKey("COUNTRYCODE")) {
+				tagElement(xmlBuilder, "sfa:CountryCode", rs.getString(columnNameMap.get("COUNTRYCODE")));
+			}
+			xmlBuilder.append("<sfa:AddressFix>");
+			if (columnNameMap.containsKey("ENTITYSTREET")) {
+				tagElement(xmlBuilder, "sfa:Street", rs.getString(columnNameMap.get("ENTITYSTREET")));
+			}
+			if (columnNameMap.containsKey("ENTITYPOSTALCODE")) {
+				tagElement(xmlBuilder, "sfa:PostCode", rs.getString(columnNameMap.get("ENTITYPOSTALCODE")));
+			}
+			if (columnNameMap.containsKey("ENTITYCITY")) {
+				tagElement(xmlBuilder, "sfa:City", rs.getString(columnNameMap.get("ENTITYCITY")));
+			}
+			if (columnNameMap.containsKey("ENTITYSTATE")) {
+				tagElement(xmlBuilder, "sfa:CountrySubentity", rs.getString(columnNameMap.get("ENTITYSTATE")));
+			}
+			xmlBuilder.append("</sfa:AddressFix>");
+			if (!clientName.equalsIgnoreCase(Constants.EQUITY)) {
+				if (columnNameMap.containsKey("ADDRESSFREE")) {
+					tagElement(xmlBuilder, "sfa:AddressFree", rs.getString(columnNameMap.get("ADDRESSFREE")));
+				}
+			}
+			xmlBuilder.append("</sfa:Address>");
+			if (!clientName.equalsIgnoreCase(Constants.EQUITY)) {
+				xmlBuilder.append("</ftc:Individual>");
+			} else {
+				xmlBuilder.append("</ftc:organization>");
+				
+				if (columnNameMap.containsKey("ACCOUNTHOLDERTYPE")) {
+					tagElement(xmlBuilder, "ftc:AcctHolderType", rs.getString(columnNameMap.get("ACCOUNTHOLDERTYPE")));
+				}
+			}
+			xmlBuilder.append("</ftc:AccountHolder>");
 		}
-		xmlBuilder.append("<sfa:AddressFix>");
-		if (columnNameMap.containsKey("STREET")) {
-			tagElement(xmlBuilder, "sfa:Street", rs.getString(columnNameMap.get("STREET")));
-		}
-		if (columnNameMap.containsKey("USZIPCODE")) {
-			tagElement(xmlBuilder, "sfa:PostCode", rs.getString(columnNameMap.get("USZIPCODE")));
-		}
-		if (columnNameMap.containsKey("USCITY")) {
-			tagElement(xmlBuilder, "sfa:City", rs.getString(columnNameMap.get("USCITY")));
-		}
-		if (columnNameMap.containsKey("COUNTRYSUBENTITY")) {
-			tagElement(xmlBuilder, "sfa:CountrySubentity", rs.getString(columnNameMap.get("COUNTRYSUBENTITY")));
-		}
-		xmlBuilder.append("</sfa:AddressFix>");
-		if (columnNameMap.containsKey("ADDRESSFREE")) {
-			tagElement(xmlBuilder, "sfa:AddressFree", rs.getString(columnNameMap.get("ADDRESSFREE")));
-		}
-		xmlBuilder.append("</sfa:Address>");
 
-		xmlBuilder.append("</ftc:Individual>");
-		xmlBuilder.append("</ftc:AccountHolder>");
-
-		// Birth Info
-//			xmlBuilder.append("<sfa:BirthInfo>");
-//			if (columnNameMap.containsKey("DATEOFBIRTH"))
-//				tagElement(xmlBuilder, "ftc:BirthDate", rs.getString(columnNameMap.get("DATEOFBIRTH")));
-//			xmlBuilder.append("</sfa:BirthInfo>");
-		xmlSubstantialOwnerBuilder(rs, xmlBuilder, columnNameMap);
+		xmlSubstantialOwnerBuilder(rs, xmlBuilder, columnNameMap, internalStatus);
 
 		// Account Balance
 		String accountBalance = columnNameMap.containsKey("ACCOUNTBALANCE")
@@ -4979,11 +5401,11 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 		}
 
 		xmlBuilder.append("<sfa:AddressFix>");
-
-		if (columnNameMap.containsKey("ENTITYSTREET")) {
-			tagElement(xmlBuilder, "sfa:Street", rs.getString(columnNameMap.get("ENTITYSTREET")));
+		if (!clientName.equalsIgnoreCase(Constants.EQUITY)) {
+			if (columnNameMap.containsKey("ENTITYSTREET")) {
+				tagElement(xmlBuilder, "sfa:Street", rs.getString(columnNameMap.get("ENTITYSTREET")));
+			}
 		}
-
 		if (columnNameMap.containsKey("ENTITYPOSTALCODE")) {
 			tagElement(xmlBuilder, "sfa:PostCode", rs.getString(columnNameMap.get("ENTITYPOSTALCODE")));
 		}
@@ -4991,8 +5413,10 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 		if (columnNameMap.containsKey("ENTITYCITY")) {
 			tagElement(xmlBuilder, "sfa:City", rs.getString(columnNameMap.get("ENTITYCITY")));
 		}
-		if (columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
-			tagElement(xmlBuilder, "sfa:CountrySubentity", rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
+		if (!clientName.equalsIgnoreCase(Constants.EQUITY)) {
+			if (columnNameMap.containsKey("ENTITYCOUNTRYCODE")) {
+				tagElement(xmlBuilder, "sfa:CountrySubentity", rs.getString(columnNameMap.get("ENTITYCOUNTRYCODE")));
+			}
 		}
 
 		xmlBuilder.append("</sfa:AddressFix>");
@@ -5020,9 +5444,9 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 //			if (columnNameMap.containsKey("WARNING")) {
 //				tagElement(xmlBuilder, "sfa:Warning", rs.getString(columnNameMap.get("WARNING")));
 //			}
-//			if (columnNameMap.containsKey("CONTACT")) {
-//				tagElement(xmlBuilder, "sfa:Contact", rs.getString(columnNameMap.get("CONTACT")));
-//			}
+		if (columnNameMap.containsKey("CONTACT")) {
+			tagElement(xmlBuilder, "sfa:Contact", rs.getString(columnNameMap.get("CONTACT")));
+		}
 		if (columnNameMap.containsKey("MESSAGEREFID")) {
 			tagElement(xmlBuilder, "sfa:MessageRefId",
 					rs.getString(columnNameMap.get("MESSAGEREFID")) + CommonUtils.generateRandom32());
@@ -5337,7 +5761,7 @@ public class TemplateScheduleDao extends AbstractDao<TemplateScheduleVb> impleme
 					+ "SENDING_COMPANY_IN,TRANSMITTING_COUNTRY, RECEIVING_COUNTRY, MESSAGE_TYPE, WARNING, CONTACT, MESSAGE_TYPE_INDIC, DOC_TYPE_IN,MESSAGE_REF_ID ";
 			if (isFatca) {
 				headerQuery = "T3.SENDING_COMPANY_IN,T3.TRANSMITTING_COUNTRY, T3.RECEIVING_COUNTRY, T3.MESSAGE_TYPE,T3.MESSAGE_REF_ID,T3.ENTITY_NAME,T3.ENTITY_COUNTRY_CODE,"
-						+ "T3.ENTITY_POSTAL_CODE,T3.ENTITY_CITY,T3.ENTITY_ADDRESS_FREE,T3.FILER_CATEGORY,T3.ENTITY_STREET";
+						+ "T3.ENTITY_POSTAL_CODE,T3.ENTITY_CITY,T3.ENTITY_ADDRESS_FREE,T3.FILER_CATEGORY,T3.ENTITY_STREET,T3.CONTACT";
 			}
 
 			if (cloud.equalsIgnoreCase("Y")) {

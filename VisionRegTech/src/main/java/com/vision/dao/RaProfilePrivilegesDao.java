@@ -481,20 +481,25 @@ public class RaProfilePrivilegesDao extends AbstractDao<RaProfileVb> {
 	}
 
 	private int doInsertTemplateAccess(RaProfileVb vObject, String dashboardId, int status) {
-		String query = "";
-		String tableName = "";
-		if (status == Constants.STATUS_ZERO)
-			tableName = "PRD_TEMPLATE_ACCESS";
-		else
-			tableName = "PRD_TEMPLATE_ACCESS_PEND";
+		try {
+			String query = "";
+			String tableName = "";
+			if (status == Constants.STATUS_ZERO)
+				tableName = "PRD_TEMPLATE_ACCESS";
+			else
+				tableName = "PRD_TEMPLATE_ACCESS_PEND";
 
-		query = "Insert Into " + tableName + "(USER_GROUP,USER_PROFILE, TEMPLATE_ID, "
-				+ " PROFILE_STATUS, RECORD_INDICATOR, MAKER, VERIFIER, INTERNAL_STATUS,"
-				+ " DATE_LAST_MODIFIED, DATE_CREATION,PRODUCT_NAME) " + " Values (?, ?, ?, 0, 0, ?, ?, 0, "
-				+ getDbFunction("SYSDATE") + ", " + getDbFunction("SYSDATE") + ",?)";
-		Object args[] = { vObject.getUserGroup(), vObject.getUserProfile(), dashboardId, vObject.getMaker(),
-				vObject.getVerifier(), productName };
-		return getJdbcTemplate().update(query, args);
+			query = "Insert Into " + tableName + "(USER_GROUP,USER_PROFILE, TEMPLATE_ID, "
+					+ " PROFILE_STATUS, RECORD_INDICATOR, MAKER, VERIFIER, INTERNAL_STATUS,"
+					+ " DATE_LAST_MODIFIED, DATE_CREATION,PRODUCT_NAME) " + " Values (?, ?, ?, 0, 0, ?, ?, 0, "
+					+ getDbFunction("SYSDATE") + ", " + getDbFunction("SYSDATE") + ",?)";
+			Object args[] = { vObject.getUserGroup(), vObject.getUserProfile(), dashboardId, vObject.getMaker(),
+					vObject.getVerifier(), productName };
+			return getJdbcTemplate().update(query, args);
+		} catch (DataAccessException e) {
+			logger.error("Exception in doInsertTemplateAccess" + e.getMessage());
+			return 0;
+		}
 	}
 
 	private int doDeleteTemplateAccess(RaProfileVb vObject, int status) {
@@ -1063,7 +1068,8 @@ public class RaProfilePrivilegesDao extends AbstractDao<RaProfileVb> {
 				doDeleteTemplateAccess(vObject, status);
 				if (vObject.getTemplatelst() != null && vObject.getTemplatelst().size() > 0) {
 					vObject.getTemplatelst().forEach(dashboardVb -> {
-						doInsertTemplateAccess(vObject, dashboardVb.getAlphaSubTab(), status);
+						retVal= doInsertTemplateAccess(vObject, dashboardVb.getAlphaSubTab(), status);
+						logger.info("Total Record Inserted in Template Access" +retVal);
 					});
 				}
 			}

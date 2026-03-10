@@ -54,4 +54,6 @@ public class Constants {
 	
 	public static final String FATCA = "FATCA";
 	public static final String CRS = "CRS";
+	public static final String EQUITY = "EQUITY";
+	
 }
